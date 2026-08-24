@@ -34,6 +34,10 @@
   box-shadow: 0 0 0 3px rgba(122, 99, 244, 0.2);
 }
 
+.mc-input:has(.mc-input__control[aria-invalid="true"]) {
+  border-color: #f0a5a5;
+}
+
 .mc-input .mc-input__control,
 .mc-input .mc-input__control:focus {
   flex: 1;

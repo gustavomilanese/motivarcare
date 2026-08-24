@@ -1,4 +1,5 @@
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { McButton } from "@therapy/ui";
 import { PROFESSIONAL_COUPLES_THERAPY_MEET_NOTICE_BULLETS } from "../constants/professionalProfileGuidanceCopy";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -43,20 +44,20 @@ export function ProfessionalCouplesTherapyNoticeDialog(props: {
         </ul>
 
         <div className="pro-couples-meet-notice-actions">
-          <button type="button" className="pro-secondary pro-couples-meet-notice-secondary" onClick={props.onDismiss}>
+          <McButton variant="secondary" fullWidth={false} onClick={props.onDismiss}>
             {t(props.language, {
               es: "Cancelar",
               en: "Cancel",
               pt: "Cancelar"
             })}
-          </button>
-          <button type="button" className="pro-primary pro-couples-meet-notice-primary" onClick={props.onConfirm}>
+          </McButton>
+          <McButton fullWidth={false} onClick={props.onConfirm}>
             {t(props.language, {
               es: "Entendido",
               en: "Got it",
               pt: "Entendi"
             })}
-          </button>
+          </McButton>
         </div>
       </article>
     </div>

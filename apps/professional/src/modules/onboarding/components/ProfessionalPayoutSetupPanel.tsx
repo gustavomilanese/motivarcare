@@ -1,5 +1,6 @@
 import { type RefObject } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { McCheckbox, McInput } from "@therapy/ui";
 import type { ProfessionalPayoutBankTransferType, ProfessionalPayoutStatus } from "@therapy/types";
 import {
   PROFESSIONAL_PAYOUT_FISCAL_NOTICE,
@@ -79,30 +80,24 @@ export function ProfessionalPayoutSetupPanel(props: {
           </h5>
           <p className="pro-payout-card__hint">{t(props.language, PROFESSIONAL_PAYOUT_FISCAL_NOTICE)}</p>
           <div className="pro-payout-card__grid">
-            <label>
-              <span>
-                {t(props.language, { es: "Nombre legal / razón social", en: "Legal name", pt: "Nome legal" })}
-              </span>
-              <input
-                value={props.form.legalName}
-                onChange={(event) => props.onFormChange({ legalName: event.target.value })}
-                autoComplete="name"
-                placeholder={t(props.language, {
-                  es: "Como figura en tu documento",
-                  en: "As shown on your ID",
-                  pt: "Como consta no documento"
-                })}
-              />
-            </label>
-            <label>
-              <span>{fiscalHint.label}</span>
-              <input
-                value={props.form.taxId}
-                onChange={(event) => props.onFormChange({ taxId: event.target.value })}
-                autoComplete="off"
-                placeholder={fiscalHint.placeholder}
-              />
-            </label>
+            <McInput
+              label={t(props.language, { es: "Nombre legal / razón social", en: "Legal name", pt: "Nome legal" })}
+              value={props.form.legalName}
+              onChange={(event) => props.onFormChange({ legalName: event.target.value })}
+              autoComplete="name"
+              placeholder={t(props.language, {
+                es: "Como figura en tu documento",
+                en: "As shown on your ID",
+                pt: "Como consta no documento"
+              })}
+            />
+            <McInput
+              label={fiscalHint.label}
+              value={props.form.taxId}
+              onChange={(event) => props.onFormChange({ taxId: event.target.value })}
+              autoComplete="off"
+              placeholder={fiscalHint.placeholder}
+            />
           </div>
         </section>
       ) : null}
@@ -148,42 +143,34 @@ export function ProfessionalPayoutSetupPanel(props: {
             </div>
 
             <div className="pro-payout-card__grid">
-              <label>
-                <span>
-                  {t(props.language, { es: "Titular de la cuenta", en: "Account holder", pt: "Titular da conta" })}
-                </span>
-                <input
-                  value={props.form.accountHolderName}
-                  onChange={(event) => props.onFormChange({ accountHolderName: event.target.value })}
-                  autoComplete="name"
-                />
-              </label>
-              <label>
-                <span>
-                  {props.form.bankTransferType === "iban"
+              <McInput
+                label={t(props.language, { es: "Titular de la cuenta", en: "Account holder", pt: "Titular da conta" })}
+                value={props.form.accountHolderName}
+                onChange={(event) => props.onFormChange({ accountHolderName: event.target.value })}
+                autoComplete="name"
+              />
+              <McInput
+                label={
+                  props.form.bankTransferType === "iban"
                     ? "IBAN"
-                    : t(props.language, { es: "Número de cuenta", en: "Account number", pt: "Numero da conta" })}
-                </span>
-                <input
-                  value={props.form.bankAccountValue}
-                  onChange={(event) => props.onFormChange({ bankAccountValue: event.target.value })}
-                  autoComplete="off"
-                  placeholder={props.form.bankTransferType === "iban" ? "DE89 3704 0044 0532 0130 00" : ""}
-                />
-              </label>
-              <label>
-                <span>{t(props.language, { es: "Banco", en: "Bank", pt: "Banco" })}</span>
-                <input
-                  value={props.form.bankName}
-                  onChange={(event) => props.onFormChange({ bankName: event.target.value })}
-                  autoComplete="organization"
-                  placeholder={t(props.language, {
-                    es: "Nombre de tu banco",
-                    en: "Your bank name",
-                    pt: "Nome do seu banco"
-                  })}
-                />
-              </label>
+                    : t(props.language, { es: "Número de cuenta", en: "Account number", pt: "Numero da conta" })
+                }
+                value={props.form.bankAccountValue}
+                onChange={(event) => props.onFormChange({ bankAccountValue: event.target.value })}
+                autoComplete="off"
+                placeholder={props.form.bankTransferType === "iban" ? "DE89 3704 0044 0532 0130 00" : ""}
+              />
+              <McInput
+                label={t(props.language, { es: "Banco", en: "Bank", pt: "Banco" })}
+                value={props.form.bankName}
+                onChange={(event) => props.onFormChange({ bankName: event.target.value })}
+                autoComplete="organization"
+                placeholder={t(props.language, {
+                  es: "Nombre de tu banco",
+                  en: "Your bank name",
+                  pt: "Nome do seu banco"
+                })}
+              />
             </div>
           </>
         )}
@@ -231,20 +218,17 @@ export function ProfessionalPayoutSetupPanel(props: {
         </div>
       </section>
 
-      <label className="pro-payout-terms">
-        <input
-          type="checkbox"
-          checked={props.form.payoutTermsAccepted}
-          onChange={(event) => props.onFormChange({ payoutTermsAccepted: event.target.checked })}
-        />
-        <span>
-          {t(props.language, {
-            es: "Confirmo que los datos ingresados son correctos, que la cuenta está a mi nombre y autorizo a MotivarCare a transferir allí mis pagos.",
-            en: "I confirm the details entered are correct, the account is in my name, and I authorize MotivarCare to transfer my payments there.",
-            pt: "Confirmo que os dados informados estao corretos, que a conta esta em meu nome e autorizo a MotivarCare a transferir ali meus pagamentos."
-          })}
-        </span>
-      </label>
+      <McCheckbox
+        className="pro-payout-terms"
+        checked={props.form.payoutTermsAccepted}
+        onChange={(event) => props.onFormChange({ payoutTermsAccepted: event.target.checked })}
+      >
+        {t(props.language, {
+          es: "Confirmo que los datos ingresados son correctos, que la cuenta está a mi nombre y autorizo a MotivarCare a transferir allí mis pagos.",
+          en: "I confirm the details entered are correct, the account is in my name, and I authorize MotivarCare to transfer my payments there.",
+          pt: "Confirmo que os dados informados estao corretos, que a conta esta em meu nome e autorizo a MotivarCare a transferir ali meus pagamentos."
+        })}
+      </McCheckbox>
     </div>
   );
 }

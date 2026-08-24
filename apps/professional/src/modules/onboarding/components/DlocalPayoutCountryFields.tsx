@@ -1,4 +1,5 @@
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { McInput, McSelect } from "@therapy/ui";
 import {
   dlocalPayoutBankCodes,
   dlocalPayoutCountryOptions,
@@ -113,41 +114,41 @@ export function DlocalPayoutCountryFields(props: {
     <div className="pro-payout-dlocal">
       {props.hideBeneficiaryNameFields ? null : (
       <div className="pro-payout-card__grid">
-        <label className={errors.beneficiaryFirstName ? "is-invalid" : undefined}>
-          <span>{t(language, { es: "Nombre (como en el DNI)", en: "First name (as on ID)", pt: "Nome (como no documento)" })}</span>
-          <input
+        <div>
+          <McInput
+            label={t(language, { es: "Nombre (como en el DNI)", en: "First name (as on ID)", pt: "Nome (como no documento)" })}
             value={fields.beneficiaryFirstName}
             onChange={(event) => onFormChange({ beneficiaryFirstName: event.target.value })}
             autoComplete="given-name"
+            aria-invalid={Boolean(errors.beneficiaryFirstName)}
           />
           <FieldNote error={errors.beneficiaryFirstName} />
-        </label>
-        <label className={errors.beneficiaryLastName ? "is-invalid" : undefined}>
-          <span>{t(language, { es: "Apellido (como en el DNI)", en: "Last name (as on ID)", pt: "Sobrenome (como no documento)" })}</span>
-          <input
+        </div>
+        <div>
+          <McInput
+            label={t(language, { es: "Apellido (como en el DNI)", en: "Last name (as on ID)", pt: "Sobrenome (como no documento)" })}
             value={fields.beneficiaryLastName}
             onChange={(event) => onFormChange({ beneficiaryLastName: event.target.value })}
             autoComplete="family-name"
+            aria-invalid={Boolean(errors.beneficiaryLastName)}
           />
           <FieldNote error={errors.beneficiaryLastName} />
-        </label>
+        </div>
       </div>
       )}
 
-      <label className={errors.payoutCountry ? "is-invalid" : undefined}>
-        <span>
-          {t(language, {
+      <div>
+        <McSelect
+          label={t(language, {
             es: "País donde tenés la cuenta bancaria para cobrar",
             en: "Country of the bank account where you’ll get paid",
             pt: "País onde você tem a conta bancária para receber"
           })}
-        </span>
-        <select
           value={fields.payoutCountry}
+          aria-invalid={Boolean(errors.payoutCountry)}
           onChange={(event) =>
             onFormChange({
               payoutCountry: event.target.value,
-              // Al cambiar de país, limpiamos los datos que dependen del país.
               documentType: "",
               bankCode: "",
               bankBranch: "",
@@ -163,9 +164,9 @@ export function DlocalPayoutCountryFields(props: {
               {option.label}
             </option>
           ))}
-        </select>
+        </McSelect>
         <FieldNote error={errors.payoutCountry} />
-      </label>
+      </div>
 
       <p className="pro-payout-card__hint">
         {t(language, {
@@ -205,10 +206,11 @@ export function DlocalPayoutCountryFields(props: {
       {config ? (
         <>
           <div className="pro-payout-card__grid">
-            <label className={errors.documentType ? "is-invalid" : undefined}>
-              <span>{t(language, { es: "Tipo de documento", en: "Document type", pt: "Tipo de documento" })}</span>
-              <select
+            <div>
+              <McSelect
+                label={t(language, { es: "Tipo de documento", en: "Document type", pt: "Tipo de documento" })}
                 value={fields.documentType}
+                aria-invalid={Boolean(errors.documentType)}
                 onChange={(event) => onFormChange({ documentType: event.target.value })}
               >
                 <option value="">
@@ -219,21 +221,22 @@ export function DlocalPayoutCountryFields(props: {
                     {option.label}
                   </option>
                 ))}
-              </select>
+              </McSelect>
               <FieldNote error={errors.documentType} />
-            </label>
-            <label className={errors.taxId ? "is-invalid" : undefined}>
-              <span>
-                {fields.payoutCountry === "AR"
-                  ? t(language, { es: "Número de CUIT / CUIL", en: "CUIT / CUIL number", pt: "Número de CUIT / CUIL" })
-                  : t(language, { es: "Número de documento fiscal", en: "Tax ID number", pt: "Número do documento" })}
-              </span>
-              <input
+            </div>
+            <div>
+              <McInput
+                label={
+                  fields.payoutCountry === "AR"
+                    ? t(language, { es: "Número de CUIT / CUIL", en: "CUIT / CUIL number", pt: "Número de CUIT / CUIL" })
+                    : t(language, { es: "Número de documento fiscal", en: "Tax ID number", pt: "Número do documento" })
+                }
                 value={fields.taxId}
                 onChange={(event) => onFormChange({ taxId: event.target.value })}
                 autoComplete="off"
                 inputMode="numeric"
                 placeholder={fields.payoutCountry === "AR" ? "20-12345678-9" : undefined}
+                aria-invalid={Boolean(errors.taxId)}
               />
               <FieldNote
                 error={errors.taxId}
@@ -247,14 +250,14 @@ export function DlocalPayoutCountryFields(props: {
                     : undefined
                 }
               />
-            </label>
+            </div>
           </div>
 
           <div className="pro-payout-card__grid">
             {bankList ? (
-              <label className={errors.bankCode ? "is-invalid" : undefined}>
-                <span>{t(language, { es: "Banco de la cuenta", en: "Account bank", pt: "Banco da conta" })}</span>
-                <select
+              <div>
+                <McSelect
+                  label={t(language, { es: "Banco de la cuenta", en: "Account bank", pt: "Banco da conta" })}
                   value={fields.bankCode}
                   aria-invalid={Boolean(errors.bankCode)}
                   onChange={(event) => {
@@ -271,7 +274,7 @@ export function DlocalPayoutCountryFields(props: {
                       {bankOptionLabel(fields.payoutCountry, bank)}
                     </option>
                   ))}
-                </select>
+                </McSelect>
                 <FieldNote
                   error={errors.bankCode}
                   hint={
@@ -284,12 +287,12 @@ export function DlocalPayoutCountryFields(props: {
                       : undefined
                   }
                 />
-              </label>
+              </div>
             ) : (
               <>
-                <label className={errors.bankCode ? "is-invalid" : undefined}>
-                  <span>{t(language, { es: "Código de banco", en: "Bank code", pt: "Código do banco" })}</span>
-                  <input
+                <div>
+                  <McInput
+                    label={t(language, { es: "Código de banco", en: "Bank code", pt: "Código do banco" })}
                     value={fields.bankCode}
                     onChange={(event) => onFormChange({ bankCode: event.target.value })}
                     autoComplete="off"
@@ -299,24 +302,26 @@ export function DlocalPayoutCountryFields(props: {
                       en: "Bank code",
                       pt: "Código do banco"
                     })}
+                    aria-invalid={Boolean(errors.bankCode)}
                   />
                   <FieldNote error={errors.bankCode} />
-                </label>
-                <label className={errors.bankName ? "is-invalid" : undefined}>
-                  <span>{t(language, { es: "Nombre del banco", en: "Bank name", pt: "Nome do banco" })}</span>
-                  <input
+                </div>
+                <div>
+                  <McInput
+                    label={t(language, { es: "Nombre del banco", en: "Bank name", pt: "Nome do banco" })}
                     value={fields.bankName}
                     onChange={(event) => onFormChange({ bankName: event.target.value })}
                     autoComplete="organization"
+                    aria-invalid={Boolean(errors.bankName)}
                   />
                   <FieldNote error={errors.bankName} />
-                </label>
+                </div>
               </>
             )}
 
-            <label className={errors.bankAccountValue ? "is-invalid" : undefined}>
-              <span>{localized(language, config.accountLabel)}</span>
-              <input
+            <div>
+              <McInput
+                label={localized(language, config.accountLabel)}
                 value={fields.bankAccountValue}
                 onChange={(event) => onFormChange({ bankAccountValue: event.target.value })}
                 autoComplete="off"
@@ -329,9 +334,10 @@ export function DlocalPayoutCountryFields(props: {
                       })
                     : undefined
                 }
+                aria-invalid={Boolean(errors.bankAccountValue)}
               />
               <FieldNote error={errors.bankAccountValue} hint={localized(language, config.accountHint)} />
-            </label>
+            </div>
           </div>
 
           {fields.payoutCountry === "AR" && bankList && bankList.length > 0 ? (
@@ -354,9 +360,9 @@ export function DlocalPayoutCountryFields(props: {
           {(config.requiresBranch || config.requiresAccountType) ? (
             <div className="pro-payout-card__grid">
               {config.requiresBranch ? (
-                <label className={errors.bankBranch ? "is-invalid" : undefined}>
-                  <span>{t(language, { es: "Sucursal / agencia", en: "Branch", pt: "Agência" })}</span>
-                  <input
+                <div>
+                  <McInput
+                    label={t(language, { es: "Sucursal / agencia", en: "Branch", pt: "Agência" })}
                     value={fields.bankBranch}
                     onChange={(event) => onFormChange({ bankBranch: event.target.value })}
                     autoComplete="off"
@@ -364,17 +370,17 @@ export function DlocalPayoutCountryFields(props: {
                     aria-invalid={Boolean(errors.bankBranch)}
                   />
                   <FieldNote error={errors.bankBranch} />
-                </label>
+                </div>
               ) : null}
               {config.requiresAccountType ? (
-                <label className={errors.accountType ? "is-invalid" : undefined}>
-                  <span>{t(language, { es: "Tipo de cuenta", en: "Account type", pt: "Tipo de conta" })}</span>
-                  <select
+                <div>
+                  <McSelect
+                    label={t(language, { es: "Tipo de cuenta", en: "Account type", pt: "Tipo de conta" })}
                     value={fields.accountType}
+                    aria-invalid={Boolean(errors.accountType)}
                     onChange={(event) =>
                       onFormChange({ accountType: event.target.value as PayoutFormFields["accountType"] })
                     }
-                    aria-invalid={Boolean(errors.accountType)}
                   >
                     <option value="">
                       {t(language, { es: "Elegí una opción", en: "Choose an option", pt: "Escolha uma opção" })}
@@ -385,9 +391,9 @@ export function DlocalPayoutCountryFields(props: {
                     <option value="SAVINGS">
                       {t(language, { es: "Caja de ahorro", en: "Savings", pt: "Poupança" })}
                     </option>
-                  </select>
+                  </McSelect>
                   <FieldNote error={errors.accountType} />
-                </label>
+                </div>
               ) : null}
             </div>
           ) : null}

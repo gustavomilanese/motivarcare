@@ -1,4 +1,5 @@
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { McButton, McModal } from "@therapy/ui";
 import {
   PROFESSIONAL_IDENTITY_ADVANCE_AI_BULLET
 } from "../constants/professionalProfileGuidanceCopy";
@@ -15,41 +16,39 @@ export function ProfessionalIdentityStepConfirmDialog(props: {
   const points = [PROFESSIONAL_IDENTITY_ADVANCE_AI_BULLET];
 
   return (
-    <div className="pro-web-identity-confirm" role="dialog" aria-modal="true" aria-labelledby="pro-web-identity-confirm-title">
-      <article className="pro-web-identity-confirm-card">
-        <header className="pro-web-identity-confirm-head">
-          <h3 id="pro-web-identity-confirm-title">
-            {t(props.language, {
-              es: "¿Listo para continuar?",
-              en: "Ready to continue?",
-              pt: "Pronto para continuar?"
-            })}
-          </h3>
-        </header>
-
-        <ul className="pro-web-identity-confirm-points">
-          {points.map((point) => (
-            <li key={point.es}>{t(props.language, point)}</li>
-          ))}
-        </ul>
-
-        <div className="pro-web-identity-confirm-actions">
-          <button type="button" className="pro-secondary" onClick={props.onGoBack}>
+    <McModal
+      open
+      title={t(props.language, {
+        es: "¿Listo para continuar?",
+        en: "Ready to continue?",
+        pt: "Pronto para continuar?"
+      })}
+      onClose={props.onGoBack}
+      closeLabel={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+      footer={
+        <>
+          <McButton variant="secondary" onClick={props.onGoBack}>
             {t(props.language, {
               es: "Revisar",
               en: "Review",
               pt: "Revisar"
             })}
-          </button>
-          <button type="button" className="pro-primary" onClick={props.onContinue}>
+          </McButton>
+          <McButton onClick={props.onContinue}>
             {t(props.language, {
               es: "Continuar",
               en: "Continue",
               pt: "Continuar"
             })}
-          </button>
-        </div>
-      </article>
-    </div>
+          </McButton>
+        </>
+      }
+    >
+      <ul className="pro-web-identity-confirm-points">
+        {points.map((point) => (
+          <li key={point.es}>{t(props.language, point)}</li>
+        ))}
+      </ul>
+    </McModal>
   );
 }

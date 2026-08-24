@@ -1,6 +1,7 @@
 import { Turnstile } from "@marsidev/react-turnstile";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { McButton, McInput, McNotice, McPasswordInput, McSelect, McTextarea } from "@therapy/ui";
 import { compressImageDataUrl, fileToDataUrl, mediaPreviewFromFile, readVideoFileForUpload } from "../../app/utils/mediaPreview";
 import { RESIDENCY_COUNTRY_OPTIONS } from "@therapy/types";
 import { LATIN_AMERICA_COUNTRY_OPTIONS } from "../constants/latinAmericaCountries";
@@ -410,68 +411,60 @@ export function ProfessionalWebOnboardingWizard(props: {
 
           {step === 0 ? (
             <div className="pro-web-fields pro-web-fields--single">
-              <label>
-                <span>{t(props.language, { es: "Correo electrónico", en: "Email", pt: "E-mail" })}</span>
-                <input
-                  type="email"
-                  autoComplete="email"
-                  value={form.email}
-                  onChange={(event) => update({ email: event.target.value, turnstileToken: "" })}
-                  placeholder={t(props.language, {
-                    es: "nombre@ejemplo.com",
-                    en: "name@example.com",
-                    pt: "nome@exemplo.com"
-                  })}
-                />
-              </label>
-              <label>
-                <span>
-                  {t(props.language, {
-                    es: "Repetir correo electrónico",
-                    en: "Confirm email",
-                    pt: "Confirmar e-mail"
-                  })}
-                </span>
-                <input
-                  type="email"
-                  autoComplete="email"
-                  value={form.emailConfirm}
-                  onChange={(event) => update({ emailConfirm: event.target.value, turnstileToken: "" })}
-                  placeholder={t(props.language, {
-                    es: "Igual que el correo anterior",
-                    en: "Same as above",
-                    pt: "Igual ao e-mail acima"
-                  })}
-                />
-              </label>
-              <label>
-                <span>{t(props.language, { es: "Contraseña", en: "Password", pt: "Senha" })}</span>
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  value={form.password}
-                  onChange={(event) => update({ password: event.target.value })}
-                  placeholder={t(props.language, {
-                    es: "Mínimo 8 caracteres",
-                    en: "At least 8 characters",
-                    pt: "Minimo 8 caracteres"
-                  })}
-                />
-              </label>
-              <label>
-                <span>{t(props.language, { es: "Repetir contraseña", en: "Repeat password", pt: "Repetir senha" })}</span>
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  value={form.passwordConfirm}
-                  onChange={(event) => update({ passwordConfirm: event.target.value })}
-                  placeholder={t(props.language, {
-                    es: "Igual que la anterior",
-                    en: "Same as above",
-                    pt: "Igual à anterior"
-                  })}
-                />
-              </label>
+              <McInput
+                label={t(props.language, { es: "Correo electrónico", en: "Email", pt: "E-mail" })}
+                type="email"
+                autoComplete="email"
+                value={form.email}
+                onChange={(event) => update({ email: event.target.value, turnstileToken: "" })}
+                placeholder={t(props.language, {
+                  es: "nombre@ejemplo.com",
+                  en: "name@example.com",
+                  pt: "nome@exemplo.com"
+                })}
+              />
+              <McInput
+                label={t(props.language, {
+                  es: "Repetir correo electrónico",
+                  en: "Confirm email",
+                  pt: "Confirmar e-mail"
+                })}
+                type="email"
+                autoComplete="email"
+                value={form.emailConfirm}
+                onChange={(event) => update({ emailConfirm: event.target.value, turnstileToken: "" })}
+                placeholder={t(props.language, {
+                  es: "Igual que el correo anterior",
+                  en: "Same as above",
+                  pt: "Igual ao e-mail acima"
+                })}
+              />
+              <McPasswordInput
+                label={t(props.language, { es: "Contraseña", en: "Password", pt: "Senha" })}
+                autoComplete="new-password"
+                value={form.password}
+                onChange={(event) => update({ password: event.target.value })}
+                placeholder={t(props.language, {
+                  es: "Mínimo 8 caracteres",
+                  en: "At least 8 characters",
+                  pt: "Minimo 8 caracteres"
+                })}
+                showLabel={t(props.language, { es: "Mostrar", en: "Show", pt: "Mostrar" })}
+                hideLabel={t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })}
+              />
+              <McPasswordInput
+                label={t(props.language, { es: "Repetir contraseña", en: "Repeat password", pt: "Repetir senha" })}
+                autoComplete="new-password"
+                value={form.passwordConfirm}
+                onChange={(event) => update({ passwordConfirm: event.target.value })}
+                placeholder={t(props.language, {
+                  es: "Igual que la anterior",
+                  en: "Same as above",
+                  pt: "Igual à anterior"
+                })}
+                showLabel={t(props.language, { es: "Mostrar", en: "Show", pt: "Mostrar" })}
+                hideLabel={t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })}
+              />
               {requiresTurnstileWidget && turnstileSiteKey ? (
                 <div className="pro-web-turnstile-wrap">
                   <span className="pro-web-field-label-like">
@@ -498,7 +491,7 @@ export function ProfessionalWebOnboardingWizard(props: {
                   })}
                 </p>
               ) : null}
-              {credentialsStepError ? <p className="pro-web-field-error">{credentialsStepError}</p> : null}
+              {credentialsStepError ? <McNotice>{credentialsStepError}</McNotice> : null}
             </div>
           ) : null}
 
@@ -529,20 +522,20 @@ export function ProfessionalWebOnboardingWizard(props: {
                     })}
                   </p>
                   <div className="pro-web-verify-pending-actions">
-                    <button
-                      type="button"
-                      className="pro-secondary"
+                    <McButton
+                      variant="secondary"
+                      fullWidth={false}
                       disabled={resendVerificationLoading}
                       onClick={() => void resendVerificationEmail()}
                     >
                       {resendVerificationLoading
                         ? t(props.language, { es: "Enviando…", en: "Sending…", pt: "Enviando…" })
                         : t(props.language, { es: "Reenviar correo", en: "Resend email", pt: "Reenviar e-mail" })}
-                    </button>
+                    </McButton>
                     {import.meta.env.DEV ? (
-                      <button
-                        type="button"
-                        className="pro-secondary"
+                      <McButton
+                        variant="secondary"
+                        fullWidth={false}
                         disabled={devVerifyLoading}
                         onClick={() => void devVerifyEmailInLocalDevelopment()}
                         title="Llama a POST /api/auth/email-verification/dev-verify (solo si el API corre en NODE_ENV=development)"
@@ -554,17 +547,15 @@ export function ProfessionalWebOnboardingWizard(props: {
                               en: "Dev only: mark email verified",
                               pt: "So dev: marcar e-mail verificado"
                             })}
-                      </button>
+                      </McButton>
                     ) : null}
                   </div>
-                  {devVerifyError ? <p className="pro-web-field-error">{devVerifyError}</p> : null}
+                  {devVerifyError ? <McNotice>{devVerifyError}</McNotice> : null}
                   {resendVerificationMessage ? (
-                    <p className="pro-web-price-bounds-hint" style={{ color: "#15803d" }}>
-                      {resendVerificationMessage}
-                    </p>
+                    <McNotice tone="success">{resendVerificationMessage}</McNotice>
                   ) : null}
-                  {resendVerificationError ? <p className="pro-web-field-error">{resendVerificationError}</p> : null}
-                  {credentialsStepError ? <p className="pro-web-field-error">{credentialsStepError}</p> : null}
+                  {resendVerificationError ? <McNotice>{resendVerificationError}</McNotice> : null}
+                  {credentialsStepError ? <McNotice>{credentialsStepError}</McNotice> : null}
                 </div>
               ) : (
                 <div className="pro-web-email-sent-card pro-web-email-sent-card--ok">
@@ -588,110 +579,109 @@ export function ProfessionalWebOnboardingWizard(props: {
                 reached={identitySegments.reached}
               />
               <div className="pro-web-grid-2">
-                <label>
-                  <span>{t(props.language, { es: "Nombre", en: "First name", pt: "Nome" })}</span>
-                  <input value={form.firstName} onChange={(event) => update({ firstName: event.target.value })} />
-                </label>
-                <label>
-                  <span>{t(props.language, { es: "Apellido", en: "Last name", pt: "Sobrenome" })}</span>
-                  <input value={form.lastName} onChange={(event) => update({ lastName: event.target.value })} />
-                </label>
+                <McInput
+                  label={t(props.language, { es: "Nombre", en: "First name", pt: "Nome" })}
+                  value={form.firstName}
+                  onChange={(event) => update({ firstName: event.target.value })}
+                />
+                <McInput
+                  label={t(props.language, { es: "Apellido", en: "Last name", pt: "Sobrenome" })}
+                  value={form.lastName}
+                  onChange={(event) => update({ lastName: event.target.value })}
+                />
               </div>
-              <label>
-                <span>{t(props.language, { es: "Título profesional", en: "Professional title", pt: "Titulo profissional" })}</span>
-                <select
-                  className="pro-web-select-full"
-                  value={form.professionalTitle}
-                  onChange={(event) => update({ professionalTitle: event.target.value })}
-                >
-                  <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
-                  {WEB_PROFESSIONAL_TITLE_OPTIONS_ES.map((title) => (
-                    <option key={title} value={title}>
-                      {title === "Psicólogo"
-                        ? t(props.language, { es: "Psicólogo", en: "Psychologist", pt: "Psicologo" })
-                        : title === "Psiquiatra"
-                          ? t(props.language, { es: "Psiquiatra", en: "Psychiatrist", pt: "Psiquiatra" })
-                          : title === "Sexólogo"
-                            ? t(props.language, { es: "Sexólogo", en: "Sexologist", pt: "Sexologo" })
-                            : title === "Coach"
-                              ? t(props.language, { es: "Coach", en: "Coach", pt: "Coach" })
-                              : t(props.language, { es: "Nutricionista", en: "Nutritionist", pt: "Nutricionista" })}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <McSelect
+                label={t(props.language, { es: "Título profesional", en: "Professional title", pt: "Titulo profissional" })}
+                value={form.professionalTitle}
+                onChange={(event) => update({ professionalTitle: event.target.value })}
+              >
+                <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
+                {WEB_PROFESSIONAL_TITLE_OPTIONS_ES.map((title) => (
+                  <option key={title} value={title}>
+                    {title === "Psicólogo"
+                      ? t(props.language, { es: "Psicólogo", en: "Psychologist", pt: "Psicologo" })
+                      : title === "Psiquiatra"
+                        ? t(props.language, { es: "Psiquiatra", en: "Psychiatrist", pt: "Psiquiatra" })
+                        : title === "Sexólogo"
+                          ? t(props.language, { es: "Sexólogo", en: "Sexologist", pt: "Sexologo" })
+                          : title === "Coach"
+                            ? t(props.language, { es: "Coach", en: "Coach", pt: "Coach" })
+                            : t(props.language, { es: "Nutricionista", en: "Nutritionist", pt: "Nutricionista" })}
+                  </option>
+                ))}
+              </McSelect>
               {identityReveal.showCareer ? (
                 <div className="pro-web-identity-section">
                   <div className="pro-web-grid-3">
-                    <label>
-                      <span>{t(props.language, { es: "Experiencia (rango)", en: "Experience (range)", pt: "Experiencia (faixa)" })}</span>
-                      <select value={form.experienceBand} onChange={(event) => update({ experienceBand: event.target.value })}>
-                        <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
-                        <option value="Menos de 1 ano">{t(props.language, { es: "Menos de 1 año", en: "Less than 1 year", pt: "Menos de 1 ano" })}</option>
-                        <option value="1-3 anos">{t(props.language, { es: "1-3 años", en: "1-3 years", pt: "1-3 anos" })}</option>
-                        <option value="3-6 anos">{t(props.language, { es: "3-6 años", en: "3-6 years", pt: "3-6 anos" })}</option>
-                        <option value="6-10 anos">{t(props.language, { es: "6-10 años", en: "6-10 years", pt: "6-10 anos" })}</option>
-                        <option value="10-15 anos">{t(props.language, { es: "10-15 años", en: "10-15 years", pt: "10-15 anos" })}</option>
-                        <option value="15-20 anos">{t(props.language, { es: "15-20 años", en: "15-20 years", pt: "15-20 anos" })}</option>
-                        <option value="Mas de 20 anos">{t(props.language, { es: "Más de 20 años", en: "More than 20 years", pt: "Mais de 20 anos" })}</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>{t(props.language, { es: "Horas de práctica", en: "Practice hours", pt: "Horas de pratica" })}</span>
-                      <select value={form.practiceBand} onChange={(event) => update({ practiceBand: event.target.value })}>
-                        <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
-                        <option value="Menos de 500 horas">{t(props.language, { es: "Menos de 500 horas", en: "Less than 500 hours", pt: "Menos de 500 horas" })}</option>
-                        <option value="500-1000 horas">{t(props.language, { es: "500-1000 horas", en: "500-1000 hours", pt: "500-1000 horas" })}</option>
-                        <option value="1000-3000 horas">{t(props.language, { es: "1000-3000 horas", en: "1000-3000 hours", pt: "1000-3000 horas" })}</option>
-                        <option value="3000-5000 horas">{t(props.language, { es: "3000-5000 horas", en: "3000-5000 hours", pt: "3000-5000 horas" })}</option>
-                        <option value="Mas de 5000 horas">{t(props.language, { es: "Más de 5000 horas", en: "More than 5000 hours", pt: "Mais de 5000 horas" })}</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>{t(props.language, { es: "Género", en: "Gender", pt: "Genero" })}</span>
-                      <select value={form.gender} onChange={(event) => update({ gender: event.target.value })}>
-                        <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
-                        {genderWebOptions.map((option) => (
-                          <option key={option.value} value={option.value}>{option.label}</option>
-                        ))}
-                      </select>
-                    </label>
+                    <McSelect
+                      label={t(props.language, { es: "Experiencia (rango)", en: "Experience (range)", pt: "Experiencia (faixa)" })}
+                      value={form.experienceBand}
+                      onChange={(event) => update({ experienceBand: event.target.value })}
+                    >
+                      <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
+                      <option value="Menos de 1 ano">{t(props.language, { es: "Menos de 1 año", en: "Less than 1 year", pt: "Menos de 1 ano" })}</option>
+                      <option value="1-3 anos">{t(props.language, { es: "1-3 años", en: "1-3 years", pt: "1-3 anos" })}</option>
+                      <option value="3-6 anos">{t(props.language, { es: "3-6 años", en: "3-6 years", pt: "3-6 anos" })}</option>
+                      <option value="6-10 anos">{t(props.language, { es: "6-10 años", en: "6-10 years", pt: "6-10 anos" })}</option>
+                      <option value="10-15 anos">{t(props.language, { es: "10-15 años", en: "10-15 years", pt: "10-15 anos" })}</option>
+                      <option value="15-20 anos">{t(props.language, { es: "15-20 años", en: "15-20 years", pt: "15-20 anos" })}</option>
+                      <option value="Mas de 20 anos">{t(props.language, { es: "Más de 20 años", en: "More than 20 years", pt: "Mais de 20 anos" })}</option>
+                    </McSelect>
+                    <McSelect
+                      label={t(props.language, { es: "Horas de práctica", en: "Practice hours", pt: "Horas de pratica" })}
+                      value={form.practiceBand}
+                      onChange={(event) => update({ practiceBand: event.target.value })}
+                    >
+                      <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
+                      <option value="Menos de 500 horas">{t(props.language, { es: "Menos de 500 horas", en: "Less than 500 hours", pt: "Menos de 500 horas" })}</option>
+                      <option value="500-1000 horas">{t(props.language, { es: "500-1000 horas", en: "500-1000 hours", pt: "500-1000 horas" })}</option>
+                      <option value="1000-3000 horas">{t(props.language, { es: "1000-3000 horas", en: "1000-3000 hours", pt: "1000-3000 horas" })}</option>
+                      <option value="3000-5000 horas">{t(props.language, { es: "3000-5000 horas", en: "3000-5000 hours", pt: "3000-5000 horas" })}</option>
+                      <option value="Mas de 5000 horas">{t(props.language, { es: "Más de 5000 horas", en: "More than 5000 hours", pt: "Mais de 5000 horas" })}</option>
+                    </McSelect>
+                    <McSelect
+                      label={t(props.language, { es: "Género", en: "Gender", pt: "Genero" })}
+                      value={form.gender}
+                      onChange={(event) => update({ gender: event.target.value })}
+                    >
+                      <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
+                      {genderWebOptions.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </McSelect>
                   </div>
                   {identityReveal.showLocation ? (
                     <div className="pro-web-identity-subfields">
-                      <label>
-                        <span>{t(props.language, { es: "País de nacimiento", en: "Country of birth", pt: "Pais de nascimento" })}</span>
-                        <select value={form.birthCountry} onChange={(event) => update({ birthCountry: event.target.value })}>
-                          <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
-                          {LATIN_AMERICA_COUNTRY_OPTIONS.map((c) => (
-                            <option key={c.value} value={c.value}>
-                              {c.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        <span>
-                          {t(props.language, {
-                            es: "País de residencia habitual",
-                            en: "Country of residence",
-                            pt: "Pais de residencia habitual"
-                          })}
-                        </span>
-                        <select
-                          value={form.residencyCountry}
-                          onChange={(event) => update({ residencyCountry: event.target.value })}
-                        >
-                          <option value="">
-                            {t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}
+                      <McSelect
+                        label={t(props.language, { es: "País de nacimiento", en: "Country of birth", pt: "Pais de nascimento" })}
+                        value={form.birthCountry}
+                        onChange={(event) => update({ birthCountry: event.target.value })}
+                      >
+                        <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
+                        {LATIN_AMERICA_COUNTRY_OPTIONS.map((c) => (
+                          <option key={c.value} value={c.value}>
+                            {c.label}
                           </option>
-                          {RESIDENCY_COUNTRY_OPTIONS.map((c) => (
-                            <option key={c.code} value={c.code}>
-                              {c.names[props.language]}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                        ))}
+                      </McSelect>
+                      <McSelect
+                        label={t(props.language, {
+                          es: "País de residencia habitual",
+                          en: "Country of residence",
+                          pt: "Pais de residencia habitual"
+                        })}
+                        value={form.residencyCountry}
+                        onChange={(event) => update({ residencyCountry: event.target.value })}
+                      >
+                        <option value="">
+                          {t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}
+                        </option>
+                        {RESIDENCY_COUNTRY_OPTIONS.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.names[props.language]}
+                          </option>
+                        ))}
+                      </McSelect>
                     </div>
                   ) : null}
                 </div>
@@ -772,30 +762,24 @@ export function ProfessionalWebOnboardingWizard(props: {
 
           {step === 3 ? (
             <div className="pro-web-fields">
-              <label>
-                <span>Acerca de mí</span>
-                <textarea
-                  autoComplete="off"
-                  value={form.about}
-                  onChange={(event) => update({ about: event.target.value })}
-                />
-              </label>
-              <label>
-                <span>Cómo trabajo</span>
-                <textarea
-                  autoComplete="off"
-                  value={form.methodology}
-                  onChange={(event) => update({ methodology: event.target.value })}
-                />
-              </label>
-              <label>
-                <span>Descripción corta (250)</span>
-                <input
-                  autoComplete="off"
-                  value={form.shortDescription}
-                  onChange={(event) => update({ shortDescription: event.target.value.slice(0, 250) })}
-                />
-              </label>
+              <McTextarea
+                label="Acerca de mí"
+                autoComplete="off"
+                value={form.about}
+                onChange={(event) => update({ about: event.target.value })}
+              />
+              <McTextarea
+                label="Cómo trabajo"
+                autoComplete="off"
+                value={form.methodology}
+                onChange={(event) => update({ methodology: event.target.value })}
+              />
+              <McInput
+                label="Descripción corta (250)"
+                autoComplete="off"
+                value={form.shortDescription}
+                onChange={(event) => update({ shortDescription: event.target.value.slice(0, 250) })}
+              />
             </div>
           ) : null}
 
@@ -809,29 +793,25 @@ export function ProfessionalWebOnboardingWizard(props: {
                 })}
               </p>
               {usdArsRateError ? (
-                <p className="pro-web-field-error" role="status">
+                <McNotice>
                   {t(props.language, {
                     es: "No pudimos obtener el tipo de cambio en este momento. Podés seguir; al guardar el perfil volveremos a intentarlo.",
                     en: "We couldn’t load the exchange rate right now. You can continue; we’ll try again when saving your profile.",
                     pt: "Nao foi possivel obter a cotacao agora. Voce pode continuar; ao salvar o perfil tentaremos de novo."
                   })}
-                </p>
+                </McNotice>
               ) : null}
-              {pricingStepError ? <p className="pro-web-field-error">{pricingStepError}</p> : null}
-              <label>
-                <span>
-                  {t(props.language, {
-                    es: "Precio de referencia por sesión (USD)",
-                    en: "Reference price per session (USD)",
-                    pt: "Preco de referencia por sessao (USD)"
-                  })}
-                </span>
-                <input
-                  inputMode="numeric"
-                  value={form.sessionPriceUsd}
-                  onChange={(event) => update({ sessionPriceUsd: event.target.value.replace(/\D/g, "") })}
-                />
-              </label>
+              {pricingStepError ? <McNotice>{pricingStepError}</McNotice> : null}
+              <McInput
+                label={t(props.language, {
+                  es: "Precio de referencia por sesión (USD)",
+                  en: "Reference price per session (USD)",
+                  pt: "Preco de referencia por sessao (USD)"
+                })}
+                inputMode="numeric"
+                value={form.sessionPriceUsd}
+                onChange={(event) => update({ sessionPriceUsd: event.target.value.replace(/\D/g, "") })}
+              />
               {sessionPriceLocalLabel ? (
                 <p className="pro-web-price-ars-preview">
                   {proDisplayCurrency === "ARS"
@@ -908,7 +888,7 @@ export function ProfessionalWebOnboardingWizard(props: {
 
           {step === 5 ? (
             <div className="pro-web-fields pro-web-fields--media">
-              {mediaStepError ? <p className="pro-web-field-error" role="alert">{mediaStepError}</p> : null}
+              {mediaStepError ? <McNotice>{mediaStepError}</McNotice> : null}
               <input
                 ref={webPhotoInputRef}
                 type="file"
@@ -1054,11 +1034,41 @@ export function ProfessionalWebOnboardingWizard(props: {
               {form.diplomas.map((diploma, index) => (
                 <div className="pro-web-diploma-card" key={`web-diploma-${index}`}>
                   <h4>{t(props.language, { es: `Diploma #${index + 1}`, en: `Diploma #${index + 1}`, pt: `Diploma #${index + 1}` })}</h4>
-                  <label><span>Institución</span><input value={diploma.institution} onChange={(event) => updateDiploma(index, { institution: event.target.value })} /></label>
-                  <label><span>Título / Especialidad</span><input value={diploma.degree} onChange={(event) => updateDiploma(index, { degree: event.target.value })} /></label>
+                  <McInput
+                    label="Institución"
+                    value={diploma.institution}
+                    onChange={(event) => updateDiploma(index, { institution: event.target.value })}
+                  />
+                  <McInput
+                    label="Título / Especialidad"
+                    value={diploma.degree}
+                    onChange={(event) => updateDiploma(index, { degree: event.target.value })}
+                  />
                   <div className="pro-web-grid-2">
-                    <label><span>Año inicio</span><select value={diploma.startYear} onChange={(event) => updateDiploma(index, { startYear: event.target.value })}><option value="">Seleccionar</option>{years.map((year) => <option key={year} value={year}>{year}</option>)}</select></label>
-                    <label><span>Año graduación</span><select value={diploma.graduationYear} onChange={(event) => updateDiploma(index, { graduationYear: event.target.value })}><option value="">Seleccionar</option>{years.map((year) => <option key={year} value={year}>{year}</option>)}</select></label>
+                    <McSelect
+                      label="Año inicio"
+                      value={diploma.startYear}
+                      onChange={(event) => updateDiploma(index, { startYear: event.target.value })}
+                    >
+                      <option value="">Seleccionar</option>
+                      {years.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </McSelect>
+                    <McSelect
+                      label="Año graduación"
+                      value={diploma.graduationYear}
+                      onChange={(event) => updateDiploma(index, { graduationYear: event.target.value })}
+                    >
+                      <option value="">Seleccionar</option>
+                      {years.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </McSelect>
                   </div>
                   <button
                     type="button"
@@ -1156,9 +1166,9 @@ export function ProfessionalWebOnboardingWizard(props: {
           </div>
 
           <footer className="pro-web-actions">
-            <button
-              type="button"
-              className="pro-secondary"
+            <McButton
+              variant="secondary"
+              fullWidth={false}
               disabled={step === 0}
               onClick={() => {
                 if (step === 1) {
@@ -1168,10 +1178,9 @@ export function ProfessionalWebOnboardingWizard(props: {
               }}
             >
               {t(props.language, { es: "Anterior", en: "Back", pt: "Anterior" })}
-            </button>
-            <button
-              type="button"
-              className="pro-primary"
+            </McButton>
+            <McButton
+              fullWidth={false}
               disabled={
                 (step === 2 ? !identityFooterAdvance.canAdvance : !canContinue)
                 || credentialsChecking
@@ -1186,7 +1195,7 @@ export function ProfessionalWebOnboardingWizard(props: {
                   : step === labels.length - 1
                     ? t(props.language, { es: "Continuar al alta", en: "Continue to sign up", pt: "Continuar para cadastro" })
                     : t(props.language, { es: "Siguiente paso", en: "Next step", pt: "Proximo passo" })}
-            </button>
+            </McButton>
           </footer>
         </div>
       </section>
@@ -1198,9 +1207,9 @@ export function ProfessionalWebOnboardingWizard(props: {
               <span className="pro-web-interstitial-kicker">{interstitialByStep[activeInterstitialStep]?.kicker}</span>
               <h3>{interstitialByStep[activeInterstitialStep]?.title}</h3>
               <p>{interstitialByStep[activeInterstitialStep]?.body}</p>
-              <button type="button" className="pro-primary" onClick={continueFromInterstitial}>
+              <McButton onClick={continueFromInterstitial}>
                 {interstitialByStep[activeInterstitialStep]?.cta}
-              </button>
+              </McButton>
             </div>
             {interstitialByStep[activeInterstitialStep] ? renderWebInterstitialVisual(interstitialByStep[activeInterstitialStep] as WebInterstitialContent) : null}
           </article>
@@ -1223,12 +1232,12 @@ export function ProfessionalWebOnboardingWizard(props: {
                 })}
               </p>
               <div className="pro-web-celebration-actions">
-                <button type="button" className="pro-secondary" onClick={() => setShowCompletionCelebration(false)}>
+                <McButton variant="secondary" fullWidth={false} onClick={() => setShowCompletionCelebration(false)}>
                   {t(props.language, { es: "Seguir editando", en: "Keep editing", pt: "Continuar editando" })}
-                </button>
-                <button type="button" className="pro-primary" onClick={finishWebOnboarding}>
+                </McButton>
+                <McButton fullWidth={false} onClick={finishWebOnboarding}>
                   {t(props.language, { es: "Acceder a mi cuenta", en: "Access my account", pt: "Acessar minha conta" })}
-                </button>
+                </McButton>
               </div>
             </div>
             <div className="pro-web-interstitial-visual pro-web-interstitial-visual-celebration" aria-hidden="true">
