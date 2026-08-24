@@ -171,60 +171,22 @@ function SubmitPayoutPromptModal(props: {
             </svg>
           </div>
         </div>
-        <p className="pro-cobro-prompt-kicker">
-          {markAndSend
-            ? t(props.language, {
-                es: "Un solo paso",
-                en: "One step",
-                pt: "Um so passo"
-              })
-            : t(props.language, {
-                es: "Pedido de cobro",
-                en: "Payout request",
-                pt: "Pedido de cobranca"
-              })}
-        </p>
         <h3 id="pro-cobro-prompt-title">
-          {markAndSend
-            ? t(props.language, {
-                es: "Marcar y enviar a cobro",
-                en: "Mark and send for payout",
-                pt: "Marcar e enviar a cobranca"
-              })
-            : t(props.language, {
-                es: "Enviar a cobro",
-                en: "Send for payout",
-                pt: "Enviar a cobranca"
-              })}
+          {t(props.language, {
+            es: "Enviar a cobro",
+            en: "Send for payout",
+            pt: "Enviar a cobranca"
+          })}
         </h3>
-        <p className="pro-cobro-prompt-lead">
-          {markAndSend
-            ? t(props.language, {
-                es: "Las marcás realizadas y pasan a Pendiente de cobro. Admin las toma para pagarte. Después no se deshace.",
-                en: "You mark them completed and they become Pending payout. Admin takes them to pay you. This cannot be undone.",
-                pt: "Voce marca realizadas e elas ficam Pendente de cobranca. O Admin as recebe para te pagar. Depois nao se desfaz."
-              })
-            : t(props.language, {
-                es: "Estas sesiones ya están realizadas. Envíalas para que pasen a Pendiente de cobro y Admin las pague.",
-                en: "These sessions are already completed. Send them so they become Pending payout and Admin can pay you.",
-                pt: "Essas sessoes ja estao realizadas. Envie para ficarem Pendente de cobranca e o Admin pagar."
-              })}
-        </p>
         <div className="pro-cobro-prompt-amount-card">
-          <span className="pro-cobro-prompt-amount-label">
-            {t(props.language, { es: "Vas a cobrar", en: "You will receive", pt: "Voce vai receber" })}
-          </span>
           {props.amountReady ? (
-            <strong className="pro-cobro-prompt-amount">{props.amountLabel}</strong>
-          ) : (
-            <strong className="pro-cobro-prompt-amount pro-cobro-prompt-amount--pending">
-              {t(props.language, {
-                es: "Importe al confirmar",
-                en: "Amount on confirm",
-                pt: "Valor na confirmacao"
-              })}
-            </strong>
-          )}
+            <>
+              <span className="pro-cobro-prompt-amount-label">
+                {t(props.language, { es: "Vas a cobrar", en: "You will receive", pt: "Voce vai receber" })}
+              </span>
+              <strong className="pro-cobro-prompt-amount">{props.amountLabel}</strong>
+            </>
+          ) : null}
           <div className="pro-cobro-prompt-people">
             {patients.slice(0, 4).map((patient, index) => (
               <PatientAvatarImage
@@ -237,27 +199,12 @@ function SubmitPayoutPromptModal(props: {
             <span>{patientCaption}</span>
           </div>
         </div>
-        <ol className="pro-cobro-prompt-flow" aria-label={t(props.language, {
-          es: "Realizada pasa a Pendiente de cobro, y después a Pagada",
-          en: "Completed moves to Pending payout, then Paid",
-          pt: "Realizada passa a Pendente de cobranca, e depois a Paga"
-        })}>
-          <li className="is-done">
-            {t(props.language, { es: "Realizada", en: "Completed", pt: "Realizada" })}
-          </li>
-          <li className="is-next">
-            {t(props.language, { es: "Pendiente de cobro", en: "Pending payout", pt: "Pendente de cobranca" })}
-          </li>
-          <li>
-            {t(props.language, { es: "Pagada", en: "Paid", pt: "Paga" })}
-          </li>
-        </ol>
         {props.payoutReady ? (
           <p className="pro-cobro-prompt-note">
             {t(props.language, {
-              es: "No se puede deshacer. Después no vas a poder cambiar ni desmarcar esas sesiones.",
-              en: "This cannot be undone. You won’t be able to change or unmark those sessions afterwards.",
-              pt: "Nao se desfaz. Depois nao podera alterar nem desmarcar essas sessoes."
+              es: "No se puede deshacer.",
+              en: "This cannot be undone.",
+              pt: "Nao se pode desfazer."
             })}
           </p>
         ) : props.blockedReason ? (
