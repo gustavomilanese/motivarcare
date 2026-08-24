@@ -5,13 +5,9 @@ import {
 } from "./adminUnpaidProfessional.service.js";
 
 describe("dlocalSentPayoutLineWhere", () => {
-  it("includes submitted, failed-with-error, and any line with a dLocal id", () => {
+  it("includes in-flight submits and any line with a dLocal id, not failed attempts that never left", () => {
     expect(dlocalSentPayoutLineWhere).toEqual({
-      OR: [
-        { dlocalPayoutId: { not: null } },
-        { status: "SUBMITTED" },
-        { AND: [{ status: "FAILED" }, { submissionError: { not: null } }] }
-      ]
+      OR: [{ dlocalPayoutId: { not: null } }, { status: "SUBMITTED" }]
     });
   });
 });

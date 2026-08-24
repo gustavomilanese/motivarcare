@@ -189,13 +189,9 @@ export async function listUnpaidProfessionalsOverview(input?: {
   };
 }
 
-/** Líneas que Admin debe ver como “enviado / intentado vía dLocal”. */
+/** Líneas que Admin ve en “Enviado a dLocal”: en vuelo o con payout_id. Los FAILED sin ID no: nunca salieron y vuelven a Por enviar. */
 export const dlocalSentPayoutLineWhere = {
-  OR: [
-    { dlocalPayoutId: { not: null } },
-    { status: "SUBMITTED" },
-    { AND: [{ status: "FAILED" }, { submissionError: { not: null } }] }
-  ]
+  OR: [{ dlocalPayoutId: { not: null } }, { status: "SUBMITTED" }]
 };
 
 export type DlocalTransferDisplayStatus = "in_transit" | "delivered" | "failed";
