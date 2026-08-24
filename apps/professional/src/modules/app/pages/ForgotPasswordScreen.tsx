@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
-import { McButton } from "@therapy/ui";
+import { McButton, McInput, McNotice } from "@therapy/ui";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 
@@ -75,28 +75,18 @@ export function ForgotPasswordScreen(props: { language: AppLanguage }) {
         </p>
 
         <form className="pro-stack pro-auth-simple-form" onSubmit={handleSubmit}>
-          <label>
-            {t(props.language, { es: "Email", en: "Email", pt: "E-mail" })}
-            <input
-              type="email"
-              name="email"
-              value={email}
-              autoComplete="email"
-              inputMode="email"
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </label>
+          <McInput
+            label={t(props.language, { es: "Email", en: "Email", pt: "E-mail" })}
+            type="email"
+            name="email"
+            value={email}
+            autoComplete="email"
+            inputMode="email"
+            onChange={(event) => setEmail(event.target.value)}
+          />
 
-          {error ? (
-            <p className="pro-error pro-auth-error-banner" role="alert">
-              {error}
-            </p>
-          ) : null}
-          {message ? (
-            <p className="pro-success" role="status">
-              {message}
-            </p>
-          ) : null}
+          {error ? <McNotice>{error}</McNotice> : null}
+          {message ? <McNotice tone="success">{message}</McNotice> : null}
 
           <McButton type="submit" disabled={loading}>
             {loading

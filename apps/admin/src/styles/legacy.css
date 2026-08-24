@@ -310,16 +310,6 @@ button.danger:active:not(:disabled) {
   color: #475569;
 }
 
-.admin-auth-error {
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
-  font-size: 14px;
-  font-weight: 600;
-}
-
 .primary-link {
   text-decoration: none;
   display: inline-flex;

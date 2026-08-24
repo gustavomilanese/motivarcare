@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
-import { McButton } from "@therapy/ui";
+import { McButton, McInput, McNotice } from "@therapy/ui";
 import { friendlyAuthSurfaceMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest } from "../services/api";
 
@@ -80,31 +80,18 @@ export function PatientForgotPasswordScreen(props: { language: AppLanguage }) {
           </p>
 
           <form className="stack auth-form auth-narrow-form" onSubmit={handleSubmit}>
-            <div className="auth-field-stack">
-              <span className="auth-field-label">{t(props.language, { es: "Correo electrónico", en: "Email", pt: "E-mail" })}</span>
-              <div className="auth-input-shell">
-                <input
-                  className="auth-input-inset"
-                  type="email"
-                  name="email"
-                  value={email}
-                  autoComplete="email"
-                  inputMode="email"
-                  onChange={(event) => setEmail(event.target.value)}
-                />
-              </div>
-            </div>
+            <McInput
+              label={t(props.language, { es: "Correo electrónico", en: "Email", pt: "E-mail" })}
+              type="email"
+              name="email"
+              value={email}
+              autoComplete="email"
+              inputMode="email"
+              onChange={(event) => setEmail(event.target.value)}
+            />
 
-            {error ? (
-              <p className="error-text auth-error" role="alert">
-                {error}
-              </p>
-            ) : null}
-            {message ? (
-              <p className="success-text" role="status">
-                {message}
-              </p>
-            ) : null}
+            {error ? <McNotice>{error}</McNotice> : null}
+            {message ? <McNotice tone="success">{message}</McNotice> : null}
 
             <McButton type="submit" disabled={loading}>
               {loading

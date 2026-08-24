@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
+import { McButton, McSelect } from "@therapy/ui";
 import {
   filterResidencyOptionsForPatientPortal,
   PATIENT_PORTAL_RESIDENCY_CODES,
@@ -41,22 +42,19 @@ export function PatientResidencyConfirm(props: {
           pt: "O pagamento usa o pais declarado no onboarding, nao este computador. Confirme para continuar."
         })}
       </p>
-      <label className="checkout-residency-confirm-label">
-        {t(props.language, { es: "País de residencia", en: "Country of residence", pt: "Pais de residencia" })}
-        <select value={draft} onChange={(event) => setDraft(event.target.value)} disabled={props.saving}>
-          {residencyOptions.map((row) => (
-            <option key={row.code} value={row.code}>
-              {row.names[props.language]}
-            </option>
-          ))}
-        </select>
-      </label>
-      <button
-        type="button"
-        className="primary"
-        disabled={props.saving || !draft}
-        onClick={() => void props.onConfirm(draft)}
+      <McSelect
+        label={t(props.language, { es: "País de residencia", en: "Country of residence", pt: "Pais de residencia" })}
+        value={draft}
+        disabled={props.saving}
+        onChange={(event) => setDraft(event.target.value)}
       >
+        {residencyOptions.map((row) => (
+          <option key={row.code} value={row.code}>
+            {row.names[props.language]}
+          </option>
+        ))}
+      </McSelect>
+      <McButton disabled={props.saving || !draft} onClick={() => void props.onConfirm(draft)}>
         {props.saving
           ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
           : t(props.language, {
@@ -64,7 +62,7 @@ export function PatientResidencyConfirm(props: {
               en: "Confirm country and continue",
               pt: "Confirmar pais e continuar"
             })}
-      </button>
+      </McButton>
     </div>
   );
 }

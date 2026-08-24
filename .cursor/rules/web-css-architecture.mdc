@@ -22,7 +22,7 @@ Las apps web ya no usan un `styles.css` gigante como destino. El look viejo vive
 - Las clases siguen el prefijo de la app (`.pro-`, etc.). No hace falta BEM con `__`.
 - Reutilizá variables de `:root` (`--brand`, radios). No inventes otro violeta.
 - Botones nuevos: `border-radius: 8px`. Cards: `10px`–`12px`.
-- CTA de login / crear cuenta: componente `McButton` de `@therapy/ui`, no un `button.primary` más.
+- Controles compartidos (`McButton`, `McInput`, `McPasswordInput`, `McSelect`, `McTextarea`, `McCheckbox`, `McNotice`, `McTextButton`, `McIconButton`, `McModal`): importar de `@therapy/ui`, no copiar clases en `legacy.css`.
 
 ## Prohibido
 

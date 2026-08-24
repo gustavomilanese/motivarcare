@@ -628,19 +628,6 @@ ul {
   width: 100%;
 }
 
-.auth-form label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #24314f;
-  gap: 7px;
-}
-
-.auth-field-stack {
-  display: grid;
-  gap: 6px;
-  width: 100%;
-}
-
 .auth-field-row-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -661,14 +648,6 @@ ul {
   letter-spacing: 0.01em;
 }
 
-.auth-field-label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-}
-
 .auth-field-hint {
   display: block;
   margin-top: 4px;
@@ -685,98 +664,6 @@ ul {
   font-size: 16px;
   color: #0f172a;
   background: #ffffff;
-  cursor: pointer;
-}
-
-.auth-link-inline {
-  padding: 0;
-  margin: 0;
-  border: 0;
-  background: transparent;
-  color: #5f44eb;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.auth-link-inline:hover {
-  background: transparent;
-  color: #4a36c4;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.auth-input-shell {
-  display: flex;
-  align-items: stretch;
-  border-radius: 12px;
-  border: 1px solid #d8dee9;
-  background: #ffffff;
-  overflow: hidden;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.auth-input-shell:focus-within {
-  border-color: #9b8af5;
-  box-shadow: 0 0 0 3px rgba(122, 99, 244, 0.2);
-}
-
-.auth-input-shell--with-suffix .auth-input-inset {
-  border-radius: 0;
-  border: 0;
-  box-shadow: none;
-}
-
-.auth-input-inset {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  border-radius: 12px;
-  background: #ffffff;
-  padding: 13px 14px;
-  font-size: 17px;
-  color: #0f172a;
-  outline: none;
-}
-
-.auth-input-suffix {
-  flex-shrink: 0;
-  align-self: stretch;
-  padding: 0 14px;
-  margin: 0;
-  border: 0;
-  border-left: 1px solid #e8ecf4;
-  background: #fafbff;
-  color: #5f44eb;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.auth-input-suffix:hover {
-  background: #f3f0ff;
-}
-
-.auth-remember {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  color: #334155;
-  line-height: 1.35;
-}
-
-.auth-remember input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  margin-top: 1px;
-  flex-shrink: 0;
-  border-radius: 4px;
-  accent-color: #5f44eb;
   cursor: pointer;
 }
 
@@ -874,20 +761,6 @@ ul {
 .auth-narrow-form {
   width: 100%;
   margin-top: 4px;
-}
-
-.auth-form input:not(.auth-input-inset) {
-  border-radius: 14px;
-  border: 1px solid #dfe4f2;
-  background: #f7f8fc;
-  padding: 13px 14px;
-  font-size: 18px;
-  color: #0f1731;
-}
-
-.auth-form input:not(.auth-input-inset):focus {
-  border-color: #7a63f4;
-  box-shadow: 0 0 0 4px rgba(122, 99, 244, 0.15);
 }
 
 .auth-switch-inline {
@@ -12967,10 +12840,6 @@ button.sessions-balance {
     font-size: 31px;
   }
 
-  .auth-input-inset {
-    font-size: 17px;
-  }
-
   .intake-submit-row {
     flex-direction: column-reverse;
     align-items: stretch;
@@ -14261,7 +14130,7 @@ button.sessions-balance {
 
   /**
    * Sin “caja” blanca global: logo + foto + copy sobre el gradiente del shell.
-   * Campos y botón siguen con fondos propios (.auth-input-shell, .primary).
+   * Campos y botón siguen con fondos propios (.mc-input, .mc-btn).
    */
   .auth-card:not(.auth-card-verify-email) {
     background: transparent;
@@ -15574,19 +15443,6 @@ button.sessions-balance {
   font-size: 14px;
   line-height: 1.45;
   color: var(--text, #1f2937);
-}
-
-.checkout-residency-confirm-label {
-  display: grid;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.checkout-residency-confirm select,
-.checkout-residency-confirm .primary {
-  border-radius: 8px;
-  min-height: 44px;
 }
 
 .checkout-packages-head-inner {

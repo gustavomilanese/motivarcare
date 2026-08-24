@@ -4,7 +4,14 @@ import { FormEvent, SyntheticEvent, useCallback, useEffect, useRef, useState } f
 import { useNavigate } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { detectBrowserTimezone } from "@therapy/auth";
-import { McButton } from "@therapy/ui";
+import {
+  McButton,
+  McCheckbox,
+  McInput,
+  McNotice,
+  McPasswordInput,
+  McTextButton
+} from "@therapy/ui";
 import {
   professionalAuthSurfaceMessage,
   professionalAuthValidationMessage
@@ -100,7 +107,6 @@ export function AuthScreen(props: {
   const [fullName, setFullName] = useState(() => props.initialFullName?.trim() ?? "");
   const [email, setEmail] = useState(() => (props.initialEmail?.trim() ? props.initialEmail : readRememberedProEmail()));
   const [password, setPassword] = useState(() => props.initialPassword ?? "");
-  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(readProRememberFlag);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -343,80 +349,58 @@ export function AuthScreen(props: {
 
           <form className="auth-form pro-auth-simple-form" onSubmit={handleSubmit}>
             {mode === "register" ? (
-              <div className="auth-field-stack">
-                <span className="auth-field-label">{t(props.language, { es: "Nombre completo", en: "Full name", pt: "Nome completo" })}</span>
-                <div className="auth-input-shell">
-                  <input
-                    className="auth-input-inset"
-                    type="text"
-                    name="name"
-                    value={fullName}
-                    autoComplete="name"
-                    onChange={(event) => setFullName(event.target.value)}
-                  />
-                </div>
-              </div>
+              <McInput
+                label={t(props.language, { es: "Nombre completo", en: "Full name", pt: "Nome completo" })}
+                type="text"
+                name="name"
+                value={fullName}
+                autoComplete="name"
+                onChange={(event) => setFullName(event.target.value)}
+              />
             ) : null}
 
-            <div className="auth-field-stack">
-              <span className="auth-field-label">{t(props.language, { es: "Correo electrónico", en: "Email", pt: "E-mail" })}</span>
-              <div className="auth-input-shell">
-                <input
-                  className="auth-input-inset"
-                  type="email"
-                  name="email"
-                  value={email}
-                  autoComplete="email"
-                  inputMode="email"
-                  onChange={(event) => {
-                    setEmail(event.target.value);
-                    setTurnstileToken("");
-                  }}
-                />
-              </div>
-            </div>
+            <McInput
+              label={t(props.language, { es: "Correo electrónico", en: "Email", pt: "E-mail" })}
+              type="email"
+              name="email"
+              value={email}
+              autoComplete="email"
+              inputMode="email"
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setTurnstileToken("");
+              }}
+            />
 
-            <div className="auth-field-stack">
-              <div className="auth-field-label-row">
-                <span className="auth-field-label">{t(props.language, { es: "Contraseña", en: "Password", pt: "Senha" })}</span>
-                {mode === "login" ? (
-                  <button type="button" className="auth-link-inline" onClick={() => navigate("/forgot-password")}>
+            <McPasswordInput
+              label={t(props.language, { es: "Contraseña", en: "Password", pt: "Senha" })}
+              name="password"
+              value={password}
+              autoComplete={mode === "register" ? "new-password" : "current-password"}
+              onChange={(event) => setPassword(event.target.value)}
+              showLabel={t(props.language, { es: "Mostrar", en: "Show", pt: "Mostrar" })}
+              hideLabel={t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })}
+              headerExtra={
+                mode === "login" ? (
+                  <McTextButton onClick={() => navigate("/forgot-password")}>
                     {t(props.language, {
                       es: "¿Olvidaste tu contraseña?",
                       en: "Forgot your password?",
                       pt: "Esqueceu sua senha?"
                     })}
-                  </button>
-                ) : null}
-              </div>
-              <div className="auth-input-shell auth-input-shell--with-suffix">
-                <input
-                  className="auth-input-inset"
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={password}
-                  autoComplete={mode === "register" ? "new-password" : "current-password"}
-                  onChange={(event) => setPassword(event.target.value)}
-                />
-                <button type="button" className="auth-input-suffix" onClick={() => setShowPassword((v) => !v)}>
-                  {showPassword
-                    ? t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })
-                    : t(props.language, { es: "Mostrar", en: "Show", pt: "Mostrar" })}
-                </button>
-              </div>
-            </div>
+                  </McTextButton>
+                ) : null
+              }
+            />
 
             {mode === "login" ? (
-              <label className="auth-remember">
-                <input type="checkbox" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} />
-                <span>
-                  {t(props.language, {
-                    es: "Recordarme en este dispositivo",
-                    en: "Remember me on this device",
-                    pt: "Lembrar neste dispositivo"
-                  })}
-                </span>
-              </label>
+              <McCheckbox checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)}>
+                {t(props.language, {
+                  es: "Recordarme en este dispositivo",
+                  en: "Remember me on this device",
+                  pt: "Lembrar neste dispositivo"
+                })}
+              </McCheckbox>
             ) : null}
 
             {requiresTurnstileWidget ? (
@@ -447,9 +431,7 @@ export function AuthScreen(props: {
             ) : null}
 
             {error ? (
-              <p className="pro-error pro-auth-error-banner" role="alert">
-                {error}
-              </p>
+              <McNotice>{error}</McNotice>
             ) : null}
 
             <McButton type="submit" disabled={loading}>

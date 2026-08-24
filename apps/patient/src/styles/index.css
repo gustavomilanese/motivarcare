@@ -1,5 +1,7 @@
 @import "@therapy/ui/motivarCareLoader.css";
 @import "@therapy/ui/mcButton.css";
+@import "@therapy/ui/mcForm.css";
+@import "@therapy/ui/mcModal.css";
 @import "./legacy.css";
 @import "../modules/emotional-diary/emotional-diary.css";
 @import "../mobile-portal-flat.css";

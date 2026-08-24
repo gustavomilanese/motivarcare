@@ -1,13 +1,12 @@
-/* CTA primario MotivarCare (login / crear cuenta). Un solo look en todas las webs. */
+/* Botones MotivarCare. Radio 8px — nunca pastilla. */
 .mc-btn {
   appearance: none;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  margin-top: 4px;
-  min-height: 52px;
+  margin: 0;
+  min-height: 48px;
   padding: 10px 16px;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -17,6 +16,22 @@
   letter-spacing: 0.01em;
   text-align: center;
   cursor: pointer;
+  box-shadow: none;
+}
+
+.mc-btn--block {
+  width: 100%;
+  min-height: 52px;
+}
+
+.mc-btn--inline {
+  width: auto;
+  min-width: 120px;
+}
+
+.mc-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .mc-btn--primary {
@@ -27,9 +42,77 @@
 
 .mc-btn--primary:hover:not(:disabled) {
   background: linear-gradient(135deg, #5038d8 0%, #6b4ef2 100%);
+  border-color: transparent;
+  color: #fff;
 }
 
-.mc-btn--primary:disabled {
-  opacity: 0.7;
+.mc-btn--secondary {
+  color: #0f172a;
+  background: #fff;
+  border-color: #cbd5e1;
+}
+
+.mc-btn--secondary:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.mc-btn--ghost {
+  color: #334155;
+  background: transparent;
+  border-color: transparent;
+}
+
+.mc-btn--ghost:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: transparent;
+  color: #0f172a;
+}
+
+.mc-btn--danger {
+  color: #b91c1c;
+  background: #fff;
+  border-color: #f0a5a5;
+}
+
+.mc-btn--danger:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #fff;
+}
+
+.mc-icon-btn {
+  appearance: none;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #41516f;
+  font: inherit;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.mc-icon-btn:hover:not(:disabled),
+.mc-icon-btn:focus-visible {
+  background: #f1f5f9;
+  color: #1a2744;
+  border-color: transparent;
+}
+
+.mc-icon-btn:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }

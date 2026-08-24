@@ -1,7 +1,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
-import { McButton } from "@therapy/ui";
+import { McButton, McInput, McNotice, McPasswordInput } from "@therapy/ui";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 
@@ -85,45 +85,38 @@ export function ResetPasswordScreen(props: { language: AppLanguage }) {
 
         {done ? (
           <div className="pro-stack">
-            <p className="pro-success" role="status">
+            <McNotice tone="success">
               {t(props.language, {
                 es: "Tu contraseña fue actualizada. Ya podés iniciar sesión.",
                 en: "Your password was updated. You can sign in now.",
                 pt: "Sua senha foi atualizada. Voce ja pode entrar."
               })}
-            </p>
-            <button className="pro-primary" type="button" onClick={() => navigate("/", { replace: true })}>
+            </McNotice>
+            <McButton type="button" onClick={() => navigate("/", { replace: true })}>
               {t(props.language, { es: "Acceder", en: "Sign in", pt: "Entrar" })}
-            </button>
+            </McButton>
           </div>
         ) : (
           <form className="pro-stack pro-auth-simple-form" onSubmit={handleSubmit}>
-            <label>
-              {t(props.language, { es: "Nueva contraseña", en: "New password", pt: "Nova senha" })}
-              <input
-                type="password"
-                name="password"
-                value={password}
-                autoComplete="new-password"
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </label>
-            <label>
-              {t(props.language, { es: "Confirmar contraseña", en: "Confirm password", pt: "Confirmar senha" })}
-              <input
-                type="password"
-                name="confirm"
-                value={confirm}
-                autoComplete="new-password"
-                onChange={(event) => setConfirm(event.target.value)}
-              />
-            </label>
+            <McPasswordInput
+              label={t(props.language, { es: "Nueva contraseña", en: "New password", pt: "Nova senha" })}
+              name="password"
+              value={password}
+              autoComplete="new-password"
+              onChange={(event) => setPassword(event.target.value)}
+              showLabel={t(props.language, { es: "Mostrar", en: "Show", pt: "Mostrar" })}
+              hideLabel={t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })}
+            />
+            <McInput
+              label={t(props.language, { es: "Confirmar contraseña", en: "Confirm password", pt: "Confirmar senha" })}
+              type="password"
+              name="confirm"
+              value={confirm}
+              autoComplete="new-password"
+              onChange={(event) => setConfirm(event.target.value)}
+            />
 
-            {error ? (
-              <p className="pro-error pro-auth-error-banner" role="alert">
-                {error}
-              </p>
-            ) : null}
+            {error ? <McNotice>{error}</McNotice> : null}
 
             <McButton type="submit" disabled={loading}>
               {loading

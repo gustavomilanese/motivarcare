@@ -1,6 +1,15 @@
 import type { ReactNode } from "react";
 
 export { McButton } from "./McButton";
+export { McCheckbox } from "./McCheckbox";
+export { McIconButton } from "./McIconButton";
+export { McInput } from "./McInput";
+export { McModal } from "./McModal";
+export { McNotice } from "./McNotice";
+export { McPasswordInput } from "./McPasswordInput";
+export { McSelect } from "./McSelect";
+export { McTextarea } from "./McTextarea";
+export { McTextButton } from "./McTextButton";
 export {
   MotivarCareLoader,
   MotivarCarePageLoader,

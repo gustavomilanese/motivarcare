@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
-import { McButton } from "@therapy/ui";
+import { McButton, McInput, McNotice, McPasswordInput } from "@therapy/ui";
 import { adminAuthSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AuthApiResponse, AuthUser } from "../types";
@@ -92,27 +92,27 @@ export function AuthScreen(props: {
         </div>
 
         <form className="stack" onSubmit={handleSubmit}>
-          <label>
-            Email
-            <input type="email" name="email" autoComplete="email" inputMode="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-          </label>
+          <McInput
+            label="Email"
+            type="email"
+            name="email"
+            autoComplete="email"
+            inputMode="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
 
-          <label>
-            {t(props.language, { es: "Contraseña", en: "Password", pt: "Senha" })}
-            <input
-              type="password"
-              name="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </label>
+          <McPasswordInput
+            label={t(props.language, { es: "Contraseña", en: "Password", pt: "Senha" })}
+            name="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            showLabel={t(props.language, { es: "Mostrar", en: "Show", pt: "Mostrar" })}
+            hideLabel={t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })}
+          />
 
-          {error ? (
-            <p className="error-text admin-auth-error" role="alert">
-              {error}
-            </p>
-          ) : null}
+          {error ? <McNotice>{error}</McNotice> : null}
           <McButton type="submit" disabled={loading}>
             {loading
               ? t(props.language, { es: "Validando...", en: "Validating...", pt: "Validando..." })
