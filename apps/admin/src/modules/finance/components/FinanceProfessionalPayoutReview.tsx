@@ -39,7 +39,7 @@ function formatSessionDate(value: string | null, language: AppLanguage): string 
   return formatDateWithLocale({
     value,
     language,
-    options: { month: "short", day: "numeric", year: "numeric" }
+    options: { day: "2-digit", month: "2-digit", year: "numeric" }
   });
 }
 
@@ -50,6 +50,8 @@ export function FinanceProfessionalPayoutReview(props: {
   professionalName: string;
   /** Meses UTC seleccionados en Pendientes; se respetan al pagar. */
   months?: string[];
+  /** Si viene, solo se incluyen / pagan estas sesiones. */
+  sessionIds?: string[];
   onClose: () => void;
   onPaid: () => void;
 }) {
@@ -68,7 +70,8 @@ export function FinanceProfessionalPayoutReview(props: {
       const response = await fetchUnpaidProfessionalDetail(
         props.token,
         props.professionalId,
-        props.months ?? []
+        props.months ?? [],
+        props.sessionIds ?? []
       );
       setDetail(response);
     } catch (requestError) {
@@ -77,7 +80,7 @@ export function FinanceProfessionalPayoutReview(props: {
     } finally {
       setLoading(false);
     }
-  }, [props.language, props.months, props.professionalId, props.token]);
+  }, [props.language, props.months, props.professionalId, props.sessionIds, props.token]);
 
   useEffect(() => {
     void load();
@@ -103,7 +106,8 @@ export function FinanceProfessionalPayoutReview(props: {
       const result = await payProfessionalUnpaid(props.token, props.professionalId, {
         method,
         payoutReference: reference.trim() || undefined,
-        months: props.months
+        months: props.months,
+        sessionIds: props.sessionIds
       });
       setSuccess(
         method === "dlocal" && result.dlocalPayoutId

@@ -18,7 +18,44 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-type SortKey = "name_az" | "sessions_desc" | "net_desc";
+function applySessionExclusions(
+  row: AdminUnpaidProfessional,
+  excludedIds: string[] | undefined,
+  detail: UnpaidProfessionalDetailResponse | undefined
+): AdminUnpaidProfessional {
+  if (!excludedIds?.length || !detail) {
+    return row;
+  }
+  const excluded = new Set(excludedIds);
+  const remaining = detail.sessions.filter(
+    (session) => session.payoutStatus === "pending" && !excluded.has(session.id)
+  );
+  return {
+    ...row,
+    sessionsCount: remaining.length,
+    professionalNetCents: remaining.reduce((sum, session) => sum + session.professionalNetUsdCents, 0)
+  };
+}
+
+function omitKey<T extends Record<string, unknown>>(record: T, key: string): T {
+  const next = { ...record };
+  delete next[key];
+  return next;
+}
+
+function remainingSessionIdsForPay(
+  professionalId: string,
+  excludedSessionIds: Record<string, string[]>,
+  detail: UnpaidProfessionalDetailResponse | undefined
+): string[] | undefined {
+  const excluded = excludedSessionIds[professionalId];
+  if (!excluded?.length || !detail) {
+    return undefined;
+  }
+  return detail.sessions
+    .filter((session) => session.payoutStatus === "pending" && !excluded.includes(session.id))
+    .map((session) => session.id);
+}
 
 const PAGE_SIZE = 10;
 
@@ -27,7 +64,7 @@ function formatSessionDay(value: string | null, language: AppLanguage): string {
   return formatDateWithLocale({
     value,
     language,
-    options: { month: "short", day: "numeric", year: "numeric" }
+    options: { day: "2-digit", month: "2-digit", year: "numeric" }
   });
 }
 
@@ -82,9 +119,9 @@ function emptyPendingCopy(input: {
     });
   }
   return t(input.language, {
-    es: "Nada por pagar.",
-    en: "Nothing to pay.",
-    pt: "Nada a pagar."
+    es: "Nada pendiente de aprobación.",
+    en: "Nothing pending approval.",
+    pt: "Nada pendente de aprovação."
   });
 }
 
@@ -153,8 +190,13 @@ export function AdminUnpaidProfessionalsPanel(props: {
   const [loading, setLoading] = useState(true);
   const [loadingSent, setLoadingSent] = useState(true);
   const [error, setError] = useState("");
-  const [reviewTarget, setReviewTarget] = useState<AdminUnpaidProfessional | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<{
+    professional: AdminUnpaidProfessional;
+    sessionIds?: string[];
+  } | null>(null);
   const [stagedIds, setStagedIds] = useState<string[]>([]);
+  const [skippedIds, setSkippedIds] = useState<string[]>([]);
+  const [excludedSessionIds, setExcludedSessionIds] = useState<Record<string, string[]>>({});
   const [sentOpen, setSentOpen] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<"pending" | "assemble" | null>(null);
@@ -229,6 +271,22 @@ export function AdminUnpaidProfessionalsPanel(props: {
       const next = current.filter((id) => alive.has(id));
       return next.length === current.length ? current : next;
     });
+    setSkippedIds((current) => {
+      const next = current.filter((id) => alive.has(id));
+      return next.length === current.length ? current : next;
+    });
+    setExcludedSessionIds((current) => {
+      const next: Record<string, string[]> = {};
+      let changed = false;
+      for (const [id, sessionIds] of Object.entries(current)) {
+        if (alive.has(id)) {
+          next[id] = sessionIds;
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? next : current;
+    });
   }, [rows, loading]);
 
   useEffect(() => {
@@ -263,17 +321,17 @@ export function AdminUnpaidProfessionalsPanel(props: {
     const byId = new Map(rows.map((row) => [row.professionalId, row]));
     return stagedIds.flatMap((id) => {
       const row = byId.get(id);
-      return row ? [row] : [];
+      return row ? [applySessionExclusions(row, excludedSessionIds[id], expandedDetails[id])] : [];
     });
-  }, [rows, stagedIds]);
+  }, [rows, stagedIds, excludedSessionIds, expandedDetails]);
 
   const queueRows = useMemo(() => {
-    if (stagedIds.length === 0) {
-      return filteredSorted;
-    }
+    const skipped = new Set(skippedIds);
     const staged = new Set(stagedIds);
-    return filteredSorted.filter((row) => !staged.has(row.professionalId));
-  }, [filteredSorted, stagedIds]);
+    return filteredSorted
+      .filter((row) => !skipped.has(row.professionalId) && !staged.has(row.professionalId))
+      .map((row) => applySessionExclusions(row, excludedSessionIds[row.professionalId], expandedDetails[row.professionalId]));
+  }, [filteredSorted, stagedIds, skippedIds, excludedSessionIds, expandedDetails]);
 
   const filteredSent = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -350,9 +408,38 @@ export function AdminUnpaidProfessionalsPanel(props: {
   };
 
   const stageProfessional = (row: AdminUnpaidProfessional) => {
+    setSkippedIds((current) => current.filter((id) => id !== row.professionalId));
     setStagedIds((current) =>
       current.includes(row.professionalId) ? current : [...current, row.professionalId]
     );
+  };
+
+  const skipPendingProfessional = (row: AdminUnpaidProfessional) => {
+    const confirmed = window.confirm(
+      t(props.language, {
+        es: `¿Quitar a ${row.professionalName} de pendiente de aprobación? Las sesiones quedan pendientes y no entran en este lote.`,
+        en: `Remove ${row.professionalName} from pending approval? Sessions stay unpaid and will not be in this batch.`,
+        pt: `Tirar ${row.professionalName} de pendente de aprovação? As sessoes continuam pendentes e nao entram neste lote.`
+      })
+    );
+    if (!confirmed) {
+      return;
+    }
+    setStagedIds((current) => current.filter((id) => id !== row.professionalId));
+    setSkippedIds((current) => (current.includes(row.professionalId) ? current : [...current, row.professionalId]));
+  };
+
+  const toggleExcludeSession = (professionalId: string, sessionId: string) => {
+    setExcludedSessionIds((current) => {
+      const existing = current[professionalId] ?? [];
+      const nextIds = existing.includes(sessionId)
+        ? existing.filter((id) => id !== sessionId)
+        : [...existing, sessionId];
+      if (nextIds.length === 0) {
+        return omitKey(current, professionalId);
+      }
+      return { ...current, [professionalId]: nextIds };
+    });
   };
 
   const activateWithoutDrag = (action: () => void) => {
@@ -634,6 +721,18 @@ export function AdminUnpaidProfessionalsPanel(props: {
         ) : null}
 
         {error ? <p className="error-text">{error}</p> : null}
+        {skippedIds.length > 0 ? (
+          <p className="admin-unpaid-skipped-note">
+            {t(props.language, {
+              es: `${skippedIds.length} profesional${skippedIds.length === 1 ? "" : "es"} quitado${skippedIds.length === 1 ? "" : "s"} de pendiente de aprobación.`,
+              en: `${skippedIds.length} professional${skippedIds.length === 1 ? "" : "s"} removed from pending approval.`,
+              pt: `${skippedIds.length} profissional${skippedIds.length === 1 ? "" : "is"} retirado${skippedIds.length === 1 ? "" : "s"} de pendente de aprovação.`
+            })}{" "}
+            <button type="button" className="admin-unpaid-skipped-restore" onClick={() => setSkippedIds([])}>
+              {t(props.language, { es: "Restaurar", en: "Restore", pt: "Restaurar" })}
+            </button>
+          </p>
+        ) : null}
         <AdminUnpaidPayoutBoard
           language={props.language}
           loading={loading}
@@ -659,15 +758,22 @@ export function AdminUnpaidProfessionalsPanel(props: {
           onDragEnd={endDrag}
           onStage={onQueueRowActivate}
           onUnstage={onStagedRowActivate}
+          onSkipPending={skipPendingProfessional}
           onToggleExpand={(row) => void toggleExpand(row)}
+          onExcludeSession={toggleExcludeSession}
           expandedIds={expandedIds}
           expandedDetails={expandedDetails}
+          excludedSessionIds={excludedSessionIds}
           detailLoadingId={detailLoadingId}
           onAssemble={() => {
             const next = stagedRows[0];
-            if (next) {
-              setReviewTarget(next);
+            if (!next || next.sessionsCount === 0) {
+              return;
             }
+            setReviewTarget({
+              professional: next,
+              sessionIds: remainingSessionIdsForPay(next.professionalId, excludedSessionIds, expandedDetails[next.professionalId])
+            });
           }}
           pager={{
             visible: queueRows.length > PAGE_SIZE,
@@ -974,14 +1080,16 @@ export function AdminUnpaidProfessionalsPanel(props: {
         <FinanceProfessionalPayoutReview
           token={props.token}
           language={props.language}
-          professionalId={reviewTarget.professionalId}
-          professionalName={reviewTarget.professionalName}
+          professionalId={reviewTarget.professional.professionalId}
+          professionalName={reviewTarget.professional.professionalName}
           months={selectedMonths}
+          sessionIds={reviewTarget.sessionIds}
           onClose={() => setReviewTarget(null)}
           onPaid={() => {
-            const paidProfessionalId = reviewTarget.professionalId;
+            const paidProfessionalId = reviewTarget.professional.professionalId;
             setReviewTarget(null);
             setStagedIds((current) => current.filter((id) => id !== paidProfessionalId));
+            setExcludedSessionIds((current) => omitKey(current, paidProfessionalId));
             setSentOpen(true);
             setArrivedProfessionalId(paidProfessionalId);
             void load();

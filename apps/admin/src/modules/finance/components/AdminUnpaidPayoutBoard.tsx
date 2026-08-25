@@ -22,7 +22,7 @@ function formatSessionDay(value: string | null, language: AppLanguage): string {
   return formatDateWithLocale({
     value,
     language,
-    options: { month: "short", day: "numeric", year: "numeric" }
+    options: { day: "2-digit", month: "2-digit", year: "numeric" }
   });
 }
 
@@ -34,10 +34,12 @@ function PayoutRow(props: {
   moveTitle: string;
   expandTitle: string;
   moveLabel: string;
+  skipTitle?: string;
   onDragStart: (event: DragEvent) => void;
   onDragEnd: () => void;
   onToggleExpand: () => void;
   onMove: () => void;
+  onSkip?: () => void;
 }) {
   return (
     <tr
@@ -74,18 +76,34 @@ function PayoutRow(props: {
         </span>
       </td>
       <td className="admin-unpaid-package-move">
-        <button
-          type="button"
-          className="admin-unpaid-move-btn"
-          title={props.moveTitle}
-          aria-label={props.moveTitle}
-          onClick={(event) => {
-            event.stopPropagation();
-            props.onMove();
-          }}
-        >
-          {props.moveLabel}
-        </button>
+        <span className="admin-unpaid-row-actions">
+          {props.onSkip ? (
+            <button
+              type="button"
+              className="admin-unpaid-skip-btn"
+              title={props.skipTitle}
+              aria-label={props.skipTitle}
+              onClick={(event) => {
+                event.stopPropagation();
+                props.onSkip?.();
+              }}
+            >
+              ×
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="admin-unpaid-move-btn"
+            title={props.moveTitle}
+            aria-label={props.moveTitle}
+            onClick={(event) => {
+              event.stopPropagation();
+              props.onMove();
+            }}
+          >
+            {props.moveLabel}
+          </button>
+        </span>
       </td>
     </tr>
   );
@@ -95,6 +113,8 @@ function PackageSessionDetail(props: {
   language: AppLanguage;
   loading: boolean;
   sessions: UnpaidProfessionalSessionDetail[];
+  excludedIds?: Set<string>;
+  onExcludeSession?: (sessionId: string) => void;
 }) {
   const pending = props.sessions.filter((session) => session.payoutStatus === "pending");
   if (props.loading) {
@@ -115,31 +135,58 @@ function PackageSessionDetail(props: {
       </p>
     );
   }
+  const excludeTitle = t(props.language, {
+    es: "Quitar del pago",
+    en: "Remove from payout",
+    pt: "Tirar do pagamento"
+  });
+  const restoreTitle = t(props.language, {
+    es: "Volver a incluir",
+    en: "Include again",
+    pt: "Incluir de novo"
+  });
   return (
     <div className="admin-unpaid-package-detail">
       <p className="admin-unpaid-package-detail-kicker">
         {t(props.language, { es: "Sesiones del paquete", en: "Sessions in package", pt: "Sessoes do pacote" })}
       </p>
       <ul className="admin-unpaid-package-sessions">
-        {pending.map((session) => (
-          <li key={session.id}>
-            <span className="admin-unpaid-package-session-date">
-              {formatSessionDay(session.bookingCompletedAt ?? session.bookingStartsAt, props.language)}
-            </span>
-            <Link className="admin-unpaid-package-session-patient" to={`/sessions?patientId=${encodeURIComponent(session.patient.id)}`}>
-              {session.patient.fullName}
-            </Link>
-            <span className="admin-unpaid-package-session-origin">
-              {session.sourceKind === "trial"
-                ? t(props.language, { es: "Prueba", en: "Trial", pt: "Teste" })
-                : t(props.language, { es: "Paquete", en: "Package", pt: "Pacote" })}
-              {session.sourceLabel ? ` · ${session.sourceLabel}` : ""}
-            </span>
-            <span className="admin-unpaid-package-session-net">
-              {formatAdminFinanceUsd(session.professionalNetUsdCents, props.language)}
-            </span>
-          </li>
-        ))}
+        {pending.map((session) => {
+          const excluded = props.excludedIds?.has(session.id) ?? false;
+          return (
+            <li key={session.id} className={excluded ? "is-excluded" : undefined}>
+              <span className="admin-unpaid-package-session-date">
+                {formatSessionDay(session.bookingCompletedAt ?? session.bookingStartsAt, props.language)}
+              </span>
+              <Link className="admin-unpaid-package-session-patient" to={`/sessions?patientId=${encodeURIComponent(session.patient.id)}`}>
+                {session.patient.fullName}
+              </Link>
+              <span className="admin-unpaid-package-session-origin">
+                {session.sourceKind === "trial"
+                  ? t(props.language, { es: "Prueba", en: "Trial", pt: "Teste" })
+                  : t(props.language, { es: "Paquete", en: "Package", pt: "Pacote" })}
+                {session.sourceLabel ? ` · ${session.sourceLabel}` : ""}
+              </span>
+              <span className="admin-unpaid-package-session-net">
+                {formatAdminFinanceUsd(session.professionalNetUsdCents, props.language)}
+              </span>
+              {props.onExcludeSession ? (
+                <button
+                  type="button"
+                  className="admin-unpaid-session-skip-btn"
+                  title={excluded ? restoreTitle : excludeTitle}
+                  aria-label={excluded ? restoreTitle : excludeTitle}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    props.onExcludeSession?.(session.id);
+                  }}
+                >
+                  {excluded ? "↺" : "×"}
+                </button>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -249,9 +296,12 @@ export function AdminUnpaidPayoutBoard(props: {
   onDragEnd: () => void;
   onStage: (row: AdminUnpaidProfessional) => void;
   onUnstage: (row: AdminUnpaidProfessional) => void;
+  onSkipPending: (row: AdminUnpaidProfessional) => void;
   onToggleExpand: (row: AdminUnpaidProfessional) => void;
+  onExcludeSession: (professionalId: string, sessionId: string) => void;
   expandedIds: Set<string>;
   expandedDetails: Record<string, UnpaidProfessionalDetailResponse>;
+  excludedSessionIds: Record<string, string[]>;
   detailLoadingId: string | null;
   onAssemble: () => void;
   pager: {
@@ -267,14 +317,19 @@ export function AdminUnpaidPayoutBoard(props: {
 }) {
   const language = props.language;
   const moveRightTitle = t(language, {
-    es: "Pasar a este pago",
-    en: "Move to this payout",
-    pt: "Passar para este pagamento"
+    es: "Pasar a aprobados",
+    en: "Move to approved",
+    pt: "Passar para aprovados"
   });
   const moveLeftTitle = t(language, {
-    es: "Devolver a por pagar",
-    en: "Move back to unpaid",
-    pt: "Devolver para a pagar"
+    es: "Devolver a pendiente de aprobación",
+    en: "Move back to pending approval",
+    pt: "Devolver para pendente de aprovação"
+  });
+  const skipPendingTitle = t(language, {
+    es: "Quitar de pendiente de aprobación",
+    en: "Remove from pending approval",
+    pt: "Tirar de pendente de aprovação"
   });
 
   const expandTitle = t(language, {
@@ -288,6 +343,7 @@ export function AdminUnpaidPayoutBoard(props: {
       const expanded = props.expandedIds.has(row.professionalId);
       const detail = props.expandedDetails[row.professionalId] ?? null;
       const loading = expanded && !detail && props.detailLoadingId === row.professionalId;
+      const excluded = new Set(props.excludedSessionIds[row.professionalId] ?? []);
       return (
         <Fragment key={row.professionalId}>
           <PayoutRow
@@ -298,15 +354,23 @@ export function AdminUnpaidPayoutBoard(props: {
             expandTitle={expandTitle}
             moveTitle={side === "pending" ? moveRightTitle : moveLeftTitle}
             moveLabel={side === "pending" ? "→" : "←"}
+            skipTitle={side === "pending" ? skipPendingTitle : undefined}
             onDragStart={props.onDragStart(row)}
             onDragEnd={props.onDragEnd}
             onToggleExpand={() => props.onToggleExpand(row)}
             onMove={() => (side === "pending" ? props.onStage(row) : props.onUnstage(row))}
+            onSkip={side === "pending" ? () => props.onSkipPending(row) : undefined}
           />
           {expanded ? (
             <tr className="admin-unpaid-package-detail-row">
               <td colSpan={4}>
-                <PackageSessionDetail language={language} loading={loading} sessions={detail?.sessions ?? []} />
+                <PackageSessionDetail
+                  language={language}
+                  loading={loading}
+                  sessions={detail?.sessions ?? []}
+                  excludedIds={excluded}
+                  onExcludeSession={(sessionId) => props.onExcludeSession(row.professionalId, sessionId)}
+                />
               </td>
             </tr>
           ) : null}
@@ -332,7 +396,7 @@ export function AdminUnpaidPayoutBoard(props: {
       >
         <PaneHead
           id="admin-unpaid-col-pending"
-          title={t(language, { es: "Por pagar", en: "To pay", pt: "A pagar" })}
+          title={t(language, { es: "Pendiente de aprobación", en: "Pending approval", pt: "Pendente de aprovação" })}
           count={props.loading ? null : props.queueRows.length}
         />
         {props.loading ? (
@@ -397,7 +461,7 @@ export function AdminUnpaidPayoutBoard(props: {
       >
         <PaneHead
           id="admin-unpaid-col-assemble"
-          title={t(language, { es: "Este pago", en: "This payout", pt: "Este pagamento" })}
+          title={t(language, { es: "Aprobados", en: "Approved", pt: "Aprovados" })}
           count={props.stagedRows.length > 0 ? props.stagedRows.length : null}
         />
         <div className="admin-unpaid-professionals-table-wrap">

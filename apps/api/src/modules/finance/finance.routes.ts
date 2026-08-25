@@ -466,9 +466,10 @@ financeRouter.get("/unpaid-professionals/:professionalId", async (req, res) => {
       details: parsed.error.flatten()
     });
   }
-  const { getUnpaidProfessionalDetail, parseUnpaidMonthKeys } = await import("./adminUnpaidProfessional.service.js");
+  const { getUnpaidProfessionalDetail, parseUnpaidMonthKeys, parseUnpaidSessionIds } = await import("./adminUnpaidProfessional.service.js");
   const detail = await getUnpaidProfessionalDetail(req.params.professionalId, {
-    months: parseUnpaidMonthKeys(parsed.data.months)
+    months: parseUnpaidMonthKeys(parsed.data.months),
+    sessionIds: parseUnpaidSessionIds(parsed.data.sessionIds)
   });
   if ("notFound" in detail) {
     return sendApiError({ res, status: 404, code: "NOT_FOUND", message: "Professional not found" });
@@ -488,10 +489,19 @@ financeRouter.post("/unpaid-professionals/:professionalId/pay", async (req, res)
       professionalId: req.params.professionalId,
       method: parsed.data.method,
       payoutReference: parsed.data.payoutReference,
-      months: parsed.data.months
+      months: parsed.data.months,
+      sessionIds: parsed.data.sessionIds
     });
     if ("notFound" in result) {
       return sendApiError({ res, status: 404, code: "NOT_FOUND", message: "Professional not found" });
+    }
+    if ("invalidSessionIds" in result) {
+      return sendApiError({
+        res,
+        status: 400,
+        code: "BAD_REQUEST",
+        message: "Some sessions are not eligible for this payout"
+      });
     }
     if ("noRecords" in result) {
       return sendApiError({ res, status: 409, code: "CONFLICT", message: "No unpaid sessions for this professional" });

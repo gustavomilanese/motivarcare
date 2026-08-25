@@ -762,6 +762,7 @@ export async function payProfessionalUnpaidBalance(
   payoutReference?: string,
   options?: {
     months?: string[];
+    sessionIds?: string[];
     markPaidImmediately?: boolean;
     dlocalPayoutId?: string | null;
     dlocalStatus?: string | null;
@@ -777,6 +778,7 @@ export async function payProfessionalUnpaidBalance(
   }
 
   const monthFilter = [...new Set((options?.months ?? []).filter((m) => /^\d{4}-\d{2}$/.test(m)))];
+  const sessionIdFilter = [...new Set((options?.sessionIds ?? []).map((id) => id.trim()).filter(Boolean))];
   const markPaidImmediately = options?.markPaidImmediately !== false;
 
   let eligibleRecords = await prisma.financeSessionRecord.findMany({
@@ -805,6 +807,15 @@ export async function payProfessionalUnpaidBalance(
       const key = utcMonthKey(record.bookingCompletedAt ?? record.bookingStartsAt);
       return monthFilter.includes(key);
     });
+  }
+
+  if (sessionIdFilter.length > 0) {
+    const eligibleIds = new Set(eligibleRecords.map((record) => record.id));
+    if (sessionIdFilter.some((id) => !eligibleIds.has(id))) {
+      return { invalidSessionIds: true as const };
+    }
+    const allowed = new Set(sessionIdFilter);
+    eligibleRecords = eligibleRecords.filter((record) => allowed.has(record.id));
   }
 
   if (eligibleRecords.length === 0) {

@@ -2,7 +2,9 @@ import { z } from "zod";
 
 export const unpaidProfessionalsQuerySchema = z.object({
   /** Meses UTC `YYYY-MM` separados por coma (multi-selección). Vacío = todos. */
-  months: z.string().trim().max(200).optional()
+  months: z.string().trim().max(200).optional(),
+  /** IDs de sesión separados por coma (detalle / recorte de un lote). */
+  sessionIds: z.string().trim().max(12000).optional()
 });
 
 export const financeSettingsSchema = z.object({
@@ -66,7 +68,9 @@ export const payUnpaidProfessionalSchema = z.object({
   method: z.enum(["ledger", "dlocal"]).default("ledger"),
   payoutReference: z.string().trim().min(2).max(120).optional(),
   /** Meses UTC YYYY-MM (vacío = todas las sesiones unpaid). */
-  months: z.array(z.string().regex(/^\d{4}-\d{2}$/)).max(24).optional()
+  months: z.array(z.string().regex(/^\d{4}-\d{2}$/)).max(24).optional(),
+  /** Si viene, solo se pagan esas sesiones elegibles (no el paquete entero). */
+  sessionIds: z.array(z.string().trim().min(8).max(80)).max(500).optional()
 });
 
 export const financeDailyAggregateQuerySchema = z.object({

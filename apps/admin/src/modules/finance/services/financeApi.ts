@@ -179,9 +179,17 @@ export async function fetchDlocalPayoutDetail(
 export async function fetchUnpaidProfessionalDetail(
   token: string,
   professionalId: string,
-  months: string[] = []
+  months: string[] = [],
+  sessionIds: string[] = []
 ): Promise<UnpaidProfessionalDetailResponse> {
-  const query = months.length > 0 ? `?months=${encodeURIComponent(months.join(","))}` : "";
+  const params = new URLSearchParams();
+  if (months.length > 0) {
+    params.set("months", months.join(","));
+  }
+  if (sessionIds.length > 0) {
+    params.set("sessionIds", sessionIds.join(","));
+  }
+  const query = params.toString() ? `?${params.toString()}` : "";
   return apiRequest<UnpaidProfessionalDetailResponse>(
     `/api/admin/finance/unpaid-professionals/${encodeURIComponent(professionalId)}${query}`,
     token
@@ -191,7 +199,7 @@ export async function fetchUnpaidProfessionalDetail(
 export async function payProfessionalUnpaid(
   token: string,
   professionalId: string,
-  input?: { method?: "ledger" | "dlocal"; payoutReference?: string; months?: string[] }
+  input?: { method?: "ledger" | "dlocal"; payoutReference?: string; months?: string[]; sessionIds?: string[] }
 ): Promise<PayUnpaidProfessionalResponse> {
   return apiRequest(`/api/admin/finance/unpaid-professionals/${encodeURIComponent(professionalId)}/pay`, token, {
     method: "POST",
@@ -199,7 +207,8 @@ export async function payProfessionalUnpaid(
     body: JSON.stringify({
       method: input?.method ?? "ledger",
       payoutReference: input?.payoutReference ?? undefined,
-      months: input?.months?.length ? input.months : undefined
+      months: input?.months?.length ? input.months : undefined,
+      sessionIds: input?.sessionIds?.length ? input.sessionIds : undefined
     })
   });
 }

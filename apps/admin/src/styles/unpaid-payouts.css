@@ -127,8 +127,8 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   overflow: hidden;
-  border: 1px solid #ddd6fe;
-  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
   background: #fff;
   min-height: 440px;
   align-items: stretch;
@@ -139,7 +139,7 @@
   min-height: 440px;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #ddd6fe;
+  border-right: 1px solid #cbd5e1;
 }
 
 .admin-unpaid-split-pane:last-child {
@@ -162,7 +162,8 @@
   margin: 0;
   font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
   text-transform: uppercase;
   color: #fff;
 }
@@ -215,7 +216,7 @@
 }
 
 .admin-unpaid-professionals-table--split .admin-unpaid-col-move {
-  width: 3.25rem;
+  width: 5.75rem;
 }
 
 .admin-unpaid-professionals-table.admin-unpaid-professionals-table--split tfoot td {
@@ -328,11 +329,18 @@
 }
 
 .admin-unpaid-package-move {
-  width: 3.25rem;
+  width: 5.75rem;
   padding-left: 4px !important;
   padding-right: 8px !important;
   text-align: right;
   vertical-align: middle;
+}
+
+.admin-unpaid-row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
 }
 
 .admin-unpaid-professionals-table.admin-unpaid-professionals-table--split .admin-unpaid-pro-row:hover td {
@@ -379,6 +387,40 @@
   outline: none;
 }
 
+.admin-unpaid-skip-btn,
+.admin-unpaid-session-skip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-unpaid-skip-btn:hover,
+.admin-unpaid-skip-btn:focus-visible,
+.admin-unpaid-session-skip-btn:hover,
+.admin-unpaid-session-skip-btn:focus-visible {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+  outline: none;
+}
+
+.admin-unpaid-session-skip-btn {
+  width: 24px;
+  height: 24px;
+  font-size: 16px;
+}
+
 .admin-unpaid-package-detail-row > td {
   background: #f8f7fc;
   padding: 0 12px 12px 40px;
@@ -411,16 +453,28 @@
 
 .admin-unpaid-package-sessions li {
   display: grid;
-  grid-template-columns: 6.5rem minmax(0, 1.1fr) minmax(0, 1fr) 6.5rem;
+  grid-template-columns: 7.5rem minmax(0, 1.1fr) minmax(0, 1fr) 5.75rem 1.75rem;
   gap: 8px;
-  align-items: baseline;
+  align-items: center;
   min-height: 28px;
 }
 
+.admin-unpaid-package-sessions li.is-excluded {
+  opacity: 0.45;
+}
+
+.admin-unpaid-package-sessions li.is-excluded .admin-unpaid-package-session-date,
+.admin-unpaid-package-sessions li.is-excluded .admin-unpaid-package-session-patient,
+.admin-unpaid-package-sessions li.is-excluded .admin-unpaid-package-session-origin,
+.admin-unpaid-package-sessions li.is-excluded .admin-unpaid-package-session-net {
+  text-decoration: line-through;
+}
+
 .admin-unpaid-package-session-date {
-  color: #94a3b8;
+  color: #64748b;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .admin-unpaid-package-session-patient {
@@ -459,7 +513,7 @@
   display: grid;
   gap: 12px;
   padding: 14px 16px 12px;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid #e2e8f0;
   background: #fff;
 }
@@ -562,7 +616,7 @@
 
 .admin-unpaid-sent-block {
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid #e2e8f0;
   background: #fff;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
@@ -650,6 +704,176 @@
   animation: admin-unpaid-arrive 1.4s ease;
 }
 
+.admin-unpaid-skipped-note {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 13px;
+}
+
+.admin-unpaid-skipped-restore {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #5f44eb;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-unpaid-skipped-restore:hover,
+.admin-unpaid-skipped-restore:focus-visible {
+  text-decoration: underline;
+  outline: none;
+}
+
+.finance-payout-review-table-wrap {
+  border-radius: 8px;
+}
+
+.finance-payout-review-table td:first-child,
+.admin-unpaid-professionals-table--sent td:first-child {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-pagos-tutorial {
+  display: grid;
+  gap: 14px;
+  padding: 14px 16px 16px;
+  border: 1px solid #ddd6fe;
+  border-radius: 10px;
+  background: #faf8ff;
+}
+
+.admin-pagos-tutorial-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-pagos-tutorial-head h2 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 750;
+  color: #4c1d95;
+}
+
+.admin-pagos-tutorial-head p {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #5b21b6;
+}
+
+.admin-pagos-tutorial-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #ddd6fe;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.admin-pagos-tutorial-close:hover,
+.admin-pagos-tutorial-close:focus-visible {
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+  color: #4c1d95;
+  outline: none;
+}
+
+.admin-pagos-tutorial-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-pagos-tutorial-steps li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid #e9e4ff;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.admin-pagos-tutorial-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #5f44eb;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.admin-pagos-tutorial-steps strong {
+  display: block;
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 750;
+  color: #0f172a;
+}
+
+.admin-pagos-tutorial-steps p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #475569;
+}
+
+.admin-pagos-tutorial-reopen {
+  margin: 0;
+}
+
+.admin-pagos-tutorial-reopen button {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #5f44eb;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.admin-pagos-tutorial-reopen button:hover,
+.admin-pagos-tutorial-reopen button:focus-visible {
+  text-decoration: underline;
+  outline: none;
+}
+
+@media (max-width: 900px) {
+  .admin-pagos-tutorial-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
 @keyframes admin-unpaid-arrive {
   0% {
     background: rgba(167, 243, 208, 0.85);
@@ -666,7 +890,7 @@
 
   .admin-unpaid-split-pane {
     border-right: none;
-    border-bottom: 1px solid #ddd6fe;
+    border-bottom: 1px solid #cbd5e1;
   }
 
   .admin-unpaid-split-pane:last-child {

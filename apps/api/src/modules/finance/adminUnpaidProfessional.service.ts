@@ -61,6 +61,17 @@ export function parseUnpaidMonthKeys(raw: string | null | undefined): string[] {
   ].sort();
 }
 
+export function parseUnpaidSessionIds(raw: string | string[] | null | undefined): string[] {
+  const parts = Array.isArray(raw) ? raw : (raw ?? "").split(",");
+  return [
+    ...new Set(
+      parts
+        .map((part) => part.trim())
+        .filter((part) => part.length >= 8 && part.length <= 80)
+    )
+  ];
+}
+
 function financeRecordMonthKey(row: {
   bookingCompletedAt: Date | null;
   bookingStartsAt: Date;
@@ -652,9 +663,10 @@ export async function getDlocalPayoutTransferDetail(
 
 export async function getUnpaidProfessionalDetail(
   professionalId: string,
-  input?: { months?: string[] }
+  input?: { months?: string[]; sessionIds?: string[] }
 ): Promise<UnpaidProfessionalDetail | { notFound: true }> {
   const selectedMonths = [...new Set((input?.months ?? []).filter((m) => /^\d{4}-\d{2}$/.test(m)))].sort();
+  const selectedSessionIds = parseUnpaidSessionIds(input?.sessionIds);
   const professional = await prisma.professionalProfile.findUnique({
     where: { id: professionalId },
     select: {
@@ -701,13 +713,15 @@ export async function getUnpaidProfessionalDetail(
     selectedMonths.length === 0
       ? allRecords
       : allRecords.filter((record) => selectedMonths.includes(financeRecordMonthKey(record)))
-  ).filter((record) =>
-    isSessionEligibleForAdminPayout({
-      bookingStatus: record.bookingStatus,
-      submittedForPayoutAt: record.submittedForPayoutAt,
-      payoutLineStatus: record.payoutLine?.status ?? null
-    })
-  );
+  )
+    .filter((record) =>
+      isSessionEligibleForAdminPayout({
+        bookingStatus: record.bookingStatus,
+        submittedForPayoutAt: record.submittedForPayoutAt,
+        payoutLineStatus: record.payoutLine?.status ?? null
+      })
+    )
+    .filter((record) => selectedSessionIds.length === 0 || selectedSessionIds.includes(record.id));
 
   const packageSessionIndexByBookingId = await buildPackageSessionIndexByBookingId(
     records.flatMap((row) => (row.purchaseId ? [row.purchaseId] : []))
@@ -927,16 +941,22 @@ export async function payUnpaidProfessional(input: {
   method: "ledger" | "dlocal";
   payoutReference?: string;
   months?: string[];
+  sessionIds?: string[];
 }) {
   const months = [...new Set((input.months ?? []).filter((m) => /^\d{4}-\d{2}$/.test(m)))].sort();
+  const sessionIds = parseUnpaidSessionIds(input.sessionIds);
   console.info(`${LOG_PREFIX} pay start`, {
     professionalId: input.professionalId,
     method: input.method,
     months,
+    sessionIdsCount: sessionIds.length,
     hasReference: Boolean(input.payoutReference?.trim())
   });
 
-  const detail = await getUnpaidProfessionalDetail(input.professionalId, { months });
+  const detail = await getUnpaidProfessionalDetail(input.professionalId, {
+    months,
+    sessionIds: sessionIds.length > 0 ? sessionIds : undefined
+  });
   if ("notFound" in detail) {
     console.warn(`${LOG_PREFIX} pay aborted: professional not found`, { professionalId: input.professionalId });
     return { notFound: true as const };
@@ -952,11 +972,12 @@ export async function payUnpaidProfessional(input: {
   if (input.method === "ledger") {
     const ledger = await payProfessionalUnpaidBalance(input.professionalId, input.payoutReference, {
       months,
+      sessionIds: sessionIds.length > 0 ? sessionIds : undefined,
       markPaidImmediately: true
     });
     console.info(`${LOG_PREFIX} ledger payment recorded`, {
       professionalId: input.professionalId,
-      result: "notFound" in ledger || "noRecords" in ledger ? ledger : {
+      result: "notFound" in ledger || "noRecords" in ledger || "invalidSessionIds" in ledger ? ledger : {
         payoutLineId: ledger.payoutLineId,
         sessionsCount: ledger.sessionsCount,
         professionalNetCents: ledger.professionalNetCents
@@ -992,10 +1013,11 @@ export async function payUnpaidProfessional(input: {
 
   const ledger = await payProfessionalUnpaidBalance(input.professionalId, undefined, {
     months,
+    sessionIds: sessionIds.length > 0 ? sessionIds : undefined,
     markPaidImmediately: false,
     notes: "Pago dLocal desde pendientes (awaiting webhook)"
   });
-  if ("notFound" in ledger || "noRecords" in ledger) {
+  if ("notFound" in ledger || "noRecords" in ledger || "invalidSessionIds" in ledger) {
     console.warn(`${LOG_PREFIX} reservation returned empty`, {
       professionalId: input.professionalId,
       ledger
