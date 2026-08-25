@@ -60,7 +60,7 @@ function PayoutRow(props: {
     >
       <td>
         <span className="admin-unpaid-package-name">
-          <span className="admin-unpaid-grip" aria-hidden />
+          <span className="admin-unpaid-grip" aria-hidden title={t(props.language, { es: "Arrastrar", en: "Drag", pt: "Arrastar" })} />
           <span className="admin-unpaid-expand" aria-hidden>
             {props.expanded ? "▾" : "▸"}
           </span>
@@ -242,6 +242,7 @@ function TotalsFoot(props: {
 
 function ColumnHead(props: {
   language: AppLanguage;
+  side: PaneSide;
   sortKey?: SortKey;
   onSort?: (key: SortKey) => void;
 }) {
@@ -263,13 +264,23 @@ function ColumnHead(props: {
       </th>
     );
   };
+  const action =
+    props.side === "pending"
+      ? t(props.language, { es: "Aprobar", en: "Approve", pt: "Aprovar" })
+      : t(props.language, { es: "Devolver", en: "Return", pt: "Devolver" });
   return (
     <thead>
       <tr>
         {label("name_az", { es: "Profesional", en: "Professional", pt: "Profissional" })}
         {label("sessions_desc", { es: "Sesiones", en: "Sessions", pt: "Sessões" }, "num")}
         {label("net_desc", { es: "A pagar", en: "To pay", pt: "A pagar" }, "num")}
-        <th className="admin-unpaid-package-move" />
+        <th className="admin-unpaid-package-move">
+          <span className="admin-unpaid-action-head">
+            {props.side === "assemble" ? <span aria-hidden>←</span> : null}
+            {action}
+            {props.side === "pending" ? <span aria-hidden>→</span> : null}
+          </span>
+        </th>
       </tr>
     </thead>
   );
@@ -412,7 +423,7 @@ export function AdminUnpaidPayoutBoard(props: {
                 <col className="admin-unpaid-col-net" />
                 <col className="admin-unpaid-col-move" />
               </colgroup>
-              <ColumnHead language={language} sortKey={props.sortKey} onSort={props.onSort} />
+              <ColumnHead language={language} side="pending" sortKey={props.sortKey} onSort={props.onSort} />
               <tbody>
                 {renderPackageRows(props.pageRows, "pending")}
                 <SlotRows filled={props.pageRows.length} emptyLabel={props.emptyPending} />
@@ -472,15 +483,15 @@ export function AdminUnpaidPayoutBoard(props: {
               <col className="admin-unpaid-col-net" />
               <col className="admin-unpaid-col-move" />
             </colgroup>
-            <ColumnHead language={language} />
+            <ColumnHead language={language} side="assemble" />
             <tbody>
               {renderPackageRows(props.stagedRows, "assemble")}
               <SlotRows
                 filled={props.stagedRows.length}
                 emptyLabel={t(language, {
-                  es: "Arrastrá acá",
-                  en: "Drop here",
-                  pt: "Arraste aqui"
+                  es: "Aprobá con → o arrastrá acá",
+                  en: "Approve with → or drop here",
+                  pt: "Aprove com → ou arraste aqui"
                 })}
               />
             </tbody>
@@ -493,8 +504,37 @@ export function AdminUnpaidPayoutBoard(props: {
           </table>
         </div>
         {props.stagedRows.length > 0 ? (
-          <button type="button" className="admin-unpaid-assemble-btn" onClick={props.onAssemble}>
-            {t(language, { es: "Armar pago", en: "Assemble payout", pt: "Armar pagamento" })}
+          <button
+            type="button"
+            className="admin-unpaid-assemble-btn"
+            onClick={props.onAssemble}
+            title={
+              props.stagedRows.length > 1
+                ? t(language, {
+                    es: "Se paga de a un profesional. Los demás siguen en Aprobados.",
+                    en: "Pays one professional at a time. The rest stay in Approved.",
+                    pt: "Paga um profissional por vez. Os demais continuam em Aprovados."
+                  })
+                : undefined
+            }
+          >
+            {t(language, {
+              es: `Armar pago · ${props.stagedRows[0].professionalName}`,
+              en: `Assemble payout · ${props.stagedRows[0].professionalName}`,
+              pt: `Armar pagamento · ${props.stagedRows[0].professionalName}`
+            })}
+            <span className="admin-unpaid-assemble-amount">
+              {formatAdminFinanceUsd(props.stagedRows[0].professionalNetCents, language)}
+            </span>
+            {props.stagedRows.length > 1 ? (
+              <span className="admin-unpaid-assemble-rest">
+                {t(language, {
+                  es: `+${props.stagedRows.length - 1}`,
+                  en: `+${props.stagedRows.length - 1}`,
+                  pt: `+${props.stagedRows.length - 1}`
+                })}
+              </span>
+            ) : null}
           </button>
         ) : null}
       </section>

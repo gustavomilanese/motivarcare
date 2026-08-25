@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -15,13 +16,9 @@ function readOpen(): boolean {
   }
 }
 
-function persistOpen(open: boolean) {
+function persistDismissed() {
   try {
-    if (open) {
-      window.localStorage.removeItem(STORAGE_KEY);
-    } else {
-      window.localStorage.setItem(STORAGE_KEY, "1");
-    }
+    window.localStorage.setItem(STORAGE_KEY, "1");
   } catch {
     /* ignore quota / private mode */
   }
@@ -65,58 +62,87 @@ export function AdminPagosTutorial(props: { language: AppLanguage }) {
   const [open, setOpen] = useState(readOpen);
   const language = props.language;
 
-  const setDismissed = (nextOpen: boolean) => {
-    persistOpen(nextOpen);
-    setOpen(nextOpen);
+  const close = () => {
+    persistDismissed();
+    setOpen(false);
   };
 
-  if (!open) {
-    return (
-      <p className="admin-pagos-tutorial-reopen">
-        <button type="button" onClick={() => setDismissed(true)}>
-          {t(language, { es: "Cómo funciona esta pantalla", en: "How this screen works", pt: "Como funciona esta tela" })}
-        </button>
-      </p>
-    );
-  }
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        persistDismissed();
+        setOpen(false);
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
+  const dialog = open
+    ? createPortal(
+        <div className="admin-pagos-tutorial-backdrop" role="presentation" onClick={close}>
+          <section
+            className="admin-pagos-tutorial"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-pagos-tutorial-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="admin-pagos-tutorial-head">
+              <div>
+                <h2 id="admin-pagos-tutorial-title">
+                  {t(language, { es: "Cómo pagar", en: "How to pay", pt: "Como pagar" })}
+                </h2>
+                <p>
+                  {t(language, {
+                    es: "Revisá los paquetes recibidos y aprobálos moviéndolos a la derecha.",
+                    en: "Review received packages and approve them by moving them to the right.",
+                    pt: "Revise os pacotes recebidos e aprove-os passando-os para a direita."
+                  })}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="admin-pagos-tutorial-close"
+                onClick={close}
+                aria-label={t(language, { es: "Cerrar tutorial", en: "Close tutorial", pt: "Fechar tutorial" })}
+              >
+                ×
+              </button>
+            </header>
+            <ol className="admin-pagos-tutorial-steps">
+              {STEPS.map((step) => (
+                <li key={step.title.es}>
+                  <span className="admin-pagos-tutorial-num" aria-hidden>
+                    {t(language, step.kicker)}
+                  </span>
+                  <div>
+                    <strong>{t(language, step.title)}</strong>
+                    <p>{t(language, step.body)}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <footer className="admin-pagos-tutorial-foot">
+              <button type="button" className="admin-pagos-tutorial-done" onClick={close}>
+                {t(language, { es: "Entendido", en: "Got it", pt: "Entendi" })}
+              </button>
+            </footer>
+          </section>
+        </div>,
+        document.body
+      )
+    : null;
 
   return (
-    <section className="admin-pagos-tutorial" aria-labelledby="admin-pagos-tutorial-title">
-      <header className="admin-pagos-tutorial-head">
-        <div>
-          <h2 id="admin-pagos-tutorial-title">
-            {t(language, { es: "Cómo pagar", en: "How to pay", pt: "Como pagar" })}
-          </h2>
-          <p>
-            {t(language, {
-              es: "Esta pantalla es para revisar los paquetes recibidos y aprobarlos moviéndolos a la derecha.",
-              en: "Use this screen to review received packages and approve them by moving them to the right.",
-              pt: "Esta tela e para revisar os pacotes recebidos e aprova-los passando-os para a direita."
-            })}
-          </p>
-        </div>
-        <button
-          type="button"
-          className="admin-pagos-tutorial-close"
-          onClick={() => setDismissed(false)}
-          aria-label={t(language, { es: "Cerrar tutorial", en: "Close tutorial", pt: "Fechar tutorial" })}
-        >
-          ×
-        </button>
-      </header>
-      <ol className="admin-pagos-tutorial-steps">
-        {STEPS.map((step) => (
-          <li key={step.title.es}>
-            <span className="admin-pagos-tutorial-num" aria-hidden>
-              {t(language, step.kicker)}
-            </span>
-            <div>
-              <strong>{t(language, step.title)}</strong>
-              <p>{t(language, step.body)}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </section>
+    <>
+      <button type="button" className="admin-pagos-tutorial-reopen" onClick={() => setOpen(true)}>
+        {t(language, { es: "Cómo funciona", en: "How it works", pt: "Como funciona" })}
+      </button>
+      {dialog}
+    </>
   );
 }

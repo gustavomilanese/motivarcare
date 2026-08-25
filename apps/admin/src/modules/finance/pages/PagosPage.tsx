@@ -13,8 +13,8 @@ export function PagosPage(props: { token: string; language: AppLanguage }) {
         <h1 className="dashboard-page-heading">
           {t(props.language, { es: "Pagos", en: "Payouts", pt: "Pagamentos" })}
         </h1>
+        <AdminPagosTutorial language={props.language} />
       </header>
-      <AdminPagosTutorial language={props.language} />
       <AdminUnpaidProfessionalsPanel token={props.token} language={props.language} />
     </div>
   );

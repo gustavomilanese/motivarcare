@@ -201,6 +201,10 @@
   color: #334155;
 }
 
+.admin-unpaid-professionals-table--split th.admin-unpaid-package-move {
+  color: #5f44eb;
+}
+
 .admin-unpaid-professionals-table.admin-unpaid-professionals-table--split td {
   height: auto;
   padding: 12px;
@@ -216,7 +220,7 @@
 }
 
 .admin-unpaid-professionals-table--split .admin-unpaid-col-move {
-  width: 5.75rem;
+  width: 6.75rem;
 }
 
 .admin-unpaid-professionals-table.admin-unpaid-professionals-table--split tfoot td {
@@ -329,11 +333,27 @@
 }
 
 .admin-unpaid-package-move {
-  width: 5.75rem;
+  width: 6.75rem;
   padding-left: 4px !important;
   padding-right: 8px !important;
   text-align: right;
   vertical-align: middle;
+}
+
+.admin-unpaid-action-head {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  width: 100%;
+  color: #5f44eb;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.admin-unpaid-action-head span {
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .admin-unpaid-row-actions {
@@ -590,6 +610,10 @@
 }
 
 .admin-unpaid-assemble-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
   min-height: 42px;
   margin: 0;
@@ -602,6 +626,20 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.admin-unpaid-assemble-amount,
+.admin-unpaid-assemble-rest {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.92;
+}
+
+.admin-unpaid-assemble-rest {
+  min-width: 1.5rem;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 12px;
 }
 
 .admin-unpaid-assemble-btn:hover:not(:disabled),
@@ -741,13 +779,28 @@
   font-variant-numeric: tabular-nums;
 }
 
+.admin-pagos-tutorial-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
 .admin-pagos-tutorial {
   display: grid;
-  gap: 14px;
-  padding: 14px 16px 16px;
+  gap: 16px;
+  width: min(720px, 100%);
+  max-height: min(90vh, 640px);
+  overflow: auto;
+  padding: 18px 18px 16px;
   border: 1px solid #ddd6fe;
   border-radius: 10px;
-  background: #faf8ff;
+  background: #fff;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.22);
 }
 
 .admin-pagos-tutorial-head {
@@ -759,17 +812,17 @@
 
 .admin-pagos-tutorial-head h2 {
   margin: 0 0 4px;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 750;
-  color: #4c1d95;
+  color: #0f172a;
 }
 
 .admin-pagos-tutorial-head p {
   margin: 0;
-  max-width: 62ch;
+  max-width: 52ch;
   font-size: 13px;
   line-height: 1.45;
-  color: #5b21b6;
+  color: #475569;
 }
 
 .admin-pagos-tutorial-close {
@@ -780,7 +833,7 @@
   height: 32px;
   margin: 0;
   padding: 0;
-  border: 1px solid #ddd6fe;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #fff;
   color: #64748b;
@@ -792,16 +845,15 @@
 
 .admin-pagos-tutorial-close:hover,
 .admin-pagos-tutorial-close:focus-visible {
-  background: #f5f3ff;
-  border-color: #c4b5fd;
-  color: #4c1d95;
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
   outline: none;
 }
 
 .admin-pagos-tutorial-steps {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -812,10 +864,10 @@
   grid-template-columns: 28px minmax(0, 1fr);
   gap: 10px;
   align-items: start;
-  padding: 12px;
-  border: 1px solid #e9e4ff;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  background: #fff;
+  background: #faf8ff;
 }
 
 .admin-pagos-tutorial-num {
@@ -846,15 +898,38 @@
   color: #475569;
 }
 
-.admin-pagos-tutorial-reopen {
-  margin: 0;
+.admin-pagos-tutorial-foot {
+  display: flex;
+  justify-content: flex-end;
 }
 
-.admin-pagos-tutorial-reopen button {
+.admin-pagos-tutorial-done {
+  min-height: 36px;
   margin: 0;
-  padding: 0;
+  padding: 0 14px;
   border: none;
-  background: none;
+  border-radius: 8px;
+  background: #5f44eb;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-pagos-tutorial-done:hover,
+.admin-pagos-tutorial-done:focus-visible {
+  background: #4f37d4;
+  outline: none;
+}
+
+.admin-pagos-tutorial-reopen {
+  min-height: 32px;
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid #ddd6fe;
+  border-radius: 8px;
+  background: #fff;
   color: #5f44eb;
   font: inherit;
   font-size: 13px;
@@ -862,9 +937,9 @@
   cursor: pointer;
 }
 
-.admin-pagos-tutorial-reopen button:hover,
-.admin-pagos-tutorial-reopen button:focus-visible {
-  text-decoration: underline;
+.admin-pagos-tutorial-reopen:hover,
+.admin-pagos-tutorial-reopen:focus-visible {
+  background: #f5f3ff;
   outline: none;
 }
 
