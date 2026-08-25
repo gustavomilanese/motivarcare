@@ -18,6 +18,8 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
+type SortKey = "name_az" | "sessions_desc" | "net_desc";
+
 function applySessionExclusions(
   row: AdminUnpaidProfessional,
   excludedIds: string[] | undefined,
@@ -37,7 +39,7 @@ function applySessionExclusions(
   };
 }
 
-function omitKey<T extends Record<string, unknown>>(record: T, key: string): T {
+function omitKey(record: Record<string, string[]>, key: string): Record<string, string[]> {
   const next = { ...record };
   delete next[key];
   return next;
