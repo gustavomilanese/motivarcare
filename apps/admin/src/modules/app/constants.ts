@@ -5,6 +5,7 @@ export const ADMIN_TRIAL_BOOKING_CANCEL_PHRASE = "eliminar sesión de prueba";
 
 export const links: Array<{ to: PortalPath; label: string }> = [
   { to: "/", label: "Dashboard" },
+  { to: "/pagos", label: "Pagos" },
   { to: "/patients", label: "Pacientes" },
   { to: "/professionals", label: "Psicólogos" },
   { to: "/sessions", label: "Sesiones" },

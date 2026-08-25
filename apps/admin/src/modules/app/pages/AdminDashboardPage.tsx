@@ -10,7 +10,7 @@ import {
 import { majorCurrencyCodeForMarket } from "@therapy/types";
 import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { formatAdminFinanceUsd } from "../../finance/lib/formatAdminFinanceUsd";
-import { AdminUnpaidProfessionalsPanel } from "../../finance/components/AdminUnpaidProfessionalsPanel";
+import { AdminUnpaidPayoutPreview } from "../../finance/components/AdminUnpaidPayoutPreview";
 import { PendingProfessionalCredentialsPanel } from "../components/professionals/PendingProfessionalCredentialsPanel";
 import { apiRequest } from "../services/api";
 import type { AdminProfessionalOps, KpisResponse, ProfessionalsResponse } from "../types";
@@ -414,11 +414,10 @@ function OverviewPage(props: OverviewPageProps) {
 
       <DashboardPendingProfessionalApprovals token={props.token} language={props.language} />
 
-      <AdminUnpaidProfessionalsPanel
-        token={props.token}
+      <AdminUnpaidPayoutPreview
         language={props.language}
-        initialRows={unpaidRows}
-        onChanged={() => setRefreshToken((value) => value + 1)}
+        rows={unpaidRows}
+        loading={!response && !error}
       />
 
       {!response && !error ? (

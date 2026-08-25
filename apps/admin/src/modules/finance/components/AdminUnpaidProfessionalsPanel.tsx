@@ -4,11 +4,12 @@ import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLangu
 import { adminSurfaceMessage } from "../../app/lib/friendlyAdminSurfaceMessages";
 import { formatAdminFinanceUsd } from "../lib/formatAdminFinanceUsd";
 import { downloadUnpaidProfessionalsExcel } from "../lib/buildUnpaidProfessionalsExcel";
-import { fetchUnpaidProfessionals, fetchDlocalPayouts, fetchDlocalPayoutDetail } from "../services/financeApi";
+import { fetchUnpaidProfessionals, fetchUnpaidProfessionalDetail, fetchDlocalPayouts, fetchDlocalPayoutDetail } from "../services/financeApi";
 import type {
   AdminDlocalPayoutTransfer,
   AdminUnpaidProfessional,
-  AdminDlocalPayoutTransferDetailResponse
+  AdminDlocalPayoutTransferDetailResponse,
+  UnpaidProfessionalDetailResponse
 } from "../types/finance.types";
 import { FinanceProfessionalPayoutReview } from "./FinanceProfessionalPayoutReview";
 import { AdminUnpaidPayoutBoard } from "./AdminUnpaidPayoutBoard";
@@ -162,6 +163,9 @@ export function AdminUnpaidProfessionalsPanel(props: {
   const [sortKey, setSortKey] = useState<SortKey>("net_desc");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [expandedSentIds, setExpandedSentIds] = useState<Set<string>>(() => new Set());
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+  const [expandedDetails, setExpandedDetails] = useState<Record<string, UnpaidProfessionalDetailResponse>>({});
+  const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [expandedSentDetails, setExpandedSentDetails] = useState<Record<string, AdminDlocalPayoutTransferDetailResponse>>(
     {}
   );
@@ -212,6 +216,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
   useEffect(() => {
     setPendingPage(1);
     setSentPage(1);
+    setExpandedIds(new Set());
     setExpandedSentIds(new Set());
   }, [search, sortKey, monthsKey]);
 
@@ -405,6 +410,42 @@ export function AdminUnpaidProfessionalsPanel(props: {
 
   const onStagedRowActivate = (row: AdminUnpaidProfessional) => {
     activateWithoutDrag(() => unstage(row));
+  };
+
+  const toggleExpand = async (row: AdminUnpaidProfessional) => {
+    if (skipClickRef.current) {
+      skipClickRef.current = false;
+      return;
+    }
+    const isOpen = expandedIds.has(row.professionalId);
+    if (isOpen) {
+      setExpandedIds((current) => {
+        const next = new Set(current);
+        next.delete(row.professionalId);
+        return next;
+      });
+      return;
+    }
+    setExpandedIds((current) => new Set(current).add(row.professionalId));
+    if (expandedDetails[row.professionalId]) {
+      return;
+    }
+    setDetailLoadingId(row.professionalId);
+    setError("");
+    try {
+      const detail = await fetchUnpaidProfessionalDetail(props.token, row.professionalId, selectedMonths);
+      setExpandedDetails((current) => ({ ...current, [row.professionalId]: detail }));
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("finance-overview-load", props.language, raw));
+      setExpandedIds((current) => {
+        const next = new Set(current);
+        next.delete(row.professionalId);
+        return next;
+      });
+    } finally {
+      setDetailLoadingId(null);
+    }
   };
 
   const toggleExpandSent = async (row: AdminDlocalPayoutTransfer) => {
@@ -618,6 +659,10 @@ export function AdminUnpaidProfessionalsPanel(props: {
           onDragEnd={endDrag}
           onStage={onQueueRowActivate}
           onUnstage={onStagedRowActivate}
+          onToggleExpand={(row) => void toggleExpand(row)}
+          expandedIds={expandedIds}
+          expandedDetails={expandedDetails}
+          detailLoadingId={detailLoadingId}
           onAssemble={() => {
             const next = stagedRows[0];
             if (next) {

@@ -21,6 +21,13 @@ export function AdminNavIcon(props: { section: PortalPath | "logout"; className?
           <path d="M3 9.5 12 4l9 5.5V20a1 1 0 0 1-1 1h-5v-8H9v8H4a1 1 0 0 1-1-1V9.5Z" />
         </svg>
       );
+    case "/pagos":
+      return (
+        <svg {...iconProps}>
+          <path d="M7 10h14M17 6l4 4-4 4" />
+          <path d="M17 14H3M7 18l-4-4 4-4" />
+        </svg>
+      );
     case "/patients":
       return (
         <svg {...iconProps}>

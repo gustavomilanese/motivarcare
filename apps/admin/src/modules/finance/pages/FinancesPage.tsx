@@ -16,7 +16,7 @@ import { AdminPlatformFinanceSection } from "../components/AdminPlatformFinanceS
 import { FinanceCommissionRulesPanel } from "../components/FinanceCommissionRulesPanel";
 import { FinanceMonetizedSessionsPanel } from "../components/FinanceMonetizedSessionsPanel";
 import { formatAdminFinanceUsd } from "../lib/formatAdminFinanceUsd";
-import { AdminUnpaidProfessionalsPanel } from "../components/AdminUnpaidProfessionalsPanel";
+import { AdminUnpaidPayoutPreview } from "../components/AdminUnpaidPayoutPreview";
 import { FinanceMonthOverviewSection } from "../components/FinanceMonthOverviewSection";
 import { FinanceOverviewFiltersPanel } from "../components/FinanceOverviewFiltersPanel";
 import { FINANCE_SCROLL_SECTION_IDS, FinancePageSubnav } from "../components/FinancePageSubnav";
@@ -81,7 +81,6 @@ export function FinancesPage(props: { token: string; language: AppLanguage; curr
   const [kpisResponse, setKpisResponse] = useState<KpisResponse | null>(null);
   const [kpisLoading, setKpisLoading] = useState(false);
   const [kpisError, setKpisError] = useState("");
-  const [kpisRefreshToken, setKpisRefreshToken] = useState(0);
 
   useEffect(() => {
     void model.loadAll();
@@ -123,7 +122,7 @@ export function FinancesPage(props: { token: string; language: AppLanguage; curr
     } finally {
       setKpisLoading(false);
     }
-  }, [props.token, kpisMonth, props.language, model.filters.professionalId, model.filters.patientId, kpisRefreshToken]);
+  }, [props.token, kpisMonth, props.language, model.filters.professionalId, model.filters.patientId]);
 
   useEffect(() => {
     void loadKpis();
@@ -245,18 +244,10 @@ export function FinancesPage(props: { token: string; language: AppLanguage; curr
           loading={kpisLoading}
           error={kpisError || null}
           afterRevenue={
-            <AdminUnpaidProfessionalsPanel
-              token={props.token}
+            <AdminUnpaidPayoutPreview
               language={props.language}
-              initialRows={kpisResponse?.unpaidByProfessional}
-              creatingLiquidacion={model.creatingRun}
-              onCreateLiquidacion={(months) => {
-                void model.createPayoutRunFromMonths(months);
-              }}
-              onChanged={() => {
-                setKpisRefreshToken((value) => value + 1);
-                void model.loadAll();
-              }}
+              rows={kpisResponse?.unpaidByProfessional ?? []}
+              loading={kpisLoading && !kpisResponse}
             />
           }
         />

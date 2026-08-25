@@ -2,7 +2,7 @@ import { subscribeDocumentVisibleInterval } from "@therapy/auth";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, type SupportedCurrency, textByLanguage } from "@therapy/i18n-config";
-import { FinancesPage } from "../../finance";
+import { FinancesPage, PagosPage } from "../../finance";
 import { links } from "../constants";
 import { AdminNavIcon } from "../components/AdminNavIcon";
 import { ModulePlaceholderPage } from "../components/ModulePlaceholderPage";
@@ -113,6 +113,9 @@ export function AdminPortal(props: {
   const labelForLink = (to: PortalPath): string => {
     if (to === "/") {
       return t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" });
+    }
+    if (to === "/pagos") {
+      return t(props.language, { es: "Pagos", en: "Payouts", pt: "Pagamentos" });
     }
     if (to === "/patients") {
       return t(props.language, { es: "Pacientes", en: "Patients", pt: "Pacientes" });
@@ -292,6 +295,10 @@ export function AdminPortal(props: {
                   onBack={goBack}
                 />
               }
+            />
+            <Route
+              path="/pagos"
+              element={<PagosPage token={props.token} language={props.language} />}
             />
             <Route
               path="/patients"

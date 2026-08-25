@@ -182,33 +182,64 @@
   background: transparent;
 }
 
-.admin-unpaid-professionals-table--split th {
+.admin-unpaid-professionals-table.admin-unpaid-professionals-table--split th {
   position: sticky;
   top: 0;
   z-index: 1;
+  height: 34px;
+  padding: 0 12px;
   background: #f8fafc;
-  color: #64748b;
-  border-bottom-color: #e2e8f0;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .admin-unpaid-professionals-table--split th .admin-unpaid-sort.is-active {
-  color: #0f172a;
+  color: #334155;
 }
 
-.admin-unpaid-professionals-table--split td {
-  height: 48px;
+.admin-unpaid-professionals-table.admin-unpaid-professionals-table--split td {
+  height: auto;
+  padding: 12px;
+  border-bottom: 1px solid #eef2f7;
 }
 
-.admin-unpaid-professionals-table--split tfoot td {
+.admin-unpaid-professionals-table--split .admin-unpaid-col-sessions {
+  width: 5.5rem;
+}
+
+.admin-unpaid-professionals-table--split .admin-unpaid-col-net {
+  width: 7.25rem;
+}
+
+.admin-unpaid-professionals-table--split .admin-unpaid-col-move {
+  width: 3.25rem;
+}
+
+.admin-unpaid-professionals-table.admin-unpaid-professionals-table--split tfoot td {
   position: sticky;
   bottom: 0;
   z-index: 1;
+  height: 44px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: none;
+  font-size: 12px;
+  font-weight: 650;
+  color: #64748b;
+}
+
+.admin-unpaid-professionals-table--split tfoot .admin-unpaid-package-amount {
+  color: #0f172a;
 }
 
 .admin-unpaid-split-slot td {
-  height: 48px;
-  border-bottom: 1px solid #f1f5f9;
-  color: #94a3b8;
+  height: 44px;
+  border-bottom: 1px solid #f8fafc;
+  color: #cbd5e1;
   font-size: 13px;
   font-weight: 500;
   text-align: center;
@@ -216,7 +247,7 @@
 }
 
 .admin-unpaid-split-empty-row td {
-  height: 48px;
+  height: 44px;
   text-align: center;
   vertical-align: middle;
   color: #94a3b8;
@@ -256,28 +287,247 @@
   background: #f3e8ff;
 }
 
-.admin-unpaid-split-remove {
+.admin-unpaid-package-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-unpaid-package-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.admin-unpaid-expand {
+  flex-shrink: 0;
+  width: 12px;
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.admin-unpaid-package-metric {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-unpaid-package-amount {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.admin-unpaid-package-move {
+  width: 3.25rem;
+  padding-left: 4px !important;
+  padding-right: 8px !important;
+  text-align: right;
+  vertical-align: middle;
+}
+
+.admin-unpaid-professionals-table.admin-unpaid-professionals-table--split .admin-unpaid-pro-row:hover td {
+  background: #faf9ff;
+}
+
+.admin-unpaid-package-row.is-expanded td {
+  background: #f5f3ff;
+  border-bottom-color: transparent;
+}
+
+.admin-unpaid-professionals-table.admin-unpaid-professionals-table--split .admin-unpaid-package-row.is-expanded:hover td {
+  background: #f5f3ff;
+}
+
+.admin-unpaid-split .admin-unpaid-net {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-unpaid-move-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  margin-left: 4px;
+  width: 32px;
+  height: 32px;
+  margin: 0;
   padding: 0;
-  border: none;
+  border: 1px solid #ddd6fe;
   border-radius: 8px;
-  background: transparent;
-  color: #64748b;
-  font-size: 18px;
+  background: #fff;
+  color: #5f44eb;
+  font-size: 16px;
   line-height: 1;
   cursor: pointer;
 }
 
-.admin-unpaid-split-remove:hover,
-.admin-unpaid-split-remove:focus-visible {
-  background: #f1f5f9;
-  color: #0f172a;
+.admin-unpaid-move-btn:hover,
+.admin-unpaid-move-btn:focus-visible {
+  background: #f5f3ff;
+  border-color: #c4b5fd;
   outline: none;
+}
+
+.admin-unpaid-package-detail-row > td {
+  background: #f8f7fc;
+  padding: 0 12px 12px 40px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.admin-unpaid-package-detail {
+  display: grid;
+  gap: 6px;
+  padding: 2px 0 4px 12px;
+  border-left: 2px solid #c4b5fd;
+}
+
+.admin-unpaid-package-detail-kicker {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.admin-unpaid-package-sessions {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-unpaid-package-sessions li {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1.1fr) minmax(0, 1fr) 6.5rem;
+  gap: 8px;
+  align-items: baseline;
+  min-height: 28px;
+}
+
+.admin-unpaid-package-session-date {
+  color: #94a3b8;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-unpaid-package-session-patient {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.admin-unpaid-package-session-patient:hover {
+  color: #5f44eb;
+}
+
+.admin-unpaid-package-session-origin {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.admin-unpaid-package-session-net {
+  text-align: right;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-unpaid-preview {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px 12px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.admin-unpaid-preview-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.admin-unpaid-preview-head .dashboard-section-title {
+  margin: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.admin-unpaid-preview-open {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: #5f44eb;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-unpaid-preview-open:hover,
+.admin-unpaid-preview-open:focus-visible {
+  background: #4f37d4;
+  outline: none;
+}
+
+.admin-unpaid-preview-empty {
+  margin: 0;
+  padding: 12px 0 4px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.admin-unpaid-preview .admin-unpaid-professionals-table-wrap {
+  border-color: #e2e8f0;
+  box-shadow: none;
+}
+
+.admin-unpaid-preview .admin-unpaid-professionals-table.admin-unpaid-preview-table th {
+  background: #f8fafc;
+  color: #94a3b8;
+  border-bottom-color: #e2e8f0;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.admin-unpaid-preview-table td {
+  padding: 11px 12px;
+}
+
+.admin-unpaid-preview-table tbody td:first-child {
+  font-weight: 650;
+  color: #0f172a;
+}
+
+.admin-unpaid-preview-table .admin-unpaid-net {
+  font-size: 14px;
 }
 
 .admin-unpaid-split-pane .admin-unpaid-assemble-btn {

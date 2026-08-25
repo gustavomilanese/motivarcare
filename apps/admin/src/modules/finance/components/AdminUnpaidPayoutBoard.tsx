@@ -1,7 +1,12 @@
-import { type DragEvent, type ReactNode } from "react";
-import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { type DragEvent, type ReactNode, Fragment } from "react";
+import { Link } from "react-router-dom";
+import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { formatAdminFinanceUsd } from "../lib/formatAdminFinanceUsd";
-import type { AdminUnpaidProfessional } from "../types/finance.types";
+import type {
+  AdminUnpaidProfessional,
+  UnpaidProfessionalDetailResponse,
+  UnpaidProfessionalSessionDetail
+} from "../types/finance.types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -12,42 +17,131 @@ type PaneSide = "pending" | "assemble";
 
 const MIN_BODY_ROWS = 8;
 
+function formatSessionDay(value: string | null, language: AppLanguage): string {
+  if (!value) return "—";
+  return formatDateWithLocale({
+    value,
+    language,
+    options: { month: "short", day: "numeric", year: "numeric" }
+  });
+}
+
 function PayoutRow(props: {
   row: AdminUnpaidProfessional;
   language: AppLanguage;
   dragging: boolean;
-  title: string;
+  expanded: boolean;
+  moveTitle: string;
+  expandTitle: string;
+  moveLabel: string;
   onDragStart: (event: DragEvent) => void;
   onDragEnd: () => void;
-  onActivate: () => void;
+  onToggleExpand: () => void;
+  onMove: () => void;
 }) {
   return (
     <tr
-      className={`admin-unpaid-pro-row${props.dragging ? " is-dragging" : ""}`}
+      className={`admin-unpaid-pro-row admin-unpaid-package-row${props.expanded ? " is-expanded" : ""}${props.dragging ? " is-dragging" : ""}`}
       draggable
       tabIndex={0}
-      title={props.title}
+      aria-expanded={props.expanded}
+      title={props.expandTitle}
       onDragStart={props.onDragStart}
       onDragEnd={props.onDragEnd}
-      onClick={props.onActivate}
+      onClick={props.onToggleExpand}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          props.onActivate();
+          props.onToggleExpand();
         }
       }}
     >
       <td>
-        <span className="admin-unpaid-pro-name">
+        <span className="admin-unpaid-package-name">
           <span className="admin-unpaid-grip" aria-hidden />
-          {props.row.professionalName}
+          <span className="admin-unpaid-expand" aria-hidden>
+            {props.expanded ? "▾" : "▸"}
+          </span>
+          <span className="admin-unpaid-package-title">{props.row.professionalName}</span>
         </span>
       </td>
-      <td className="num">{props.row.sessionsCount}</td>
-      <td className="num admin-unpaid-net">
-        {formatAdminFinanceUsd(props.row.professionalNetCents, props.language)}
+      <td className="num">
+        <span className="admin-unpaid-package-metric">{props.row.sessionsCount}</span>
+      </td>
+      <td className="num">
+        <span className="admin-unpaid-package-amount">
+          {formatAdminFinanceUsd(props.row.professionalNetCents, props.language)}
+        </span>
+      </td>
+      <td className="admin-unpaid-package-move">
+        <button
+          type="button"
+          className="admin-unpaid-move-btn"
+          title={props.moveTitle}
+          aria-label={props.moveTitle}
+          onClick={(event) => {
+            event.stopPropagation();
+            props.onMove();
+          }}
+        >
+          {props.moveLabel}
+        </button>
       </td>
     </tr>
+  );
+}
+
+function PackageSessionDetail(props: {
+  language: AppLanguage;
+  loading: boolean;
+  sessions: UnpaidProfessionalSessionDetail[];
+}) {
+  const pending = props.sessions.filter((session) => session.payoutStatus === "pending");
+  if (props.loading) {
+    return (
+      <p className="admin-unpaid-detail-loading">
+        {t(props.language, { es: "Cargando sesiones…", en: "Loading sessions…", pt: "Carregando sessões…" })}
+      </p>
+    );
+  }
+  if (pending.length === 0) {
+    return (
+      <p className="admin-unpaid-detail-empty">
+        {t(props.language, {
+          es: "Este paquete no tiene sesiones listas.",
+          en: "This package has no sessions ready.",
+          pt: "Este pacote nao tem sessoes prontas."
+        })}
+      </p>
+    );
+  }
+  return (
+    <div className="admin-unpaid-package-detail">
+      <p className="admin-unpaid-package-detail-kicker">
+        {t(props.language, { es: "Sesiones del paquete", en: "Sessions in package", pt: "Sessoes do pacote" })}
+      </p>
+      <ul className="admin-unpaid-package-sessions">
+        {pending.map((session) => (
+          <li key={session.id}>
+            <span className="admin-unpaid-package-session-date">
+              {formatSessionDay(session.bookingCompletedAt ?? session.bookingStartsAt, props.language)}
+            </span>
+            <Link className="admin-unpaid-package-session-patient" to={`/sessions?patientId=${encodeURIComponent(session.patient.id)}`}>
+              {session.patient.fullName}
+            </Link>
+            <span className="admin-unpaid-package-session-origin">
+              {session.sourceKind === "trial"
+                ? t(props.language, { es: "Prueba", en: "Trial", pt: "Teste" })
+                : t(props.language, { es: "Paquete", en: "Package", pt: "Pacote" })}
+              {session.sourceLabel ? ` · ${session.sourceLabel}` : ""}
+            </span>
+            <span className="admin-unpaid-package-session-net">
+              {formatAdminFinanceUsd(session.professionalNetUsdCents, props.language)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -60,7 +154,7 @@ function SlotRows(props: { filled: number; emptyLabel: string }) {
     <>
       {Array.from({ length: slots }, (_, index) => (
         <tr key={`slot-${index}`} className="admin-unpaid-split-slot">
-          <td colSpan={3}>{index === 0 && props.filled === 0 ? props.emptyLabel : null}</td>
+          <td colSpan={4}>{index === 0 && props.filled === 0 ? props.emptyLabel : null}</td>
         </tr>
       ))}
     </>
@@ -90,7 +184,10 @@ function TotalsFoot(props: {
           <span className="admin-unpaid-totals-count"> · {props.professionals}</span>
         </td>
         <td className="num">{props.sessionsCount}</td>
-        <td className="num admin-unpaid-net">{formatAdminFinanceUsd(props.netCents, props.language)}</td>
+        <td className="num">
+          <span className="admin-unpaid-package-amount">{formatAdminFinanceUsd(props.netCents, props.language)}</span>
+        </td>
+        <td />
       </tr>
     </tfoot>
   );
@@ -125,6 +222,7 @@ function ColumnHead(props: {
         {label("name_az", { es: "Profesional", en: "Professional", pt: "Profissional" })}
         {label("sessions_desc", { es: "Sesiones", en: "Sessions", pt: "Sessões" }, "num")}
         {label("net_desc", { es: "A pagar", en: "To pay", pt: "A pagar" }, "num")}
+        <th className="admin-unpaid-package-move" />
       </tr>
     </thead>
   );
@@ -151,6 +249,10 @@ export function AdminUnpaidPayoutBoard(props: {
   onDragEnd: () => void;
   onStage: (row: AdminUnpaidProfessional) => void;
   onUnstage: (row: AdminUnpaidProfessional) => void;
+  onToggleExpand: (row: AdminUnpaidProfessional) => void;
+  expandedIds: Set<string>;
+  expandedDetails: Record<string, UnpaidProfessionalDetailResponse>;
+  detailLoadingId: string | null;
   onAssemble: () => void;
   pager: {
     visible: boolean;
@@ -175,19 +277,42 @@ export function AdminUnpaidPayoutBoard(props: {
     pt: "Devolver para a pagar"
   });
 
+  const expandTitle = t(language, {
+    es: "Ver sesiones de este paquete",
+    en: "See sessions in this package",
+    pt: "Ver sessoes deste pacote"
+  });
+
   const renderPackageRows = (rows: AdminUnpaidProfessional[], side: PaneSide): ReactNode =>
-    rows.map((row) => (
-      <PayoutRow
-        key={row.professionalId}
-        row={row}
-        language={language}
-        dragging={props.draggingId === row.professionalId}
-        title={side === "pending" ? moveRightTitle : moveLeftTitle}
-        onDragStart={props.onDragStart(row)}
-        onDragEnd={props.onDragEnd}
-        onActivate={() => (side === "pending" ? props.onStage(row) : props.onUnstage(row))}
-      />
-    ));
+    rows.map((row) => {
+      const expanded = props.expandedIds.has(row.professionalId);
+      const detail = props.expandedDetails[row.professionalId] ?? null;
+      const loading = expanded && !detail && props.detailLoadingId === row.professionalId;
+      return (
+        <Fragment key={row.professionalId}>
+          <PayoutRow
+            row={row}
+            language={language}
+            dragging={props.draggingId === row.professionalId}
+            expanded={expanded}
+            expandTitle={expandTitle}
+            moveTitle={side === "pending" ? moveRightTitle : moveLeftTitle}
+            moveLabel={side === "pending" ? "→" : "←"}
+            onDragStart={props.onDragStart(row)}
+            onDragEnd={props.onDragEnd}
+            onToggleExpand={() => props.onToggleExpand(row)}
+            onMove={() => (side === "pending" ? props.onStage(row) : props.onUnstage(row))}
+          />
+          {expanded ? (
+            <tr className="admin-unpaid-package-detail-row">
+              <td colSpan={4}>
+                <PackageSessionDetail language={language} loading={loading} sessions={detail?.sessions ?? []} />
+              </td>
+            </tr>
+          ) : null}
+        </Fragment>
+      );
+    });
 
   return (
     <div
@@ -217,6 +342,12 @@ export function AdminUnpaidPayoutBoard(props: {
         ) : (
           <div className="admin-unpaid-professionals-table-wrap">
             <table className="admin-unpaid-professionals-table admin-unpaid-professionals-table--split">
+              <colgroup>
+                <col />
+                <col className="admin-unpaid-col-sessions" />
+                <col className="admin-unpaid-col-net" />
+                <col className="admin-unpaid-col-move" />
+              </colgroup>
               <ColumnHead language={language} sortKey={props.sortKey} onSort={props.onSort} />
               <tbody>
                 {renderPackageRows(props.pageRows, "pending")}
@@ -271,6 +402,12 @@ export function AdminUnpaidPayoutBoard(props: {
         />
         <div className="admin-unpaid-professionals-table-wrap">
           <table className="admin-unpaid-professionals-table admin-unpaid-professionals-table--split">
+            <colgroup>
+              <col />
+              <col className="admin-unpaid-col-sessions" />
+              <col className="admin-unpaid-col-net" />
+              <col className="admin-unpaid-col-move" />
+            </colgroup>
             <ColumnHead language={language} />
             <tbody>
               {renderPackageRows(props.stagedRows, "assemble")}

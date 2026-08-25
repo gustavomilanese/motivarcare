@@ -8,6 +8,7 @@ export type RiskTriageDecision = "pending" | "approved" | "cancelled";
 export type RoleFilter = Role | "ALL";
 export type PortalPath =
   | "/"
+  | "/pagos"
   | "/patients"
   | "/professionals"
   | "/sessions"
