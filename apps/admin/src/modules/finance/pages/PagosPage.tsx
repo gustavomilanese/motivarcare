@@ -1,20 +1,9 @@
-import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
-import { AdminPagosTutorial } from "../components/AdminPagosTutorial";
 import { AdminUnpaidProfessionalsPanel } from "../components/AdminUnpaidProfessionalsPanel";
-
-function t(language: AppLanguage, values: LocalizedText): string {
-  return textByLanguage(language, values);
-}
+import { type AppLanguage } from "@therapy/i18n-config";
 
 export function PagosPage(props: { token: string; language: AppLanguage }) {
   return (
     <div className="dashboard-page">
-      <header className="dashboard-page-toolbar">
-        <h1 className="dashboard-page-heading">
-          {t(props.language, { es: "Pagos", en: "Payouts", pt: "Pagamentos" })}
-        </h1>
-        <AdminPagosTutorial language={props.language} />
-      </header>
       <AdminUnpaidProfessionalsPanel token={props.token} language={props.language} />
     </div>
   );

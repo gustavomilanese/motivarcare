@@ -15,8 +15,6 @@ function t(language: AppLanguage, values: LocalizedText): string {
 type SortKey = "name_az" | "sessions_desc" | "net_desc";
 type PaneSide = "pending" | "assemble";
 
-const MIN_BODY_ROWS = 8;
-
 function formatSessionDay(value: string | null, language: AppLanguage): string {
   if (!value) return "—";
   return formatDateWithLocale({
@@ -192,19 +190,11 @@ function PackageSessionDetail(props: {
   );
 }
 
-function SlotRows(props: { filled: number; emptyLabel: string }) {
-  const slots = Math.max(0, MIN_BODY_ROWS - props.filled);
-  if (slots === 0) {
-    return null;
-  }
+function BodyFiller(props: { filled: number; emptyLabel: string }) {
   return (
-    <>
-      {Array.from({ length: slots }, (_, index) => (
-        <tr key={`slot-${index}`} className="admin-unpaid-split-slot">
-          <td colSpan={4}>{index === 0 && props.filled === 0 ? props.emptyLabel : null}</td>
-        </tr>
-      ))}
-    </>
+    <tr className="admin-unpaid-split-filler" aria-hidden={props.filled > 0}>
+      <td colSpan={4}>{props.filled === 0 ? props.emptyLabel : null}</td>
+    </tr>
   );
 }
 
@@ -426,7 +416,7 @@ export function AdminUnpaidPayoutBoard(props: {
               <ColumnHead language={language} side="pending" sortKey={props.sortKey} onSort={props.onSort} />
               <tbody>
                 {renderPackageRows(props.pageRows, "pending")}
-                <SlotRows filled={props.pageRows.length} emptyLabel={props.emptyPending} />
+                <BodyFiller filled={props.pageRows.length} emptyLabel={props.emptyPending} />
               </tbody>
               <TotalsFoot
                 language={language}
@@ -486,7 +476,7 @@ export function AdminUnpaidPayoutBoard(props: {
             <ColumnHead language={language} side="assemble" />
             <tbody>
               {renderPackageRows(props.stagedRows, "assemble")}
-              <SlotRows
+              <BodyFiller
                 filled={props.stagedRows.length}
                 emptyLabel={t(language, {
                   es: "Aprobá con → o arrastrá acá",

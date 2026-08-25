@@ -13,6 +13,7 @@ import type {
 } from "../types/finance.types";
 import { FinanceProfessionalPayoutReview } from "./FinanceProfessionalPayoutReview";
 import { AdminUnpaidPayoutBoard } from "./AdminUnpaidPayoutBoard";
+import { AdminPagosTutorial } from "./AdminPagosTutorial";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -163,14 +164,31 @@ function transferStatusLabel(status: AdminDlocalPayoutTransfer["displayStatus"],
   return t(language, { es: "En camino", en: "In transit", pt: "A caminho" });
 }
 
-function formatMonthKeyLabel(key: string, language: AppLanguage): string {
-  if (!/^\d{4}-\d{2}$/.test(key)) return key;
-  const [year, month] = key.split("-").map(Number);
+function monthsFromYearMonth(year: string, month: string, fallbackYear: string): string[] {
+  if (!year && !month) {
+    return [];
+  }
+  const y = year || fallbackYear;
+  if (!month) {
+    return expandMonthKeysInRange(`${y}-01`, `${y}-12`);
+  }
+  return [`${y}-${month}`];
+}
+
+function yearOptions(maxYear: number, minYear = 2023): string[] {
+  const years: string[] = [];
+  for (let year = maxYear; year >= minYear; year -= 1) {
+    years.push(String(year));
+  }
+  return years;
+}
+
+function monthName(month: number, language: AppLanguage): string {
   return formatDateWithLocale({
-    value: new Date(Date.UTC(year, month - 1, 1)).toISOString(),
+    value: new Date(Date.UTC(2020, month - 1, 1)).toISOString(),
     language,
     timeZone: "UTC",
-    options: { month: "short", year: "numeric" }
+    options: { month: "long" }
   });
 }
 
@@ -186,8 +204,8 @@ export function AdminUnpaidProfessionalsPanel(props: {
 }) {
   const [rows, setRows] = useState<AdminUnpaidProfessional[]>(props.initialRows ?? []);
   const [sentTransfers, setSentTransfers] = useState<AdminDlocalPayoutTransfer[]>([]);
-  const [monthFrom, setMonthFrom] = useState("");
-  const [monthTo, setMonthTo] = useState("");
+  const [filterYear, setFilterYear] = useState("");
+  const [filterMonth, setFilterMonth] = useState("");
   const [arrivedProfessionalId, setArrivedProfessionalId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingSent, setLoadingSent] = useState(true);
@@ -205,7 +223,6 @@ export function AdminUnpaidProfessionalsPanel(props: {
   const skipClickRef = useRef(false);
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("net_desc");
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [expandedSentIds, setExpandedSentIds] = useState<Set<string>>(() => new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [expandedDetails, setExpandedDetails] = useState<Record<string, UnpaidProfessionalDetailResponse>>({});
@@ -218,7 +235,10 @@ export function AdminUnpaidProfessionalsPanel(props: {
   const [pendingPage, setPendingPage] = useState(1);
   const [sentPage, setSentPage] = useState(1);
 
-  const selectedMonths = useMemo(() => expandMonthKeysInRange(monthFrom, monthTo), [monthFrom, monthTo]);
+  const selectedMonths = useMemo(
+    () => monthsFromYearMonth(filterYear, filterMonth, currentUtcMonthKey().slice(0, 4)),
+    [filterYear, filterMonth]
+  );
   const monthsKey = selectedMonths.join(",");
 
   const load = useCallback(async () => {
@@ -394,11 +414,15 @@ export function AdminUnpaidProfessionalsPanel(props: {
   const pageSentRows = filteredSent.slice((currentSentPage - 1) * PAGE_SIZE, currentSentPage * PAGE_SIZE);
 
   const maxMonth = useMemo(() => currentUtcMonthKey(), []);
-  const hasMonthFilter = Boolean(monthFrom || monthTo);
+  const currentYear = maxMonth.slice(0, 4);
+  const currentMonth = maxMonth.slice(5, 7);
+  const hasMonthFilter = Boolean(filterYear || filterMonth);
+  const isThisMonth = filterYear === currentYear && filterMonth === currentMonth;
+  const isThisYear = filterYear === currentYear && !filterMonth;
 
   const clearMonthFilter = () => {
-    setMonthFrom("");
-    setMonthTo("");
+    setFilterYear("");
+    setFilterMonth("");
   };
 
   const unstage = (row?: AdminUnpaidProfessional) => {
@@ -596,23 +620,76 @@ export function AdminUnpaidProfessionalsPanel(props: {
       <div className="admin-unpaid-stack">
       <section className={`admin-unpaid-professionals${props.compact ? " admin-unpaid-professionals--compact" : ""}`}>
         <header className="admin-unpaid-professionals-head">
-          <div className="admin-unpaid-professionals-head-copy">
-            <h2
-              className="dashboard-section-title"
-              title={t(props.language, {
-                es: "Cuentas por pagar y pagos ya enviados.",
-                en: "Accounts payable and payments already sent.",
-                pt: "Contas a pagar e pagamentos ja enviados."
-              })}
-            >
-              {t(props.language, {
-                es: "Pagos a profesionales",
-                en: "Professional payouts",
-                pt: "Pagamentos a profissionais"
-              })}
-            </h2>
-          </div>
+          <h1 className="admin-unpaid-page-title">
+            {t(props.language, { es: "Pagos", en: "Payouts", pt: "Pagamentos" })}
+          </h1>
           <div className="admin-unpaid-professionals-head-actions">
+            <label className="admin-unpaid-filter-label admin-unpaid-filter-label--inline">
+              {t(props.language, { es: "Año", en: "Year", pt: "Ano" })}
+              <select
+                className="admin-unpaid-period-select"
+                value={filterYear}
+                aria-label={t(props.language, { es: "Año", en: "Year", pt: "Ano" })}
+                onChange={(event) => setFilterYear(event.target.value)}
+              >
+                <option value="">{t(props.language, { es: "Todos", en: "All", pt: "Todos" })}</option>
+                {yearOptions(Number(currentYear)).map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="admin-unpaid-filter-label admin-unpaid-filter-label--inline">
+              {t(props.language, { es: "Mes", en: "Month", pt: "Mês" })}
+              <select
+                className="admin-unpaid-period-select"
+                value={filterMonth}
+                aria-label={t(props.language, { es: "Mes", en: "Month", pt: "Mês" })}
+                onChange={(event) => {
+                  const nextMonth = event.target.value;
+                  setFilterMonth(nextMonth);
+                  if (nextMonth && !filterYear) {
+                    setFilterYear(currentYear);
+                  }
+                }}
+              >
+                <option value="">{t(props.language, { es: "Todos", en: "All", pt: "Todos" })}</option>
+                {Array.from({ length: 12 }, (_, index) => {
+                  const value = String(index + 1).padStart(2, "0");
+                  return (
+                    <option key={value} value={value}>
+                      {monthName(index + 1, props.language)}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+            <button
+              type="button"
+              className={`admin-unpaid-period-chip${isThisMonth ? " is-active" : ""}`}
+              onClick={() => {
+                setFilterYear(currentYear);
+                setFilterMonth(currentMonth);
+              }}
+            >
+              {t(props.language, { es: "Este mes", en: "This month", pt: "Este mês" })}
+            </button>
+            <button
+              type="button"
+              className={`admin-unpaid-period-chip${isThisYear ? " is-active" : ""}`}
+              onClick={() => {
+                setFilterYear(currentYear);
+                setFilterMonth("");
+              }}
+            >
+              {t(props.language, { es: "Este año", en: "This year", pt: "Este ano" })}
+            </button>
+            {hasMonthFilter ? (
+              <button type="button" className="admin-unpaid-period-chip" onClick={clearMonthFilter}>
+                {t(props.language, { es: "Todo", en: "All", pt: "Tudo" })}
+              </button>
+            ) : null}
             <input
               type="search"
               className="admin-unpaid-search"
@@ -629,15 +706,6 @@ export function AdminUnpaidProfessionalsPanel(props: {
               })}
               onChange={(event) => setSearch(event.target.value)}
             />
-            <button
-              type="button"
-              className={`admin-unpaid-filters-toggle${filtersOpen || hasMonthFilter ? " is-active" : ""}`}
-              aria-expanded={filtersOpen}
-              onClick={() => setFiltersOpen((open) => !open)}
-            >
-              {t(props.language, { es: "Filtros", en: "Filters", pt: "Filtros" })}
-              {hasMonthFilter ? <span className="admin-unpaid-filters-dot" aria-hidden /> : null}
-            </button>
             <button
               type="button"
               className="admin-unpaid-excel-btn"
@@ -657,69 +725,32 @@ export function AdminUnpaidProfessionalsPanel(props: {
                 <path d="M17.5 14.5v5M15.5 17.5l2 2 2-2" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
               </svg>
             </button>
+            <AdminPagosTutorial language={props.language} />
           </div>
         </header>
 
-        {filtersOpen ? (
+        {props.onCreateLiquidacion ? (
           <div className="admin-unpaid-professionals-filters">
-            <div className="admin-unpaid-month-range" role="group" aria-label={t(props.language, { es: "Periodo", en: "Period", pt: "Período" })}>
-              <label className="admin-unpaid-filter-label">
-                {t(props.language, { es: "Desde", en: "From", pt: "Desde" })}
-                <input
-                  className="dashboard-month-input"
-                  type="month"
-                  value={monthFrom}
-                  max={monthTo || maxMonth}
-                  onChange={(event) => setMonthFrom(event.target.value)}
-                />
-              </label>
-              <label className="admin-unpaid-filter-label">
-                {t(props.language, { es: "Hasta", en: "To", pt: "Até" })}
-                <input
-                  className="dashboard-month-input"
-                  type="month"
-                  value={monthTo}
-                  min={monthFrom || undefined}
-                  max={maxMonth}
-                  onChange={(event) => setMonthTo(event.target.value)}
-                />
-              </label>
-              {hasMonthFilter ? (
-                <button type="button" className="secondary admin-unpaid-month-clear" onClick={clearMonthFilter}>
-                  {t(props.language, { es: "Todos los meses", en: "All months", pt: "Todos os meses" })}
-                </button>
-              ) : null}
-            </div>
-            {props.onCreateLiquidacion ? (
-              <button
-                type="button"
-                className="primary"
-                disabled={props.creatingLiquidacion || selectedMonths.length === 0 || filteredSorted.length === 0}
-                onClick={() => props.onCreateLiquidacion?.(selectedMonths)}
-                title={t(props.language, {
-                  es: "Crea una corrida de liquidación con las sesiones unpaid del mes seleccionado",
-                  en: "Creates a payout run with unpaid sessions for the selected month(s)",
-                  pt: "Cria uma corrida de liquidacao com sessoes pendentes do(s) mes(es) selecionado(s)"
-                })}
-              >
-                {props.creatingLiquidacion
-                  ? t(props.language, { es: "Creando…", en: "Creating…", pt: "Criando…" })
-                  : t(props.language, {
-                      es: "Crear liquidación del mes",
-                      en: "Create month payout run",
-                      pt: "Criar liquidacao do mes"
-                    })}
-              </button>
-            ) : null}
+            <button
+              type="button"
+              className="primary"
+              disabled={props.creatingLiquidacion || selectedMonths.length === 0 || filteredSorted.length === 0}
+              onClick={() => props.onCreateLiquidacion?.(selectedMonths)}
+              title={t(props.language, {
+                es: "Crea una corrida de liquidación con las sesiones unpaid del mes seleccionado",
+                en: "Creates a payout run with unpaid sessions for the selected month(s)",
+                pt: "Cria uma corrida de liquidacao com sessoes pendentes do(s) mes(es) selecionado(s)"
+              })}
+            >
+              {props.creatingLiquidacion
+                ? t(props.language, { es: "Creando…", en: "Creating…", pt: "Criando…" })
+                : t(props.language, {
+                    es: "Crear liquidación del mes",
+                    en: "Create month payout run",
+                    pt: "Criar liquidacao do mes"
+                  })}
+            </button>
           </div>
-        ) : hasMonthFilter ? (
-          <p className="admin-unpaid-active-period">
-            {t(props.language, {
-              es: `Periodo: ${formatMonthKeyLabel(monthFrom || monthTo, props.language)}${monthFrom && monthTo && monthFrom !== monthTo ? ` – ${formatMonthKeyLabel(monthTo, props.language)}` : ""}`,
-              en: `Period: ${formatMonthKeyLabel(monthFrom || monthTo, props.language)}${monthFrom && monthTo && monthFrom !== monthTo ? ` – ${formatMonthKeyLabel(monthTo, props.language)}` : ""}`,
-              pt: `Período: ${formatMonthKeyLabel(monthFrom || monthTo, props.language)}${monthFrom && monthTo && monthFrom !== monthTo ? ` – ${formatMonthKeyLabel(monthTo, props.language)}` : ""}`
-            })}
-          </p>
         ) : null}
 
         {error ? <p className="error-text">{error}</p> : null}

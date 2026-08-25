@@ -7658,7 +7658,7 @@ button.primary.finance-hero-search {
 .admin-unpaid-professionals-head {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 8px 12px;
 }

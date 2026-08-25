@@ -1,3 +1,66 @@
+.admin-unpaid-page-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.admin-unpaid-filter-label--inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.admin-unpaid-period-select {
+  min-height: 36px;
+  min-width: 8.25rem;
+  padding: 0 10px;
+  border: 1px solid #d6deeb;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #0f172a;
+}
+
+.admin-unpaid-period-chip {
+  min-height: 36px;
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid #d6deeb;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.admin-unpaid-period-chip:hover,
+.admin-unpaid-period-chip:focus-visible {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  outline: none;
+}
+
+.admin-unpaid-period-chip.is-active {
+  border-color: #c4b5fd;
+  background: #f5f3ff;
+  color: #5b21b6;
+}
+
 .admin-unpaid-transfer-totals {
   display: flex;
   flex-wrap: wrap;
@@ -130,13 +193,13 @@
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: #fff;
-  min-height: 440px;
+  min-height: 880px;
   align-items: stretch;
 }
 
 .admin-unpaid-split-pane {
   min-width: 0;
-  min-height: 440px;
+  min-height: 880px;
   display: flex;
   flex-direction: column;
   border-right: 1px solid #cbd5e1;
@@ -175,12 +238,21 @@
 
 .admin-unpaid-split .admin-unpaid-professionals-table-wrap {
   flex: 1;
-  min-height: 320px;
+  min-height: 640px;
+  display: flex;
+  flex-direction: column;
   overflow: auto;
   border: none;
   border-radius: 0;
   box-shadow: none;
   background: transparent;
+}
+
+.admin-unpaid-professionals-table.admin-unpaid-professionals-table--split {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
 }
 
 .admin-unpaid-professionals-table.admin-unpaid-professionals-table--split th {
@@ -252,13 +324,25 @@
 }
 
 .admin-unpaid-split-empty-row td {
-  height: 44px;
+  height: 56px;
   text-align: center;
   vertical-align: middle;
   color: #94a3b8;
   font-size: 13px;
   border-bottom: none;
   background: transparent;
+}
+
+.admin-unpaid-split-filler td {
+  height: 100%;
+  padding: 0 12px !important;
+  border: none !important;
+  background: transparent;
+  text-align: center;
+  vertical-align: middle;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .admin-unpaid-split-note {
