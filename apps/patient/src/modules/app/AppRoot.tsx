@@ -1310,7 +1310,8 @@ export function App() {
           : Math.min(30_000, 1500 * 2 ** Math.max(0, retry.consecutiveFailures - 1));
       retry.cooldownUntil = Date.now() + delayMs;
       clearPortalSyncRetryTimer();
-      retry.timer = window.setTimeout(() => {
+      // Prefer setTimeout over window.setTimeout so the type matches ReturnType<typeof setTimeout> under @types/node (Vercel tsc).
+      retry.timer = setTimeout(() => {
         portalSyncRetryRef.current.timer = null;
         portalSyncRetryRef.current.cooldownUntil = 0;
         schedulePortalSyncRef.current?.(true);
