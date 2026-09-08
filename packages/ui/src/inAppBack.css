@@ -1,0 +1,28 @@
+/*
+ * Botón "volver" dentro de la app. Base común a paciente, profesional y admin.
+ *
+ * `justify-self` no está acá porque sólo lo necesitan las apps que lo montan dentro de
+ * un grid; cada una lo agrega en su hoja si le corresponde.
+ */
+.in-app-back {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 6px 10px 6px 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #5f44eb;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.in-app-back:hover {
+  background: rgba(95, 68, 235, 0.08);
+  color: #4c31d8;
+}

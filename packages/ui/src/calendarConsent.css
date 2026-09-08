@@ -1,0 +1,86 @@
+/*
+ * Pantalla de permiso de Google Calendar. La ven paciente y profesional con el mismo
+ * diseño, así que la estructura vive acá y cada app sólo ajusta su tipografía y sus
+ * botones en la hoja propia.
+ */
+.calendar-consent-shell {
+  background: #f1f4fb;
+}
+
+.calendar-consent-card {
+  width: min(900px, 100%);
+  max-width: 900px;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid #d6dbea;
+  box-shadow: 0 24px 52px rgba(18, 24, 40, 0.14);
+  padding: 0;
+  gap: 0;
+}
+
+.calendar-consent-header {
+  display: flex;
+  align-items: center;
+  min-height: 68px;
+  padding: 0 24px;
+  border-bottom: 1px solid #e5e9f3;
+  background: #ffffff;
+  font-size: 22px;
+}
+
+.calendar-consent-header strong {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.calendar-consent-visual {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #4285f4 0%, #34a853 40%, #fbbc04 70%, #ea4335 100%);
+  opacity: 0.92;
+  box-shadow: 0 10px 24px rgba(66, 133, 244, 0.25);
+}
+
+.calendar-consent-body {
+  display: grid;
+  gap: 14px;
+  padding: 30px 24px 22px;
+  background: #fff;
+}
+
+.calendar-consent-body p {
+  font-size: 18px;
+  line-height: 1.45;
+  color: #24324a;
+  max-width: 46ch;
+}
+
+.calendar-consent-body .calendar-consent-note {
+  font-size: 15px;
+  color: #4b5f80;
+}
+
+.calendar-consent-body .calendar-consent-error {
+  margin: 0;
+  max-width: 52ch;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.calendar-consent-actions {
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 18px 24px 24px;
+  border-top: 1px solid #e5e9f3;
+  background: #fff;
+}
+
+.calendar-consent-actions button {
+  border-radius: 999px;
+  min-width: 170px;
+  min-height: 46px;
+  font-size: 16px;
+}

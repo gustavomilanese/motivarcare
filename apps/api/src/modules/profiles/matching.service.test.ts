@@ -12,8 +12,8 @@ const FUTURE = (offsetMinutes: number, hour?: number): string => {
   const d = new Date();
   d.setMinutes(d.getMinutes() + offsetMinutes);
   if (hour !== undefined) d.setHours(hour, 0, 0, 0);
-  // Si pedimos un hour específico que ya pasó hoy, mover al día siguiente.
-  if (hour !== undefined && d.getTime() <= Date.now()) {
+  // Si pedimos un hour específico que queda dentro de las 24h de aviso, empujar un día más.
+  if (hour !== undefined && d.getTime() <= Date.now() + 24 * 60 * 60 * 1000) {
     d.setDate(d.getDate() + 1);
   }
   return d.toISOString();
@@ -211,6 +211,25 @@ describe("rankProfessionalMatch — language extendido", () => {
     const a = rankProfessionalMatch({ professional: bilingue, intakeAnswers: answers, language: "es" }).score;
     const b = rankProfessionalMatch({ professional: monolingue, intakeAnswers: answers, language: "es" }).score;
     expect(a).toBeGreaterThan(b);
+  });
+});
+
+describe("rankProfessionalMatch — antelación de reserva", () => {
+  it("no sugiere turnos dentro de las 24 horas", () => {
+    const soon = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    const later = new Date(Date.now() + 30 * 60 * 60 * 1000);
+    const professional = baseProfessional({
+      slots: [
+        { id: "soon", startsAt: soon.toISOString(), endsAt: new Date(soon.getTime() + 50 * 60 * 1000).toISOString() },
+        { id: "later", startsAt: later.toISOString(), endsAt: new Date(later.getTime() + 50 * 60 * 1000).toISOString() }
+      ]
+    });
+    const result = rankProfessionalMatch({
+      professional,
+      intakeAnswers: { mainReason: "Ansiedad" },
+      language: "es"
+    });
+    expect(result.suggestedSlots.map((s) => s.id)).toEqual(["later"]);
   });
 });
 

@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
+import { OnboardingDraftNotice } from "@therapy/ui";
 
 function preIntakeIntroCopy(language: AppLanguage): readonly [string, string] {
   return [
@@ -52,6 +53,7 @@ import {
   sanitizeIntakeAnswersForSubmit,
   validateMainReasonAnswers
 } from "../lib/patientMainReason";
+import { usePatientIntakeDraft } from "../hooks/usePatientIntakeDraft";
 import { requestPatientSafetyReferral } from "../services/safetyReferralApi";
 import { SafetyReferralScreen } from "./SafetyReferralScreen";
 import type { CountryEmergencyResources } from "@therapy/types";
@@ -346,6 +348,22 @@ export function IntakeScreen(props: {
     [props.profileResidencyCountryIso]
   );
 
+  /**
+   * El cuestionario se puede cortar a la mitad: el progreso viaja al servidor, así que
+   * el paciente vuelve días después (o desde otro dispositivo) y sigue donde estaba.
+   */
+  const draft = usePatientIntakeDraft({
+    authToken: props.authToken,
+    stepIndex,
+    answers,
+    residencyCountry,
+    setStepIndex,
+    setAnswers,
+    setResidencyCountry
+  });
+
+  const { discard: discardDraft, restored: draftRestored, status: draftStatus } = draft;
+
   const countryStepEnabled = useMemo(() => !isPatientPortalPresetCountry(presetIso), [presetIso]);
 
   useEffect(() => {
@@ -385,6 +403,13 @@ export function IntakeScreen(props: {
       : null;
   const progressPct = ((stepIndex + 1) / totalWizardSteps) * 100;
   const isLast = stepIndex >= totalWizardSteps - 1;
+
+  useEffect(() => {
+    // Un borrador viejo puede apuntar a un paso que ya no existe (p. ej. el país ahora sale del perfil).
+    if (stepIndex > totalWizardSteps - 1) {
+      setStepIndex(Math.max(0, totalWizardSteps - 1));
+    }
+  }, [stepIndex, totalWizardSteps]);
 
   const handleBack = () => {
     if (props.onBack) {
@@ -709,6 +734,8 @@ export function IntakeScreen(props: {
         residencyCountry: rc
       };
       await props.onComplete(payload);
+      // Cuestionario enviado: el borrador ya no sirve y no debe reaparecer.
+      await discardDraft();
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setError(friendlyIntakeSaveMessage(raw, props.language));
@@ -814,6 +841,12 @@ export function IntakeScreen(props: {
                   pt: "Questionario inicial"
                 })}
           </span>
+
+          <OnboardingDraftNotice
+            language={props.language}
+            status={draftStatus}
+            restored={draftRestored}
+          />
         </div>
 
         <form className="intake-wizard-form" onSubmit={isLast ? handleSubmit : (e) => e.preventDefault()}>

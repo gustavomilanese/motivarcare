@@ -1,7 +1,16 @@
 import { Turnstile } from "@marsidev/react-turnstile";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
-import { McButton, McInput, McNotice, McPasswordInput, McSelect, McTextarea } from "@therapy/ui";
+import {
+  McButton,
+  McInput,
+  McNotice,
+  McPasswordInput,
+  McSelect,
+  McTextarea,
+  OnboardingDraftNotice
+} from "@therapy/ui";
+import { droppedMediaMessage } from "../lib/professionalOnboardingDraft";
 import { compressImageDataUrl, fileToDataUrl, mediaPreviewFromFile, readVideoFileForUpload } from "../../app/utils/mediaPreview";
 import { RESIDENCY_COUNTRY_OPTIONS } from "@therapy/types";
 import { LATIN_AMERICA_COUNTRY_OPTIONS } from "../constants/latinAmericaCountries";
@@ -104,8 +113,14 @@ export function ProfessionalWebOnboardingWizard(props: {
     continueFromInterstitial,
     showCompletionCelebration,
     setShowCompletionCelebration,
-    finishWebOnboarding
+    finishWebOnboarding,
+    onboardingDraft
   } = wizard;
+
+  const droppedMediaMessageText = useMemo(
+    () => droppedMediaMessage(onboardingDraft.droppedMedia, props.language),
+    [onboardingDraft.droppedMedia, props.language]
+  );
 
   const identityReveal = useMemo(() => {
     const hasNames = Boolean(form.firstName.trim() && form.lastName.trim());
@@ -407,6 +422,12 @@ export function ProfessionalWebOnboardingWizard(props: {
             </div>
             <h1>{labels[step]}</h1>
             {stepSubtitles[step] ? <p>{stepSubtitles[step]}</p> : null}
+            <OnboardingDraftNotice
+              language={props.language}
+              status={onboardingDraft.status}
+              restored={onboardingDraft.restored}
+              detail={droppedMediaMessageText}
+            />
           </header>
 
           {step === 0 ? (

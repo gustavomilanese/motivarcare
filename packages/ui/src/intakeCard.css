@@ -1,0 +1,15 @@
+/*
+ * Tarjeta blanca sobre la que se monta el onboarding: el cuestionario del paciente y el
+ * wizard del profesional la usan igual. Los modificadores (`--wizard`, `--chat`,
+ * `--chooser`) y el ajuste de padding en mobile son propios del paciente y viven en su hoja.
+ */
+.intake-card {
+  width: min(980px, 100%);
+  background: #ffffff;
+  border: 1px solid #d7d2ff;
+  border-radius: 18px;
+  padding: 26px;
+  display: grid;
+  gap: 16px;
+  box-shadow: var(--shadow), 0 0 0 1px rgba(106, 86, 244, 0.08), 0 26px 52px rgba(96, 68, 235, 0.12);
+}

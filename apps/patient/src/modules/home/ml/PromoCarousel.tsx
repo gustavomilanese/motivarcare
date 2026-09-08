@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type TransitionEvent } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
-import { PromoCareLineIcon, PromoMatchLineIcon } from "./HomeBannerGlyphs";
+import { PromoAccessBannerGlyph, PromoCareBannerGlyph, PromoMatchBannerGlyph } from "./HomeBannerGlyphs";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -11,9 +11,8 @@ type PromoBannerTone = "care" | "access" | "match";
 type PromoBanner = {
   id: string;
   tone: PromoBannerTone;
-  imageSrc?: string;
-  /** Ícono line-art para mobile (care/match); el reloj 24h sigue siendo PNG. */
-  lineIcon?: ReactNode;
+  /** Glyph liquid (vidrio) — mismo lenguaje que Sesiones. */
+  liquidGlyph: ReactNode;
   kicker: LocalizedText;
   title: LocalizedText;
   /** Líneas fijas del título (p. ej. mantener “en tu necesidad” junta). */
@@ -28,8 +27,7 @@ const PROMO_BANNERS: PromoBanner[] = [
   {
     id: "therapy-value",
     tone: "care",
-    imageSrc: "/home/banner-therapy-value.png?v=therapy-flat-1",
-    lineIcon: <PromoCareLineIcon />,
+    liquidGlyph: <PromoCareBannerGlyph />,
     kicker: {
       es: "Habla con expertos",
       en: "Talk to experts",
@@ -54,7 +52,7 @@ const PROMO_BANNERS: PromoBanner[] = [
   {
     id: "access-24h",
     tone: "access",
-    imageSrc: "/home/banner-access-24h.png?v=clock-24h-white-2",
+    liquidGlyph: <PromoAccessBannerGlyph />,
     kicker: {
       es: "Siempre disponible",
       en: "Always available",
@@ -84,8 +82,7 @@ const PROMO_BANNERS: PromoBanner[] = [
   {
     id: "specialist-match",
     tone: "match",
-    imageSrc: "/home/banner-specialist-match.png?v=handshake-cutout-5",
-    lineIcon: <PromoMatchLineIcon />,
+    liquidGlyph: <PromoMatchBannerGlyph />,
     kicker: {
       es: "Matching inteligente",
       en: "Smart matching",
@@ -280,16 +277,15 @@ export function DashboardHomePromoCarousel(props: {
         >
           {loopSlides.map((banner, bannerIndex) => {
             const isActive = bannerIndex === trackIndex;
-            const hasMedia = Boolean(banner.imageSrc || banner.lineIcon);
             return (
               <article
                 key={banner.id}
-                className={`dashboard-ml-promo-slide dashboard-ml-promo-slide--${banner.tone}${isActive ? " is-active" : ""}${hasMedia ? " dashboard-ml-promo-slide--media" : ""}`}
+                className={`dashboard-ml-promo-slide dashboard-ml-promo-slide--${banner.tone}${isActive ? " is-active" : ""} dashboard-ml-promo-slide--media`}
                 aria-hidden={!isActive}
                 data-active={isActive ? "true" : "false"}
               >
                 <div className="dashboard-ml-promo-orbs" aria-hidden="true" />
-                <div className={`dashboard-ml-promo-frame${hasMedia ? " dashboard-ml-promo-frame--media" : ""}`}>
+                <div className="dashboard-ml-promo-frame dashboard-ml-promo-frame--media">
                   <div className="dashboard-ml-promo-copy">
                     <p className="dashboard-ml-promo-kicker">{t(props.language, banner.kicker)}</p>
                     {banner.titleLines ? (
@@ -319,21 +315,9 @@ export function DashboardHomePromoCarousel(props: {
                     )}
                     <span className="dashboard-ml-promo-badge">{t(props.language, banner.badge)}</span>
                   </div>
-                  {banner.imageSrc || banner.lineIcon ? (
-                    <div className="dashboard-ml-promo-media" aria-hidden="true">
-                      {banner.imageSrc ? (
-                        <img
-                          className="dashboard-ml-promo-photo"
-                          src={banner.imageSrc}
-                          alt=""
-                          decoding="async"
-                        />
-                      ) : null}
-                      {banner.lineIcon ? (
-                        <div className="dashboard-ml-promo-glyph">{banner.lineIcon}</div>
-                      ) : null}
-                    </div>
-                  ) : null}
+                  <div className="dashboard-ml-promo-media" aria-hidden="true">
+                    <div className="dashboard-ml-promo-glyph">{banner.liquidGlyph}</div>
+                  </div>
                 </div>
               </article>
             );

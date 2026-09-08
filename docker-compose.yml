@@ -1,9 +1,29 @@
-version: "3.9"
+# Espejo de infra/docker/docker-compose.yml — `npm run db:up` usa el de infra/docker.
+#
+# MySQL 8.4, el mismo motor que Railway en producción. Se probó MariaDB (imagen más chica)
+# y devuelve el error 1020 "Record has changed since last read" con los updates concurrentes
+# que hace el portal al cargar, algo que MySQL no hace. No cambiar de motor.
+#
+# Redis no arranca por defecto: el API en development usa memoria.
+#   DEV_WITH_REDIS=1 npm run db:up
+name: therapy-local
+
 services:
   mysql:
     image: mysql:8.4
     container_name: therapy-mysql
-    command: --disable-log-bin
+    command:
+      - --disable-log-bin
+      - --skip-mysqlx
+      - --performance-schema=OFF
+      - --innodb-buffer-pool-size=96M
+      - --innodb-buffer-pool-instances=1
+      - --innodb-redo-log-capacity=16M
+      - --innodb-log-buffer-size=8M
+      - --max-connections=30
+      - --table-open-cache=64
+      - --skip-name-resolve
+      - --innodb-flush-log-at-trx-commit=2
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: therapy_platform
@@ -11,15 +31,24 @@ services:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    mem_limit: 448m
+    cpus: "0.75"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 4s
+      timeout: 5s
+      retries: 12
+      start_period: 25s
 
   redis:
-    image: redis:7
+    profiles: ["with-redis"]
+    image: redis:7-alpine
     container_name: therapy-redis
+    command: redis-server --save "" --appendonly no --maxmemory 32mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
-    volumes:
-      - redis_data:/data
+    mem_limit: 64m
+    cpus: "0.25"
 
 volumes:
   mysql_data:
-  redis_data:

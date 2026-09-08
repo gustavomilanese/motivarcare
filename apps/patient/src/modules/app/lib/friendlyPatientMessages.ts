@@ -105,9 +105,9 @@ export function friendlyBookingFailureMessage(raw: string, language: AppLanguage
 
   if (normalized === "Selected time is no longer available") {
     return t(language, {
-      es: "Ese horario ya no está libre. Volvé al calendario y elegí otra opción.",
-      en: "That slot is no longer free. Go back to the calendar and choose another option.",
-      pt: "Esse horario nao esta mais livre. Volte ao calendario e escolha outra opcao."
+      es: "Ese horario ya no se puede reservar. Elegí otro de los que ves en la tarjeta o abrí todos los horarios.",
+      en: "That time can’t be booked anymore. Pick another slot on the card, or open all available times.",
+      pt: "Esse horario nao pode mais ser reservado. Escolha outro na lista ou abra todos os horarios."
     });
   }
 

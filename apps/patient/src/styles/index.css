@@ -1,7 +1,15 @@
 @import "@therapy/ui/motivarCareLoader.css";
 @import "@therapy/ui/mcButton.css";
 @import "@therapy/ui/mcForm.css";
+@import "@therapy/ui/onboardingDraftNotice.css";
 @import "@therapy/ui/mcModal.css";
+@import "@therapy/ui/srOnly.css";
+@import "@therapy/ui/inAppBack.css";
+@import "@therapy/ui/calendarConsent.css";
+@import "@therapy/ui/preferencesModal.css";
+@import "@therapy/ui/sessionActionIcon.css";
+@import "@therapy/ui/sessionModal.css";
+@import "@therapy/ui/intakeCard.css";
 @import "./legacy.css";
 @import "../modules/emotional-diary/emotional-diary.css";
 @import "../mobile-portal-flat.css";

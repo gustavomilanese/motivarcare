@@ -54,6 +54,9 @@ export default defineConfig(({ mode }) => {
   return {
     envDir: repoRoot,
     server: {
+      watch: {
+        ignored: ["**/node_modules/**", "**/.git/**", "**/dist/**"]
+      },
       proxy: {
         "/api": {
           target: apiProxyTarget,

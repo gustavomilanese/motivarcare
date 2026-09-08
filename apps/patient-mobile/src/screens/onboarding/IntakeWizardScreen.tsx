@@ -503,8 +503,8 @@ export function IntakeWizardScreen(props?: { onSwitchToChat?: () => void }) {
       });
       await refresh();
     } catch (submissionError) {
-      const message = submissionError instanceof Error ? submissionError.message : "No se pudo guardar el intake.";
-      setError(message.includes("409") || message.includes("already") ? "El intake ya fue completado." : message);
+      const message = submissionError instanceof Error ? submissionError.message : "No se pudo guardar el cuestionario.";
+      setError(message.includes("409") || message.includes("already") ? "El cuestionario ya fue completado." : message);
     } finally {
       setLoading(false);
     }

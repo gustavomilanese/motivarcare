@@ -313,7 +313,7 @@ export function MatchingScreen() {
         if (!cancelled) {
           // Fallback al snapshot de matching si el endpoint de availability falla.
           setLiveSlots(slotModal.slots ?? []);
-          setLiveNoticeHours(0);
+          setLiveNoticeHours(24);
         }
       })
       .finally(() => {

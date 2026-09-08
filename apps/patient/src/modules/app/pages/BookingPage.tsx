@@ -41,6 +41,7 @@ import { usePackageCheckout } from "../hooks/usePackageCheckout";
 import { savePendingCheckoutDlocalReturn } from "../lib/checkoutDlocalReturn";
 import { acquireBookingSlotHold, releaseBookingSlotHold } from "../../matching/services/slotHold";
 import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
+import { NoSessionsAvailableModal } from "../components/NoSessionsAvailableModal";
 import { useMobilePortal } from "../hooks/useMobilePortal";
 import type { PortalPurchaseResult } from "../hooks/usePortalActions";
 import { BookingActionModal } from "../components/booking/BookingActionModal";
@@ -49,7 +50,6 @@ import { AssignProfessionalPromptModal } from "../components/AssignProfessionalP
 import { SessionsCollapsibleToggle } from "../components/SessionsCollapsibleToggle";
 import { SessionsSecondarySectionIcon } from "../components/SessionsSecondarySectionIcons";
 import { ProfessionalReviewsModal } from "../../reviews/components/ProfessionalReviewsModal";
-import { acquireNewSessionsButtonLabel } from "../lib/acquireSessionsButtonLabel";
 import {
   clearPersistedBookingReturnTo,
   persistBookingReturnTo,
@@ -211,7 +211,7 @@ export function BookingPage(props: {
   const [calendarCancelBookingId, setCalendarCancelBookingId] = useState<string | null>(null);
   const slotHoldIdRef = useRef("");
   const holdAcquireGenerationRef = useRef(0);
-  const [showNoCreditsAlert, setShowNoCreditsAlert] = useState(false);
+  const [noSessionsModalOpen, setNoSessionsModalOpen] = useState(false);
   const [assignProfessionalModalOpen, setAssignProfessionalModalOpen] = useState(false);
   const [reviewsModalProfessionalId, setReviewsModalProfessionalId] = useState<string | null>(null);
   const [packagePaymentSuccess, setPackagePaymentSuccess] = useState<PaymentSuccessSummary | null>(null);
@@ -535,13 +535,18 @@ export function BookingPage(props: {
 
         const purchased = await props.onPurchasePackage(plan);
         if (purchased.checkoutUrl) {
+          const professionalId =
+            props.state.selectedProfessionalId?.trim()
+            || props.state.assignedProfessionalId?.trim()
+            || "";
           savePendingCheckoutDlocalReturn({
             kind: "package",
             packageId: plan.id,
             packageName: plan.name,
             sessionCount: plan.credits,
             paymentId: purchased.paymentId,
-            orderId: purchased.orderId
+            orderId: purchased.orderId,
+            ...(professionalId ? { professionalId } : {})
           });
           window.location.assign(purchased.checkoutUrl);
           return;
@@ -589,6 +594,7 @@ export function BookingPage(props: {
     pricingReady,
     packageCatalogFromApi,
     usesDlocalCheckout,
+    selectedProfessionalId: props.state.selectedProfessionalId || props.state.assignedProfessionalId,
     onPurchasePackage: props.onPurchasePackage,
     onGateBlocked: openAssignProfessionalPrompt
   });
@@ -770,7 +776,9 @@ export function BookingPage(props: {
       persistBookingReturnTo(bookingReturnToRef.current);
     }
 
-    const openAsTrialRebook = searchParams.get("trial") === "1" && props.state.trialRebookAvailable;
+    const openAsTrialRebook =
+      props.state.trialRebookAvailable
+      && (searchParams.get("trial") === "1" || pendingSessions <= 0);
 
     if (isCheckoutFlow) {
       setCheckoutPaymentLoading(false);
@@ -794,12 +802,13 @@ export function BookingPage(props: {
     setBookingActionError("");
     setTrialRebookMode(openAsTrialRebook);
 
-    if (pendingSessions <= 0 && !openAsTrialRebook) {
-      setShowNoCreditsAlert(true);
-      setPanelMode(null);
-    } else {
-      setShowNoCreditsAlert(false);
+    // Créditos o prueba pagada → abrir reserva. Sin nada → popup (no banner rojo).
+    if (pendingSessions > 0 || props.state.trialRebookAvailable) {
+      setNoSessionsModalOpen(false);
       setPanelMode("new");
+    } else {
+      setPanelMode(null);
+      setNoSessionsModalOpen(true);
     }
   }, [isCheckoutFlow, pendingSessions, props.state.trialRebookAvailable, searchParams, setSearchParams]);
 
@@ -1189,7 +1198,7 @@ export function BookingPage(props: {
 
   const openCheckoutCatalog = useCallback(
     (planId?: string | null) => {
-      setShowNoCreditsAlert(false);
+      setNoSessionsModalOpen(false);
       setPanelMode(null);
       setEditingBookingId(null);
       setSelectedSlotId("");
@@ -1210,7 +1219,7 @@ export function BookingPage(props: {
   );
 
   const openIndividualSessionsCheckoutFromModal = useCallback(() => {
-    setShowNoCreditsAlert(false);
+    setNoSessionsModalOpen(false);
     setPanelMode(null);
     setEditingBookingId(null);
     setSelectedSlotId("");
@@ -1243,9 +1252,9 @@ export function BookingPage(props: {
       onShowChoiceModal: () => setAcquireSessionsModalOpen(true),
       onOpenCheckout: openCheckoutCatalog,
       onOpenIndividualCheckout: openIndividualSessionsCheckoutFromModal,
-      onShowNoCreditsAlert: () => setShowNoCreditsAlert(true),
+      onShowNoCreditsAlert: () => setNoSessionsModalOpen(true),
       onOpenNewBookingPanel: () => {
-        setShowNoCreditsAlert(false);
+        setNoSessionsModalOpen(false);
         clearPersistedBookingReturnTo();
         bookingReturnToRef.current = null;
         setPanelMode("new");
@@ -1279,7 +1288,7 @@ export function BookingPage(props: {
       if (current === "new") {
         holdAcquireGenerationRef.current += 1;
         void releaseCurrentSlotHold();
-        setShowNoCreditsAlert(false);
+        setNoSessionsModalOpen(false);
         setSlotHoldLoading(false);
         setTrialRebookMode(false);
         clearPersistedBookingReturnTo();
@@ -1291,24 +1300,24 @@ export function BookingPage(props: {
       bookingReturnToRef.current = null;
       if (pendingSessions <= 0) {
         if (props.state.trialRebookAvailable) {
-          setShowNoCreditsAlert(false);
+          setNoSessionsModalOpen(false);
           setTrialRebookMode(true);
           return "new";
         }
         dispatchAcquireSessions("book_without_credits");
         return null;
       }
-      setShowNoCreditsAlert(false);
+      setNoSessionsModalOpen(false);
       setTrialRebookMode(false);
       return "new";
     });
   };
 
   useEffect(() => {
-    if (pendingSessions > 0 && showNoCreditsAlert) {
-      setShowNoCreditsAlert(false);
+    if (availableSessions > 0 && noSessionsModalOpen) {
+      setNoSessionsModalOpen(false);
     }
-  }, [pendingSessions, showNoCreditsAlert]);
+  }, [availableSessions, noSessionsModalOpen]);
 
   const handlePurchasePlan = (plan: PackagePlan) => {
     if (checkoutPaymentLoading || packageCheckoutLoading || !usesDlocalCheckout) {
@@ -1364,11 +1373,16 @@ export function BookingPage(props: {
         const purchased = await props.onPurchaseIndividualSessions(n);
         const checkoutUrl = purchased.checkoutUrl?.trim() ?? "";
         if (/^https?:\/\//i.test(checkoutUrl)) {
+          const professionalId =
+            props.state.selectedProfessionalId?.trim()
+            || props.state.assignedProfessionalId?.trim()
+            || "";
           savePendingCheckoutDlocalReturn({
             kind: "individual",
             sessionCount: n,
             paymentId: purchased.paymentId,
-            orderId: purchased.orderId
+            orderId: purchased.orderId,
+            ...(professionalId ? { professionalId } : {})
           });
           window.location.assign(checkoutUrl);
           return;
@@ -1522,17 +1536,6 @@ export function BookingPage(props: {
                   pt: "Gerencie suas reservas, compras e historico"
                 })}
               </p>
-              {hasProfessionalsOnPortal ? (
-                <div className="dashboard-ml-sessions-banner-actions">
-                  <button
-                    type="button"
-                    className="dashboard-ml-sessions-banner-link"
-                    onClick={() => dispatchAcquireSessions("buy_cta")}
-                  >
-                    {acquireNewSessionsButtonLabel(props.language)}
-                  </button>
-                </div>
-              ) : null}
             </div>
             <div className="dashboard-ml-sessions-banner-media" aria-hidden="true">
               <SessionsBannerGlyph />
@@ -1544,7 +1547,7 @@ export function BookingPage(props: {
       <div className="sessions-booking-body dashboard-ml-sessions-pack sessions-page-ml-pack">
       {availableSessions <= 0 ? (
         <div
-          className="sessions-balance sessions-balance--zero sessions-booking-credits-strip sessions-balance-card-with-buy"
+          className="sessions-balance sessions-balance--zero sessions-booking-credits-strip"
           role="region"
           aria-label={t(props.language, {
             es: "Estado de créditos",
@@ -1571,15 +1574,6 @@ export function BookingPage(props: {
               })}
             </span>
           </div>
-          {hasProfessionalsOnPortal ? (
-            <button
-              className="sessions-hero-buy-button sessions-balance-inline-buy"
-              type="button"
-              onClick={() => dispatchAcquireSessions("buy_cta")}
-            >
-              {acquireNewSessionsButtonLabel(props.language)}
-            </button>
-          ) : null}
         </div>
       ) : (
         <button
@@ -1651,55 +1645,28 @@ export function BookingPage(props: {
         <div className="sessions-panel-head">
           <h2>{t(props.language, { es: "Próximas Reservas", en: "Upcoming bookings", pt: "Próximas reservas" })}</h2>
           <div className="sessions-booking-reserve-panel-desktop">
-            <div className="sessions-panel-actions">
+            <div className="sessions-panel-actions" role="group" aria-label={t(props.language, {
+              es: "Reservar o comprar sesiones",
+              en: "Book or buy sessions",
+              pt: "Reservar ou comprar sessoes"
+            })}>
               <button className="sessions-reserve-button" type="button" onClick={toggleNewBookingPanel}>
                 {panelMode === "new"
-                  ? t(props.language, { es: "Cerrar panel", en: "Close panel", pt: "Fechar painel" })
-                  : t(props.language, { es: "Reservar nueva sesión", en: "Reserve new session", pt: "Reservar nova sessao" })}
+                  ? t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })
+                  : t(props.language, { es: "Reservar", en: "Book", pt: "Reservar" })}
               </button>
+              {hasProfessionalsOnPortal ? (
+                <button
+                  className="sessions-buy-button"
+                  type="button"
+                  onClick={() => dispatchAcquireSessions("buy_cta")}
+                >
+                  {t(props.language, { es: "Comprar", en: "Buy", pt: "Comprar" })}
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
-
-        {showNoCreditsAlert ? (
-          <div className="sessions-credit-alert" role="alert">
-            <div className="sessions-credit-alert-main">
-              <span className="sessions-credit-alert-icon" aria-hidden="true">!</span>
-              <div>
-                <strong>{t(props.language, { es: "No tienes sesiones disponibles", en: "You have no available sessions", pt: "Voce nao tem sessoes disponiveis" })}</strong>
-                <p>
-                  {hasPricingProfessional
-                    ? t(props.language, {
-                        es: "Compra un paquete para reservar una nueva sesión.",
-                        en: "Buy a package to reserve a new session.",
-                        pt: "Compre um pacote para reservar uma nova sessao."
-                      })
-                    : t(props.language, {
-                        es: "Elegí un profesional asignado para poder comprar paquetes y reservar.",
-                        en: "Choose an assigned professional before you can buy packages and book.",
-                        pt: "Escolha um profissional atribuido para poder comprar pacotes e reservar."
-                      })}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              className="sessions-credit-alert-action"
-              onClick={() => {
-                if (!hasPricingProfessional) {
-                  openAssignProfessionalPrompt();
-                  setShowNoCreditsAlert(false);
-                  return;
-                }
-                setAcquireSessionsModalOpen(true);
-              }}
-            >
-              {hasPricingProfessional
-                ? t(props.language, { es: "Ir a comprar", en: "Go to buy", pt: "Ir para compra" })
-                : t(props.language, { es: "Elegir profesional", en: "Choose professional", pt: "Escolher profissional" })}
-            </button>
-          </div>
-        ) : null}
 
         {upcomingConfirmedBookings.length === 0 ? (
           <div className="sessions-empty-state">
@@ -1791,9 +1758,9 @@ export function BookingPage(props: {
           tabIndex={-1}
           className="content-card booking-session-card booking-card-minimal sessions-package-options-panel"
           aria-label={t(props.language, {
-            es: "Adquirir nuevas sesiones",
-            en: "Get new sessions",
-            pt: "Adquirir novas sessoes"
+            es: "Comprar sesiones",
+            en: "Buy sessions",
+            pt: "Comprar sessoes"
           })}
         >
           <CheckoutPackagesPanel
@@ -2276,6 +2243,21 @@ export function BookingPage(props: {
             openCheckoutCatalog();
           }}
           onChooseIndividual={openIndividualSessionsCheckoutFromModal}
+        />
+      ) : null}
+
+      {noSessionsModalOpen ? (
+        <NoSessionsAvailableModal
+          language={props.language}
+          onClose={() => setNoSessionsModalOpen(false)}
+          onContinueToPackages={() => {
+            setNoSessionsModalOpen(false);
+            if (!hasPricingProfessional) {
+              openAssignProfessionalPrompt();
+              return;
+            }
+            dispatchAcquireSessions("buy_cta");
+          }}
         />
       ) : null}
     </div>

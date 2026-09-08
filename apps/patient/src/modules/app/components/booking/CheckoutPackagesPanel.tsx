@@ -78,7 +78,7 @@ export function CheckoutPackagesPanel(props: {
     {!props.hideChrome ? (
       <div className="session-booking-panel-head checkout-packages-head">
         <div className="checkout-packages-head-inner sessions-package-panel-head-copy">
-          <h3>{t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}</h3>
+          <h3>{t(props.language, { es: "Comprar sesiones", en: "Buy sessions", pt: "Comprar sessoes" })}</h3>
           <p>
             {props.pricingReady
               ? t(props.language, {

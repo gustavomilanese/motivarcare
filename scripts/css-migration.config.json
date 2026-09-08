@@ -1,0 +1,39 @@
+{
+  "_": "Excepciones ya revisadas de la migracion de legacy.css a componentes. Ver scripts/css-cascade-check.mjs.",
+  "allowRemoved": [
+    {
+      "selector": "^\\.locale-controls",
+      "motivo": "CSS muerto: el selector de idioma/region no lo renderiza ningun componente en las 3 apps."
+    },
+    {
+      "selector": "^\\.admin-unpaid-(actions|active-period|calc-hint|col-actions|col-pro|filters-dot|filters-toggle|icon-btn|month-clear|month-range|original|pay-btn|professionals-head-copy|professionals-head-total|professionals-lead|professionals-toolbar|professionals-total|professionals-totals|row-metrics|session-hint)\\b",
+      "motivo": "CSS muerto del panel de pagos de admin: 23 clases sin uso en TSX. Los modificadores que se arman en runtime (admin-unpaid-status--*) NO estan en esta lista y siguen vivos."
+    }
+  ],
+  "allowCrossing": [
+    {
+      "selector": "^\\.preferences-modal-header",
+      "motivo": "El modal de preferencias se renderiza como dialogo sobre el backdrop (PortalPreferencesModal.tsx), nunca anidado dentro de las tarjetas con las que cruza."
+    },
+    {
+      "selector": "^\\.preferences-option",
+      "motivo": "Las opciones viven dentro del modal de preferencias, que se renderiza sobre el backdrop; no se anidan en las tarjetas con las que cruzan."
+    },
+    {
+      "selector": "\\.session-action-icon",
+      "motivo": "El icono es su propio <span> (UpcomingBookingItem.tsx, UpcomingReservationsList.tsx): no comparte elemento con .agenda-status ni es hijo directo de .acquire-sessions-choice-card."
+    },
+    {
+      "selector": "^\\.calendar-consent-body \\.calendar-consent-(error|meet-hint)$",
+      "motivo": "Son dos <p> distintos en AppRoot.tsx; ningun elemento lleva las dos clases."
+    },
+    {
+      "selector": "^\\.session-modal-backdrop$",
+      "motivo": "El backdrop es el contenedor fijo del modal (PortalPreferencesModal.tsx): nunca se renderiza como hijo directo de .pro-chat-messages."
+    },
+    {
+      "selector": "^\\.preferences-group h3$",
+      "motivo": "El h3 vive dentro del modal de preferencias; no es el mismo nodo que los h3 de las tarjetas de agenda o del diario."
+    }
+  ]
+}

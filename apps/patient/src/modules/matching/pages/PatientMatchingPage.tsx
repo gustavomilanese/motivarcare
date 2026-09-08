@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { filterSlotsByBookingNotice } from "@therapy/types";
 import { MatchingHeader } from "../components/MatchingHeader";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 import { ProfessionalMatchCard } from "../components/ProfessionalMatchCard";
@@ -32,11 +33,8 @@ function t(language: MatchingPageProps["language"], values: LocalizedText): stri
   return textByLanguage(language, values);
 }
 
-function sortFutureSlots(slots: MatchTimeSlot[]): MatchTimeSlot[] {
-  const now = Date.now();
-  return [...slots]
-    .filter((slot) => new Date(slot.startsAt).getTime() > now)
-    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+function sortBookableSlots(slots: MatchTimeSlot[]): MatchTimeSlot[] {
+  return filterSlotsByBookingNotice(slots);
 }
 
 function directorySlotsForProfessional(professional: MatchCardProfessional | null | undefined): MatchTimeSlot[] {
@@ -44,7 +42,7 @@ function directorySlotsForProfessional(professional: MatchCardProfessional | nul
     return [];
   }
   const source = professional.slots.length > 0 ? professional.slots : (professional.suggestedSlots ?? []);
-  return sortFutureSlots(source);
+  return sortBookableSlots(source);
 }
 
 export function PatientMatchingPage(props: MatchingPageProps) {
@@ -55,6 +53,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
   const [professionals, setProfessionals] = useState<MatchCardProfessional[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [directoryReloadKey, setDirectoryReloadKey] = useState(0);
   const [bookingStep, setBookingStep] = useState<"availability" | "summary" | null>(null);
   const [bookingProfessionalId, setBookingProfessionalId] = useState("");
   const [bookingSlot, setBookingSlot] = useState<MatchTimeSlot | null>(null);
@@ -86,19 +85,38 @@ export function PatientMatchingPage(props: MatchingPageProps) {
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setError("");
+
+    const timeoutMs = 12_000;
+    const timeoutId = window.setTimeout(() => {
+      if (!active) {
+        return;
+      }
+      setLoading(false);
+      setError(
+        t(props.language, {
+          es: "Está tardando más de lo normal en cargar profesionales. Tocá reintentar.",
+          en: "It’s taking longer than usual to load professionals. Tap retry.",
+          pt: "Esta demorando mais que o normal para carregar profissionais. Toque em tentar de novo."
+        })
+      );
+    }, timeoutMs);
 
     fetchProfessionalDirectory(props.authToken, props.language)
       .then((rows) => {
         if (!active) {
           return;
         }
+        window.clearTimeout(timeoutId);
         setProfessionals(rows);
         setError("");
+        setLoading(false);
       })
-      .catch((requestError) => {
+      .catch(() => {
         if (!active) {
           return;
         }
+        window.clearTimeout(timeoutId);
         setProfessionals([]);
         setError(
           t(props.language, {
@@ -107,17 +125,14 @@ export function PatientMatchingPage(props: MatchingPageProps) {
             pt: "Esta demorando um pouco mais para mostrar os profissionais. Atualize a pagina ou tente novamente em instantes."
           })
         );
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
+        setLoading(false);
       });
 
     return () => {
       active = false;
+      window.clearTimeout(timeoutId);
     };
-  }, [props.authToken, props.language]);
+  }, [props.authToken, props.language, directoryReloadKey]);
 
   const { ordered } = useProfessionalMatching({
     professionals,
@@ -604,6 +619,16 @@ export function PatientMatchingPage(props: MatchingPageProps) {
       {!loading && error ? (
         <section className="content-card">
           <p className="error-text">{error}</p>
+          <button
+            type="button"
+            className="matching-flow-primary"
+            onClick={() => {
+              setError("");
+              setDirectoryReloadKey((value) => value + 1);
+            }}
+          >
+            {t(props.language, { es: "Reintentar", en: "Retry", pt: "Tentar de novo" })}
+          </button>
         </section>
       ) : null}
 

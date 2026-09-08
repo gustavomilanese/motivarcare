@@ -16,13 +16,16 @@ function resetRedisClient(): void {
   if (!client) {
     return;
   }
+  const stale = client;
+  client = null;
   try {
-    client.removeAllListeners();
-    client.disconnect(false);
+    stale.removeAllListeners();
+    // Sin listener de "error", el socket que falla al cerrarse llega a ioredis como "Unhandled error event".
+    stale.on("error", () => {});
+    stale.disconnect(false);
   } catch {
     // ignore
   }
-  client = null;
 }
 
 function attachRedisErrorHandler(instance: Redis): void {

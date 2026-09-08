@@ -1,4 +1,5 @@
 node_modules
+infra/docker/.fresh-volume
 .tmp
 .env
 .env.local

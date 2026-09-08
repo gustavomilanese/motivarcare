@@ -301,7 +301,7 @@ export function IntakeChatScreen(props: {
       <LinearGradient colors={[...gradients.hero]} style={styles.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
         <Text style={styles.heroTitle}>Entrevista en chat</Text>
         <Text style={styles.heroMeta}>
-          {turnsRemaining != null ? `${turnsRemaining} turnos restantes` : "Asistente de intake"}
+          {turnsRemaining != null ? `${turnsRemaining} turnos restantes` : "Asistente de entrevista"}
         </Text>
         <Pressable style={styles.switchBtn} onPress={props.onSwitchToClassic}>
           <Text style={styles.switchText}>Pasar al cuestionario</Text>

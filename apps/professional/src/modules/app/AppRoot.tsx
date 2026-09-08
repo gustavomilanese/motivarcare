@@ -25,6 +25,7 @@ import {
   savePendingOnboardingDisplayFullName,
   WEB_ONBOARDING_STEP_AFTER_EMAIL_VERIFY
 } from "../onboarding/webOnboardingResumeStorage.js";
+import { useResumeOnboardingFromDraft } from "../onboarding/hooks/useResumeOnboardingFromDraft";
 import { ProfessionalAuthFlow } from "./pages/ProfessionalAuthFlow";
 import { ForgotPasswordScreen } from "./pages/ForgotPasswordScreen";
 import { ProfessionalPortal } from "./pages/ProfessionalPortal";
@@ -758,6 +759,14 @@ export function App() {
 
     stripCalendarQuery();
   }, [location.pathname, location.search, navigate, language, user?.id]);
+
+  useResumeOnboardingFromDraft({
+    token,
+    user,
+    ready: authSyncReady,
+    alreadyResuming: resumeWebOnboarding,
+    navigate
+  });
 
   /**
    * Post-login: si el profesional entra al portal con cuenta activa pero sin

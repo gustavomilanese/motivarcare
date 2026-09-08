@@ -83,7 +83,10 @@ async function assertSlotBookable(params: {
   const minimumBookingNoticeHours = Math.max(MIN_BOOKING_NOTICE_HOURS, Math.round(configuredHours));
   const earliestBookableMs = Date.now() + minimumBookingNoticeHours * 60 * 60 * 1000;
   if (params.startsAt.getTime() < earliestBookableMs) {
-    throw new SlotHoldError("Selected time is no longer available", "SLOT_UNAVAILABLE");
+    throw new SlotHoldError(
+      `Bookings must be scheduled at least ${minimumBookingNoticeHours} hours in advance.`,
+      "SLOT_UNAVAILABLE"
+    );
   }
 
   const vacationDay = await prisma.availabilitySlot.findFirst({

@@ -172,56 +172,126 @@ export function MusicOpenIcon() {
 }
 
 /**
- * Promo banners mobile: line-art (mismo lenguaje que el reloj 24h).
- * Solo stroke / currentColor — sin rellenos saturados.
+ * Promo banners: liquid glass (mismo lenguaje que Sesiones / Diario / etc.).
+ * Blanco sobre el tono del slide — sin PNG ni rellenos saturados.
  */
-export function PromoCareLineIcon() {
+export function PromoCareBannerIcon() {
   return (
-    <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <circle cx="48" cy="48" r="36" stroke="currentColor" strokeWidth="2.4" />
+    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <path
-        d="M48 66.5c-1.2 0-18-11.2-18-23.2 0-6.4 5-10.8 10.6-10.8 3.8 0 6.6 2.2 7.4 5.2.8-3 3.6-5.2 7.4-5.2 5.6 0 10.6 4.4 10.6 10.8 0 12-16.8 23.2-18 23.2Z"
-        fill="#ef4444"
-        stroke="#dc2626"
+        d="M24 40.5c-1 0-14.5-9.2-14.5-18.8 0-5.2 4-8.7 8.5-8.7 3.1 0 5.4 1.8 6 4.2.6-2.4 2.9-4.2 6-4.2 4.5 0 8.5 3.5 8.5 8.7 0 9.6-13.5 18.8-14.5 18.8Z"
+        stroke="currentColor"
         strokeWidth="2.4"
         strokeLinejoin="round"
       />
       <path
-        d="M33 30.5c2.2-3.6 6.2-5.2 10-4.2"
-        stroke="#fecaca"
+        d="M14.5 18.5c1.6-2.6 4.4-3.8 7.2-3.2"
+        stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
-        opacity="0.9"
+        opacity="0.55"
       />
     </svg>
   );
 }
 
-export function PromoMatchLineIcon() {
+export function PromoCareBannerGlyph() {
   return (
-    <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <circle cx="48" cy="48" r="36" stroke="currentColor" strokeWidth="2.4" />
-      <circle cx="36.5" cy="40" r="7.2" stroke="currentColor" strokeWidth="2.3" />
-      <circle cx="59.5" cy="40" r="7.2" stroke="currentColor" strokeWidth="2.3" />
+    <BannerGlyphShell className="dashboard-ml-promo-banner-glyph">
+      <PromoCareBannerIcon />
+    </BannerGlyphShell>
+  );
+}
+
+/** Matching: apretón de manos (line-art). */
+export function PromoMatchBannerIcon() {
+  return (
+    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      {/* Antebrazo izquierdo */}
       <path
-        d="M24.5 62.5c2.8-8.2 8.6-12.2 15.5-12.2 3.2 0 6 .8 8.3 2.3"
+        d="M8.5 20.5c0-2.4 1.9-4.3 4.3-4.3h7.4c1.2 0 2.3.5 3.1 1.3l11.2 11.2"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Antebrazo derecho */}
+      <path
+        d="M39.5 27.5c0 2.4-1.9 4.3-4.3 4.3h-6.8c-1.1 0-2.2-.4-3-1.2L14.5 19.7"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Dedos del apretón */}
+      <path
+        d="M20 29.5h4.2M24 26.5h4.2M28 23.5h3.8"
         stroke="currentColor"
         strokeWidth="2.3"
         strokeLinecap="round"
       />
       <path
-        d="M71.5 62.5c-2.8-8.2-8.6-12.2-15.5-12.2-3.2 0-6 .8-8.3 2.3"
+        d="M22.5 32.5c1.6 1.5 3.6 2.3 5.7 2.3h2.8"
         stroke="currentColor"
         strokeWidth="2.3"
         strokeLinecap="round"
-      />
-      <path
-        d="M42 54.5c1.6 1.8 3.6 2.8 6 2.8s4.4-1 6-2.8"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        opacity="0.7"
+        opacity="0.75"
       />
     </svg>
   );
+}
+
+export function PromoMatchBannerGlyph() {
+  return (
+    <BannerGlyphShell className="dashboard-ml-promo-banner-glyph">
+      <PromoMatchBannerIcon />
+    </BannerGlyphShell>
+  );
+}
+
+/** Acceso 24h: reloj con “24” adentro. */
+export function PromoAccessBannerIcon() {
+  return (
+    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="24" cy="24" r="17" stroke="currentColor" strokeWidth="2.4" />
+      <path
+        d="M24 13.5v11.2l8 4.6"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.4"
+      />
+      <text
+        x="24"
+        y="28.5"
+        textAnchor="middle"
+        fill="currentColor"
+        fontSize="14"
+        fontWeight="800"
+        fontFamily="system-ui, -apple-system, sans-serif"
+        letterSpacing="-0.04em"
+      >
+        24
+      </text>
+    </svg>
+  );
+}
+
+export function PromoAccessBannerGlyph() {
+  return (
+    <BannerGlyphShell className="dashboard-ml-promo-banner-glyph">
+      <PromoAccessBannerIcon />
+    </BannerGlyphShell>
+  );
+}
+
+/** @deprecated Preferir PromoCareBannerGlyph (liquid). */
+export function PromoCareLineIcon() {
+  return <PromoCareBannerIcon />;
+}
+
+/** @deprecated Preferir PromoMatchBannerGlyph (liquid). */
+export function PromoMatchLineIcon() {
+  return <PromoMatchBannerIcon />;
 }

@@ -146,8 +146,24 @@ export function IntakeChatScreen(props: IntakeChatScreenProps) {
     setSendError(null);
     try {
       const response = await submitIntakeChatSession(session.sessionId, authToken, mode);
-      await props.onComplete(response);
+      await props.onComplete({
+        ...response,
+        answers: response.answers ?? session.extractedAnswers
+      });
     } catch (err) {
+      const raw = err instanceof Error ? err.message : "";
+      if (/Ya completaste el intake|ALREADY_HAS_INTAKE|Intake already completed/i.test(raw)) {
+        await props.onComplete({
+          intake: {
+            id: "existing",
+            riskLevel: "low",
+            completedAt: new Date().toISOString()
+          },
+          residencyCountry: session.residencyCountry ?? undefined,
+          answers: session.extractedAnswers
+        });
+        return;
+      }
       setSendError(humanizeError(err, language));
       setSubmitting(false);
     }
@@ -224,7 +240,7 @@ export function IntakeChatScreen(props: IntakeChatScreenProps) {
             <span className="intake-chat-header-eyebrow">
               {t({
                 es: "Maca · Entrevista conversacional",
-                en: "Maca · Conversational intake",
+                en: "Maca · Conversational interview",
                 pt: "Maca · Entrevista conversacional"
               })}
             </span>
@@ -292,12 +308,22 @@ export function IntakeChatScreen(props: IntakeChatScreenProps) {
 
         {sendError ? <p className="intake-chat-error" role="alert">{sendError}</p> : null}
 
+        {!session.residencyCountry ? (
+          <p className="intake-chat-error" role="status">
+            {t({
+              es: "Para mostrar profesionales necesitamos tu país. Escribilo (ej. Argentina) y tocá Enviar.",
+              en: "To show professionals we need your country. Type it (e.g. Argentina) and tap Send.",
+              pt: "Para mostrar profissionais precisamos do seu país. Escreva (ex. Argentina) e toque em Enviar."
+            })}
+          </p>
+        ) : null}
+
         {turnsExhausted && !session.readyToSubmit ? (
           <div className="intake-chat-quota-blocked" role="alert">
             <p>
               {t({
                 es: "Llegamos al máximo de mensajes para esta entrevista. Si querés, podés enviar lo que tengamos hasta ahora o pasarte al cuestionario tradicional.",
-                en: "We've reached the message limit for this intake. You can submit what we have so far or switch to the traditional questionnaire.",
+                en: "We've reached the message limit for this interview. You can submit what we have so far or switch to the traditional questionnaire.",
                 pt: "Atingimos o limite de mensagens desta entrevista. Você pode enviar o que temos ou mudar para o questionário tradicional."
               })}
             </p>
@@ -478,12 +504,44 @@ function humanizeError(err: unknown, language: AppLanguage): string {
       pt: "A sessão atingiu o limite de uso. Tente o questionário tradicional."
     });
   }
-  if (/INCOMPLETE_ANSWERS|MISSING_RESIDENCY/i.test(msg)) {
+  if (/INCOMPLETE_ANSWERS|MISSING_RESIDENCY|Falta país|Faltan respuestas|Necesitamos al menos/i.test(msg)) {
     return textByLanguage(language, {
-      es: "Todavía faltan algunas respuestas para poder finalizar.",
-      en: "We still need a few answers before we can finish.",
-      pt: "Ainda faltam algumas respostas para finalizar."
+      es: "Todavía faltan algunas respuestas para poder finalizar. Si Maca pidió tu país, escribiló (ej. Argentina) y enviá.",
+      en: "We still need a few answers before we can finish. If Maca asked for your country, type it (e.g. Argentina) and send.",
+      pt: "Ainda faltam algumas respostas para finalizar. Se a Maca pediu seu país, escreva (ex. Argentina) e envie."
     });
+  }
+  if (/SAFETY_REFERRAL_REQUIRED|Por seguridad, no podemos continuar/i.test(msg)) {
+    return textByLanguage(language, {
+      es: "Por seguridad, no podemos continuar el registro desde acá. Te enviamos recursos de apoyo por email.",
+      en: "For safety, we can’t continue registration here. We emailed you support resources.",
+      pt: "Por segurança, não podemos continuar o cadastro por aqui. Enviamos recursos de apoio por e-mail."
+    });
+  }
+  if (/El asistente tuvo un problema/i.test(msg)) {
+    return textByLanguage(language, {
+      es: "Maca tardó en responder. Tocá Enviar de nuevo; tu último mensaje no se perdió.",
+      en: "Maca took too long to reply. Tap Send again; your last message wasn’t lost.",
+      pt: "A Maca demorou para responder. Toque em Enviar de novo; sua última mensagem não se perdeu."
+    });
+  }
+  if (/Cannot reach API|Failed to fetch|NetworkError|Load failed/i.test(msg)) {
+    return textByLanguage(language, {
+      es: "No llegamos al servidor. Confirmá que la API esté levantada (puerto 4000) y reintentá.",
+      en: "We couldn’t reach the server. Check that the API is running (port 4000) and try again.",
+      pt: "Não conseguimos falar com o servidor. Confirme que a API está no ar (porta 4000) e tente de novo."
+    });
+  }
+  if (/Mensaje inválido/i.test(msg)) {
+    return textByLanguage(language, {
+      es: "El mensaje no se pudo enviar (formato inválido). Recargá la página e intentá de nuevo.",
+      en: "The message couldn’t be sent (invalid format). Reload the page and try again.",
+      pt: "A mensagem não pôde ser enviada (formato inválido). Recarregue a página e tente de novo."
+    });
+  }
+  // En local mostramos el detalle real: el mensaje genérico tapa demasiado la causa.
+  if (import.meta.env.DEV && msg.trim().length > 0) {
+    return `${fallback} (${msg})`;
   }
   return fallback;
 }

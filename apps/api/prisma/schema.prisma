@@ -83,6 +83,28 @@ model User {
   sentMessages  ChatMessage[]        @relation("SentMessages")
   verificationTokens VerificationToken[]
   googleCalendarConnection GoogleCalendarConnection?
+  onboardingDrafts OnboardingDraft[]
+}
+
+/// Progreso a medio completar de un onboarding (cuestionario del paciente, wizard del profesional).
+/// El chat de intake NO usa esta tabla: ya persiste turno a turno en `PatientIntakeChatSession`.
+/// Se borra al completar el flujo y vence por inactividad (`ONBOARDING_DRAFT_TTL_DAYS`).
+model OnboardingDraft {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  /// patient_intake | professional_onboarding
+  kind      String
+  /// Paso del wizard donde quedó, para devolverlo exactamente ahí.
+  step      Int      @default(0)
+  /// Respuestas/campos cargados hasta el momento. Nunca contiene credenciales.
+  data      Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind])
+  @@index([updatedAt])
+  @@map("onboarding_draft")
 }
 
 model VerificationToken {

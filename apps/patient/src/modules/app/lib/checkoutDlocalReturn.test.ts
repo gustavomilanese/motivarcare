@@ -44,6 +44,21 @@ describe("checkoutDlocalReturn", () => {
     localStorage.clear();
   });
 
+  it("round-trips professionalId from matching", () => {
+    savePendingCheckoutDlocalReturn({
+      kind: "individual",
+      sessionCount: 1,
+      paymentId: "pay-1",
+      orderId: "ord-1",
+      professionalId: "pro-abc"
+    });
+    expect(readPendingCheckoutDlocalReturn()).toMatchObject({
+      kind: "individual",
+      sessionCount: 1,
+      professionalId: "pro-abc"
+    });
+  });
+
   it("round-trips package pending state with sessionCount", () => {
     savePendingCheckoutDlocalReturn({
       kind: "package",

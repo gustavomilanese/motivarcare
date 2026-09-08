@@ -50,6 +50,40 @@ function parsePatientAssignments(value: unknown): Record<string, string | null> 
   return assignments;
 }
 
+/**
+ * Si el checkout trajo un profesional (matching / pricing) y el paciente aún no
+ * tiene asignación activa, fijarla. No pisa un assign existente.
+ */
+async function ensurePatientActiveProfessionalIfEmpty(
+  patientId: string,
+  professionalId: string | null | undefined
+): Promise<void> {
+  const proId = typeof professionalId === "string" ? professionalId.trim() : "";
+  if (!proId) {
+    return;
+  }
+  const professional = await prisma.professionalProfile.findUnique({
+    where: { id: proId },
+    select: { id: true }
+  });
+  if (!professional) {
+    return;
+  }
+  const assignmentConfig = await prisma.systemConfig.findUnique({
+    where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY }
+  });
+  const assignments = parsePatientAssignments(assignmentConfig?.value);
+  if (assignments[patientId]?.trim()) {
+    return;
+  }
+  assignments[patientId] = professional.id;
+  await prisma.systemConfig.upsert({
+    where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY },
+    update: { value: assignments },
+    create: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY, value: assignments }
+  });
+}
+
 const ORDER_CONTEXT_TTL_SECONDS = 7 * 24 * 60 * 60;
 const TRIAL_PAYMENT_PROOF_TTL_SECONDS = 7 * 24 * 60 * 60;
 
@@ -785,6 +819,7 @@ export async function processDlocalGoPaymentNotification(paymentId: string): Pro
       billingCurrency: billingCurrencyCodeForMarket(context.market),
       paymentProviderSnapshot: "dlocal"
     });
+    await ensurePatientActiveProfessionalIfEmpty(context.patientId, context.professionalIdSnapshot);
     const checkoutId = await recordDlocalCheckoutSync({
       paymentId: payment.id,
       orderId,
@@ -806,6 +841,7 @@ export async function processDlocalGoPaymentNotification(paymentId: string): Pro
     billingCurrency: billingCurrencyCodeForMarket(context.market),
     paymentProviderSnapshot: "dlocal"
   });
+  await ensurePatientActiveProfessionalIfEmpty(context.patientId, context.professionalIdSnapshot);
   const checkoutId = await recordDlocalCheckoutSync({
     paymentId: payment.id,
     orderId,

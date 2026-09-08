@@ -1,0 +1,10 @@
+.mc-draft-notice {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.08);
+  color: #047857;
+  font-size: 13px;
+  line-height: 1.35;
+}

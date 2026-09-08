@@ -87,7 +87,7 @@ export const RELAXATION_CATALOG_CATEGORIES = [
 
 export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
   {
-    "id": "lofi-estudio-X4VbdwhkE10-1",
+    "id": "lofi-estudio-lTRiuFIWV54-1",
     "categoryId": "lofi-estudio",
     "categoryLabel": {
       "es": "Lofi y estudio",
@@ -105,11 +105,11 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Ritmo suave de fundo para focar ou relaxar."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/X4VbdwhkE10?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=X4VbdwhkE10"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/lTRiuFIWV54?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=lTRiuFIWV54"
   },
   {
-    "id": "lofi-estudio-GSfT7H87zq4-2",
+    "id": "lofi-estudio-wAPCSnAhhC8-2",
     "categoryId": "lofi-estudio",
     "categoryLabel": {
       "es": "Lofi y estudio",
@@ -127,11 +127,11 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Ritmo suave de fundo para focar ou relaxar."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/GSfT7H87zq4?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=GSfT7H87zq4"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/wAPCSnAhhC8?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=wAPCSnAhhC8"
   },
   {
-    "id": "lofi-estudio-4xDzrJKXOOY-3",
+    "id": "lofi-estudio-n61ULEU7CO0-3",
     "categoryId": "lofi-estudio",
     "categoryLabel": {
       "es": "Lofi y estudio",
@@ -149,11 +149,11 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Ritmo suave de fundo para focar ou relaxar."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/4xDzrJKXOOY?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=4xDzrJKXOOY"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/n61ULEU7CO0?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=n61ULEU7CO0"
   },
   {
-    "id": "lofi-estudio-7NOSDKb0HlU-4",
+    "id": "lofi-estudio-M5QY2_8704o-4",
     "categoryId": "lofi-estudio",
     "categoryLabel": {
       "es": "Lofi y estudio",
@@ -171,11 +171,11 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Ritmo suave de fundo para focar ou relaxar."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/7NOSDKb0HlU?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=7NOSDKb0HlU"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/M5QY2_8704o?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=M5QY2_8704o"
   },
   {
-    "id": "lofi-estudio-n61ULEU7CO0-5",
+    "id": "lofi-estudio-2OEL4P1Rz04-5",
     "categoryId": "lofi-estudio",
     "categoryLabel": {
       "es": "Lofi y estudio",
@@ -193,8 +193,8 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Ritmo suave de fundo para focar ou relaxar."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/n61ULEU7CO0?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=n61ULEU7CO0"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/2OEL4P1Rz04?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=2OEL4P1Rz04"
   },
   {
     "id": "lofi-estudio-77ZozI0rw7w-6",
@@ -417,7 +417,7 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
     "openUrl": "https://www.youtube.com/watch?v=8xY4N62ywWo"
   },
   {
-    "id": "piano-instrumental-hHW1oY26kxQ-6",
+    "id": "piano-instrumental-9E6b3swbnWg-6",
     "categoryId": "piano-instrumental",
     "categoryLabel": {
       "es": "Piano e instrumental",
@@ -435,8 +435,8 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Melodias calmas sem letra."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/hHW1oY26kxQ?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=hHW1oY26kxQ"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/9E6b3swbnWg?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=9E6b3swbnWg"
   },
   {
     "id": "piano-instrumental-1ZYbU82GVz4-7",
@@ -1231,7 +1231,7 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
     "openUrl": "https://www.youtube.com/watch?v=ZCk23KXDeXY"
   },
   {
-    "id": "meditacion-hHW1oY26kxQ-3",
+    "id": "meditacion-ZToicYcHIOU-3",
     "categoryId": "meditacion",
     "categoryLabel": {
       "es": "Meditación",
@@ -1249,8 +1249,8 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Paisagens sonoras para presença plena."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/hHW1oY26kxQ?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=hHW1oY26kxQ"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/ZToicYcHIOU?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=ZToicYcHIOU"
   },
   {
     "id": "meditacion-HLhld_L1WBA-4",
@@ -1385,7 +1385,7 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
     "openUrl": "https://www.youtube.com/watch?v=ZCk23KXDeXY"
   },
   {
-    "id": "meditacion-hHW1oY26kxQ-10",
+    "id": "meditacion-1ZYbU82GVz4-10",
     "categoryId": "meditacion",
     "categoryLabel": {
       "es": "Meditación",
@@ -1403,11 +1403,11 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Paisagens sonoras para presença plena."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/hHW1oY26kxQ?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=hHW1oY26kxQ"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/1ZYbU82GVz4?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=1ZYbU82GVz4"
   },
   {
-    "id": "sueno-dormir-DnJVE9sqPAM-1",
+    "id": "sueno-dormir-cEUpHtxcMzE-1",
     "categoryId": "sueno-dormir",
     "categoryLabel": {
       "es": "Sueño y descanso",
@@ -1425,8 +1425,8 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Temas lentos para preparar o sono."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/DnJVE9sqPAM?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=DnJVE9sqPAM"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/cEUpHtxcMzE?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=cEUpHtxcMzE"
   },
   {
     "id": "sueno-dormir-txQ6t4yPIM0-2",
@@ -1451,7 +1451,7 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
     "openUrl": "https://www.youtube.com/watch?v=txQ6t4yPIM0"
   },
   {
-    "id": "sueno-dormir-cEUpHtxcMzE-3",
+    "id": "sueno-dormir-1ZYbU82GVz4-3",
     "categoryId": "sueno-dormir",
     "categoryLabel": {
       "es": "Sueño y descanso",
@@ -1469,11 +1469,11 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Temas lentos para preparar o sono."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/cEUpHtxcMzE?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=cEUpHtxcMzE"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/1ZYbU82GVz4?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=1ZYbU82GVz4"
   },
   {
-    "id": "sueno-dormir-1ZYbU82GVz4-4",
+    "id": "sueno-dormir-PgkvwG971hw-4",
     "categoryId": "sueno-dormir",
     "categoryLabel": {
       "es": "Sueño y descanso",
@@ -1491,11 +1491,11 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Temas lentos para preparar o sono."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/1ZYbU82GVz4?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=1ZYbU82GVz4"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/PgkvwG971hw?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=PgkvwG971hw"
   },
   {
-    "id": "sueno-dormir-PgkvwG971hw-5",
+    "id": "sueno-dormir-eTeD8DAta4c-5",
     "categoryId": "sueno-dormir",
     "categoryLabel": {
       "es": "Sueño y descanso",
@@ -1513,11 +1513,11 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Temas lentos para preparar o sono."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/PgkvwG971hw?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=PgkvwG971hw"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/eTeD8DAta4c?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=eTeD8DAta4c"
   },
   {
-    "id": "sueno-dormir-DnJVE9sqPAM-6",
+    "id": "sueno-dormir-cEUpHtxcMzE-6",
     "categoryId": "sueno-dormir",
     "categoryLabel": {
       "es": "Sueño y descanso",
@@ -1535,8 +1535,8 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Temas lentos para preparar o sono."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/DnJVE9sqPAM?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=DnJVE9sqPAM"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/cEUpHtxcMzE?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=cEUpHtxcMzE"
   },
   {
     "id": "sueno-dormir-txQ6t4yPIM0-7",
@@ -1561,7 +1561,7 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
     "openUrl": "https://www.youtube.com/watch?v=txQ6t4yPIM0"
   },
   {
-    "id": "sueno-dormir-cEUpHtxcMzE-8",
+    "id": "sueno-dormir-1ZYbU82GVz4-8",
     "categoryId": "sueno-dormir",
     "categoryLabel": {
       "es": "Sueño y descanso",
@@ -1579,11 +1579,11 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Temas lentos para preparar o sono."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/cEUpHtxcMzE?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=cEUpHtxcMzE"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/1ZYbU82GVz4?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=1ZYbU82GVz4"
   },
   {
-    "id": "sueno-dormir-1ZYbU82GVz4-9",
+    "id": "sueno-dormir-2OEL4P1Rz04-9",
     "categoryId": "sueno-dormir",
     "categoryLabel": {
       "es": "Sueño y descanso",
@@ -1601,8 +1601,8 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Temas lentos para preparar o sono."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/1ZYbU82GVz4?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=1ZYbU82GVz4"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/2OEL4P1Rz04?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=2OEL4P1Rz04"
   },
   {
     "id": "sueno-dormir-eTeD8DAta4c-10",
@@ -1693,7 +1693,7 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
     "openUrl": "https://www.youtube.com/watch?v=Mx6xkyi5Ij8"
   },
   {
-    "id": "flauta-cello-Jhu74v62Mho-4",
+    "id": "flauta-cello-wY5ZqkLO9CI-4",
     "categoryId": "flauta-cello",
     "categoryLabel": {
       "es": "Cuerdas y melodías",
@@ -1711,11 +1711,11 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Instrumentos suaves e envolventes."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/Jhu74v62Mho?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=Jhu74v62Mho"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/wY5ZqkLO9CI?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=wY5ZqkLO9CI"
   },
   {
-    "id": "flauta-cello-wY5ZqkLO9CI-5",
+    "id": "flauta-cello-9E6b3swbnWg-5",
     "categoryId": "flauta-cello",
     "categoryLabel": {
       "es": "Cuerdas y melodías",
@@ -1733,8 +1733,8 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Instrumentos suaves e envolventes."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/wY5ZqkLO9CI?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=wY5ZqkLO9CI"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/9E6b3swbnWg?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=9E6b3swbnWg"
   },
   {
     "id": "flauta-cello-hEnkPV6w91M-6",
@@ -1803,7 +1803,7 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
     "openUrl": "https://www.youtube.com/watch?v=Mx6xkyi5Ij8"
   },
   {
-    "id": "flauta-cello-Jhu74v62Mho-9",
+    "id": "flauta-cello-wY5ZqkLO9CI-9",
     "categoryId": "flauta-cello",
     "categoryLabel": {
       "es": "Cuerdas y melodías",
@@ -1821,11 +1821,11 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Instrumentos suaves e envolventes."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/Jhu74v62Mho?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=Jhu74v62Mho"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/wY5ZqkLO9CI?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=wY5ZqkLO9CI"
   },
   {
-    "id": "flauta-cello-wY5ZqkLO9CI-10",
+    "id": "flauta-cello-9E6b3swbnWg-10",
     "categoryId": "flauta-cello",
     "categoryLabel": {
       "es": "Cuerdas y melodías",
@@ -1843,8 +1843,8 @@ export const DEFAULT_RELAXATION_CATALOG: RelaxationPlaylistItem[] = [
       "pt": "Instrumentos suaves e envolventes."
     },
     "embedType": "youtube",
-    "embedSrc": "https://www.youtube-nocookie.com/embed/wY5ZqkLO9CI?rel=0",
-    "openUrl": "https://www.youtube.com/watch?v=wY5ZqkLO9CI"
+    "embedSrc": "https://www.youtube-nocookie.com/embed/9E6b3swbnWg?rel=0",
+    "openUrl": "https://www.youtube.com/watch?v=9E6b3swbnWg"
   },
   {
     "id": "ambient-drone-GoihJiAqI4s-1",

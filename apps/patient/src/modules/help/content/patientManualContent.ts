@@ -125,9 +125,9 @@ export const PATIENT_MANUAL_SECTIONS: HelpManualSection[] = [
         pt: "Conclua o cadastro e entre com seu e-mail."
       },
       {
-        es: "Respondé el cuestionario inicial (intake) con honestidad; ayuda al matching y a detectar situaciones de riesgo.",
-        en: "Answer the initial questionnaire (intake) honestly; it helps matching and risk detection.",
-        pt: "Responda o questionário inicial (intake) com honestidade; ajuda no matching e na detecção de risco."
+        es: "Respondé el cuestionario inicial con honestidad; ayuda al matching y a detectar situaciones de riesgo.",
+        en: "Answer the initial questionnaire honestly; it helps matching and risk detection.",
+        pt: "Responda o questionário inicial com honestidade; ajuda no matching e na detecção de risco."
       },
       {
         es: "Elegí o conocé a tu profesional (sesión de prueba o matching).",

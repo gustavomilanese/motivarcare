@@ -13,6 +13,8 @@ export type UsePackageCheckoutOptions = {
   pricingReady: boolean;
   packageCatalogFromApi: boolean;
   usesDlocalCheckout: boolean;
+  /** Profesional ya elegido (matching) para asignarlo al volver del pago. */
+  selectedProfessionalId?: string | null;
   onPurchasePackage: (plan: PackagePlan) => Promise<PortalPurchaseResult>;
   /** Cuando el paciente no usa dLocal (p. ej. dev simulado o flujo legacy). */
   onNonDlocalCheckout?: (plan: PackagePlan) => void | Promise<void>;
@@ -60,7 +62,10 @@ export function usePackageCheckout(options: UsePackageCheckoutOptions) {
             packageName: plan.name,
             sessionCount: plan.credits,
             paymentId: purchased.paymentId,
-            orderId: purchased.orderId
+            orderId: purchased.orderId,
+            ...(options.selectedProfessionalId?.trim()
+              ? { professionalId: options.selectedProfessionalId.trim() }
+              : {})
           });
           window.location.assign(purchased.checkoutUrl);
           return true;
@@ -89,6 +94,7 @@ export function usePackageCheckout(options: UsePackageCheckoutOptions) {
       options.onPurchasePackage,
       options.packageCatalogFromApi,
       options.pricingReady,
+      options.selectedProfessionalId,
       options.usesDlocalCheckout
     ]
   );

@@ -10,6 +10,7 @@ import {
   startOrResumeChat,
   submitSession
 } from "./intakeChat.service.js";
+import { discardDraft } from "../onboarding-drafts/onboardingDrafts.service.js";
 
 export const intakeChatRouter = Router();
 
@@ -182,6 +183,10 @@ intakeChatRouter.post("/sessions/:id/submit", requireAuth, async (req: Authentic
   const mode = parsedBody.data?.mode ?? "full";
   try {
     const result = await submitSession({ patientId, sessionId: req.params.id, mode });
+    if (req.auth?.userId) {
+      // Si además había empezado el cuestionario y lo dejó a medias, ese borrador ya no aplica.
+      await discardDraft(req.auth.userId, "patient_intake");
+    }
     /**
      * Shape alineado con `POST /api/profiles/me/intake` (`SubmitIntakeApiResponse`)
      * para que el cliente pueda reusar el mismo handler post-intake (riskLevel,
@@ -194,7 +199,8 @@ intakeChatRouter.post("/sessions/:id/submit", requireAuth, async (req: Authentic
         completedAt: result.completedAt
       },
       market: result.market,
-      residencyCountry: result.residencyCountry
+      residencyCountry: result.residencyCountry,
+      answers: result.answers
     });
   } catch (error) {
     return handleIntakeChatError(res, error);

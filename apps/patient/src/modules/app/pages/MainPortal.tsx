@@ -1,4 +1,4 @@
-import { type ChangeEvent, type SyntheticEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { type ChangeEvent, type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   type AppLanguage,
@@ -398,8 +398,26 @@ export function MainPortal(props: {
       if (creditedSessions > 0) {
         armCheckoutCreditProtection();
       }
+      const professionalIdToAssign =
+        pending?.professionalId?.trim()
+        || props.state.selectedProfessionalId?.trim()
+        || props.state.assignedProfessionalId?.trim()
+        || "";
       props.onStateChange((current) => {
-        const next = { ...current, onboardingFinalCompleted: true };
+        const next: typeof current = {
+          ...current,
+          onboardingFinalCompleted: true,
+          ...(professionalIdToAssign && !current.assignedProfessionalId?.trim()
+            ? {
+                therapistSelectionCompleted: true,
+                selectedProfessionalId: professionalIdToAssign,
+                assignedProfessionalId: professionalIdToAssign,
+                activeChatProfessionalId: professionalIdToAssign || current.activeChatProfessionalId
+              }
+            : professionalIdToAssign
+              ? { therapistSelectionCompleted: true }
+              : {})
+        };
         if (creditedSessions < 1) {
           return next;
         }
@@ -422,6 +440,12 @@ export function MainPortal(props: {
           }
         };
       });
+      if (
+        professionalIdToAssign
+        && !props.state.assignedProfessionalId?.trim()
+      ) {
+        void syncActiveProfessionalAssignment(professionalIdToAssign);
+      }
     }
   });
 
@@ -452,6 +476,48 @@ export function MainPortal(props: {
   const lockToTherapistSelection =
     shouldLockToTherapistSelection && !checkoutReturnActive && !trialReturnActive;
 
+  /**
+   * Si ya hay créditos y un profesional seleccionado en matching, pero el assign
+   * no quedó persistido (bug histórico post-dLocal), promoverlo a assigned.
+   */
+  const healedAssignmentRef = useRef<string | null>(null);
+  useEffect(() => {
+    const selected = props.state.selectedProfessionalId?.trim() ?? "";
+    const assigned = props.state.assignedProfessionalId?.trim() ?? "";
+    const hasCredits =
+      props.state.subscription.creditsRemaining > 0 || props.state.subscription.creditsTotal > 0;
+    if (!selected || assigned || !hasCredits) {
+      return;
+    }
+    if (healedAssignmentRef.current === selected) {
+      return;
+    }
+    healedAssignmentRef.current = selected;
+    const professionalName =
+      props.professionalDirectory.find((item) => item.id === selected)?.fullName ?? null;
+    props.onStateChange((current) => {
+      if (current.assignedProfessionalId?.trim()) {
+        return current;
+      }
+      return {
+        ...current,
+        therapistSelectionCompleted: true,
+        assignedProfessionalId: selected,
+        assignedProfessionalName: professionalName ?? current.assignedProfessionalName,
+        activeChatProfessionalId: selected
+      };
+    });
+    void syncActiveProfessionalAssignment(selected);
+  }, [
+    props.state.selectedProfessionalId,
+    props.state.assignedProfessionalId,
+    props.state.subscription.creditsRemaining,
+    props.state.subscription.creditsTotal,
+    props.professionalDirectory,
+    props.onStateChange,
+    syncActiveProfessionalAssignment
+  ]);
+
   const portalReturnLoaderVisible = checkoutLoaderVisible || trialLoaderVisible;
   const portalReturnError = checkoutReturnError || trialReturnError;
   const dismissPortalReturnError = () => {
@@ -470,7 +536,9 @@ export function MainPortal(props: {
     if (!location.pathname.startsWith("/onboarding/final")) {
       return;
     }
-    if (lockToTherapistSelection || trialReturnActive || checkoutReturnActive) {
+    // Con retorno dLocal el lock ya está off: hay que salir de matching a Home
+    // (antes `checkoutReturnActive` cortaba acá y el paciente se quedaba en matching).
+    if (lockToTherapistSelection && !checkoutReturnActive && !trialReturnActive) {
       return;
     }
     navigate("/", { replace: true });

@@ -1,0 +1,152 @@
+/*
+ * Modal de preferencias (idioma, moneda, zona horaria) y su grilla de opciones.
+ * Paciente y profesional lo comparten tal cual; cada app agrega sus propios cortes
+ * responsive en la hoja local.
+ */
+.preferences-modal {
+  width: min(1180px, 100%);
+  max-height: min(86vh, 860px);
+  padding: 0;
+  overflow: hidden;
+}
+
+.preferences-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.95);
+  padding: 22px 28px 20px;
+  background: linear-gradient(180deg, rgba(248, 250, 255, 0.95) 0%, #ffffff 100%);
+}
+
+.preferences-modal-header h2 {
+  font-size: 44px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+
+.preferences-modal-header p {
+  margin-top: 10px;
+  color: #56637c;
+  font-size: 19px;
+}
+
+.preferences-modal-close {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #6f7688;
+  font-size: 44px;
+  line-height: 0.8;
+  font-weight: 300;
+  padding: 0;
+}
+
+.preferences-modal-close:hover {
+  background: #f3f5fc;
+}
+
+.preferences-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 200px);
+  justify-content: start;
+  align-content: start;
+  gap: 4px 12px;
+}
+
+.preferences-options-grid--single {
+  grid-template-columns: 200px;
+  justify-content: start;
+}
+
+.preferences-option {
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  text-align: left;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  min-height: 58px;
+}
+
+.preferences-option strong {
+  font-size: 18px;
+  line-height: 1.15;
+  color: #1d2437;
+}
+
+.preferences-option span {
+  font-size: 13px;
+  color: #67758d;
+}
+
+.preferences-option:hover {
+  background: #f3f5fc;
+  border-color: #e1e6f4;
+}
+
+.preferences-option.active {
+  background: #ece8fb;
+  border-color: #ddd3ff;
+}
+
+.preferences-option.active strong {
+  color: #4e34d1;
+}
+
+/*
+ * Cuerpo del modal: la columna de grupos (idioma, moneda, zona horaria) y cada grupo.
+ * El corte a una sola columna cambia según la app, así que ese `@media` queda en la
+ * hoja de cada portal.
+ */
+.preferences-groups {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 22px 32px;
+  padding: 24px 28px 28px;
+  overflow: auto;
+}
+
+.preferences-group {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.preferences-group h3 {
+  font-size: 20px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 680px) {
+  .preferences-modal-header {
+    padding: 16px 16px 14px;
+  }
+
+  .preferences-modal-header h2 {
+    font-size: 28px;
+  }
+
+  .preferences-modal-header p {
+    margin-top: 8px;
+    font-size: 14px;
+  }
+
+  .preferences-options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .preferences-groups {
+    padding: 14px 16px 18px;
+  }
+}

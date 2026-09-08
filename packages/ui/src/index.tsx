@@ -10,6 +10,15 @@ export { McPasswordInput } from "./McPasswordInput";
 export { McSelect } from "./McSelect";
 export { McTextarea } from "./McTextarea";
 export { McTextButton } from "./McTextButton";
+export { OnboardingDraftNotice } from "./OnboardingDraftNotice";
+export { useOnboardingDraft } from "./useOnboardingDraft";
+export type {
+  OnboardingDraftKind,
+  OnboardingDraftSnapshot,
+  OnboardingDraftStatus,
+  OnboardingDraftTransport,
+  UseOnboardingDraftResult
+} from "./useOnboardingDraft";
 export {
   MotivarCareLoader,
   MotivarCarePageLoader,

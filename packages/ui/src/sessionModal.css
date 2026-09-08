@@ -1,0 +1,23 @@
+/*
+ * Modal de sesión (reprogramar, cancelar, detalle). Paciente y profesional comparten el
+ * fondo oscurecido y la caja; el ancho, el color de fondo y el radio los define cada app
+ * en su hoja porque no son iguales.
+ */
+.session-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: grid;
+  place-items: center;
+  padding: max(16px, var(--safe-top)) 16px max(24px, var(--safe-bottom));
+  z-index: 120;
+}
+
+.session-modal {
+  padding: 18px;
+  box-shadow: var(--portal-elev-lg);
+  display: grid;
+  gap: 14px;
+}

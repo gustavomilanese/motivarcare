@@ -7,10 +7,13 @@ import type {
   ProfileMeApiResponse
 } from "../types";
 
-export type PatientPortalSyncBatchSettled = {
+export type PatientPortalCoreSyncSettled = {
   profileResult: PromiseSettledResult<ProfileMeApiResponse>;
   bookingsResult: PromiseSettledResult<BookingsMineApiResponse>;
   authResult: PromiseSettledResult<AuthMeApiResponse>;
+};
+
+export type PatientPortalSyncBatchSettled = PatientPortalCoreSyncSettled & {
   professionalDirectoryResult: PromiseSettledResult<Awaited<ReturnType<typeof fetchProfessionalDirectory>>>;
 };
 
@@ -19,11 +22,14 @@ export type PatientPortalSyncBatchSettled = {
  * Antes: clave `token+epoch` → cada bump de epoch (cleanup / resync) abría un lote nuevo en paralelo
  * y el navegador spameaba GET cada ~15ms.
  */
-const inFlightByToken = new Map<string, Promise<PatientPortalSyncBatchSettled>>();
+const inFlightCoreByToken = new Map<string, Promise<PatientPortalCoreSyncSettled>>();
+const inFlightDirectoryByToken = new Map<string, Promise<Awaited<ReturnType<typeof fetchProfessionalDirectory>>>>();
 /** Fin del último lote completado por token (ms); 0 = aún no hubo ninguno en esta sesión de página. */
-const lastBatchEndedAtByToken = new Map<string, number>();
+const lastCoreEndedAtByToken = new Map<string, number>();
+/** Si llegó un `forceFresh` mientras había lote en vuelo, encadenamos UNO solo al terminar. */
+const pendingForceCoreByToken = new Set<string>();
 
-/** Mínimo tiempo entre el *inicio* de dos lotes consecutivos para el mismo token. */
+/** Mínimo tiempo entre el *inicio* de dos lotes core consecutivos para el mismo token. */
 const MIN_MS_BETWEEN_BATCH_STARTS = 2200;
 
 /** Evita “Cargando tu perfil…” infinito si el API no responde (red, CORS, backend colgado). */
@@ -35,14 +41,13 @@ function rejectAfter(ms: number, message: string): Promise<never> {
   });
 }
 
-async function runPatientPortalSyncBatch(params: {
+async function runPatientPortalCoreSync(params: {
   token: string;
-  language: AppLanguage;
   skipThrottle?: boolean;
-}): Promise<PatientPortalSyncBatchSettled> {
+}): Promise<PatientPortalCoreSyncSettled> {
   const tokenKey = params.token;
   if (!params.skipThrottle) {
-    const lastEnd = lastBatchEndedAtByToken.get(tokenKey) ?? 0;
+    const lastEnd = lastCoreEndedAtByToken.get(tokenKey) ?? 0;
     const now = Date.now();
     const sinceLastEnd = now - lastEnd;
     if (lastEnd !== 0 && sinceLastEnd < MIN_MS_BETWEEN_BATCH_STARTS) {
@@ -50,62 +55,107 @@ async function runPatientPortalSyncBatch(params: {
     }
   }
 
-  const [profileResult, bookingsResult, authResult, professionalDirectoryResult] = await Promise.allSettled([
+  // Solo lo imprescindible para levantar el shell. El matching (~2s en local) va aparte.
+  const [profileResult, bookingsResult, authResult] = await Promise.allSettled([
     apiRequest<ProfileMeApiResponse>("/api/profiles/me", {}, params.token),
     apiRequest<BookingsMineApiResponse>("/api/bookings/mine", {}, params.token),
-    apiRequest<AuthMeApiResponse>("/api/auth/me", {}, params.token),
-    fetchProfessionalDirectory(params.token, params.language)
+    apiRequest<AuthMeApiResponse>("/api/auth/me", {}, params.token)
   ]);
-  lastBatchEndedAtByToken.set(tokenKey, Date.now());
-  return { profileResult, bookingsResult, authResult, professionalDirectoryResult };
+  lastCoreEndedAtByToken.set(tokenKey, Date.now());
+  return { profileResult, bookingsResult, authResult };
 }
 
 /**
- * Varias montadas (StrictMode) o re-disparos no duplican
- * GET /profiles/me + /bookings/mine + /auth/me + /profiles/me/matching.
+ * Sync crítico del login: perfil + reservas + auth.
+ * No incluye matching: ese endpoint es lento y no debe dejar al usuario mirando el spinner.
  */
-export function fetchPatientPortalSyncBatchShared(params: {
+export function fetchPatientPortalCoreSyncShared(params: {
   token: string;
-  /** Conservado por compatibilidad; la coalescencia es solo por `token`. */
   epoch: number;
-  language: AppLanguage;
-  /** Tras checkout: no reutilizar lote en vuelo ni esperar el throttle entre lotes. */
   forceFresh?: boolean;
-}): Promise<PatientPortalSyncBatchSettled> {
+}): Promise<PatientPortalCoreSyncSettled> {
   void params.epoch;
   const tokenKey = params.token;
+  const existing = inFlightCoreByToken.get(tokenKey);
 
   if (params.forceFresh) {
-    lastBatchEndedAtByToken.delete(tokenKey);
-    const existing = inFlightByToken.get(tokenKey);
+    lastCoreEndedAtByToken.delete(tokenKey);
     if (existing) {
-      return existing.then(() =>
-        fetchPatientPortalSyncBatchShared({
+      const alreadyQueued = pendingForceCoreByToken.has(tokenKey);
+      pendingForceCoreByToken.add(tokenKey);
+      if (alreadyQueued) {
+        return existing;
+      }
+      return existing.catch(() => undefined).then(() => {
+        pendingForceCoreByToken.delete(tokenKey);
+        return fetchPatientPortalCoreSyncShared({
           token: params.token,
           epoch: params.epoch,
-          language: params.language,
           forceFresh: true
-        })
-      );
+        });
+      });
     }
-  } else {
-    const existing = inFlightByToken.get(tokenKey);
-    if (existing) {
-      return existing;
-    }
+  } else if (existing) {
+    return existing;
   }
 
   const pending = Promise.race([
-    runPatientPortalSyncBatch({
+    runPatientPortalCoreSync({
       token: params.token,
-      language: params.language,
       skipThrottle: Boolean(params.forceFresh)
     }),
     rejectAfter(PATIENT_PORTAL_SYNC_TIMEOUT_MS, "Patient portal sync timed out waiting for API")
   ]).finally(() => {
-    inFlightByToken.delete(tokenKey);
+    if (inFlightCoreByToken.get(tokenKey) === pending) {
+      inFlightCoreByToken.delete(tokenKey);
+    }
   });
 
-  inFlightByToken.set(tokenKey, pending);
+  inFlightCoreByToken.set(tokenKey, pending);
   return pending;
+}
+
+/** Directorio / matching en segundo plano (puede tardar; no bloquea el login). */
+export function fetchPatientPortalDirectoryShared(params: {
+  token: string;
+  language: AppLanguage;
+}): Promise<Awaited<ReturnType<typeof fetchProfessionalDirectory>>> {
+  const tokenKey = `${params.token}::${params.language}`;
+  const existing = inFlightDirectoryByToken.get(tokenKey);
+  if (existing) {
+    return existing;
+  }
+
+  const pending = fetchProfessionalDirectory(params.token, params.language).finally(() => {
+    if (inFlightDirectoryByToken.get(tokenKey) === pending) {
+      inFlightDirectoryByToken.delete(tokenKey);
+    }
+  });
+  inFlightDirectoryByToken.set(tokenKey, pending);
+  return pending;
+}
+
+/**
+ * Compat: un solo await con matching incluido (tests / callers viejos).
+ * Preferir `fetchPatientPortalCoreSyncShared` + `fetchPatientPortalDirectoryShared`.
+ */
+export async function fetchPatientPortalSyncBatchShared(params: {
+  token: string;
+  epoch: number;
+  language: AppLanguage;
+  forceFresh?: boolean;
+}): Promise<PatientPortalSyncBatchSettled> {
+  const core = await fetchPatientPortalCoreSyncShared({
+    token: params.token,
+    epoch: params.epoch,
+    forceFresh: params.forceFresh
+  });
+  const professionalDirectoryResult = await Promise.allSettled([
+    fetchPatientPortalDirectoryShared({
+      token: params.token,
+      language: params.language
+    })
+  ]).then((rows) => rows[0]!);
+
+  return { ...core, professionalDirectoryResult };
 }

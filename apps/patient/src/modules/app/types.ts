@@ -114,6 +114,8 @@ export interface SubmitIntakeApiResponse {
   };
   market?: Market;
   residencyCountry?: string;
+  /** Respuestas del intake (wizard o chat). El matching las usa en el cliente. */
+  answers?: Record<string, string>;
 }
 
 export interface BookingsMineApiResponse {

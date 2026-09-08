@@ -8,9 +8,8 @@ export function upcomingAvailabilitySlots(
   slots: MatchingSlot[],
   options?: { minimumBookingNoticeHours?: number }
 ): MatchingSlot[] {
-  const minHours = Number.isFinite(Number(options?.minimumBookingNoticeHours))
-    ? Number(options?.minimumBookingNoticeHours)
-    : 0;
+  const raw = Number(options?.minimumBookingNoticeHours);
+  const minHours = Number.isFinite(raw) && raw > 0 ? raw : 24;
   const earliestMs = Date.now() + Math.max(0, minHours) * 60 * 60 * 1000;
 
   return [...slots]

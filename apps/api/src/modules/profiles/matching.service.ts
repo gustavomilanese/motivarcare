@@ -1,3 +1,5 @@
+import { filterSlotsByBookingNotice } from "@therapy/types";
+
 export type MatchingLanguage = "es" | "en" | "pt";
 
 export interface MatchingSlot {
@@ -19,6 +21,8 @@ export interface MatchingProfessionalInput {
   ratingAverage: number | null;
   compatibilityBase: number;
   slots: MatchingSlot[];
+  /** Antelación de reserva del profesional (`cancellationHours`); piso 24h. */
+  cancellationHours?: number | null;
   /**
    * (Opcional) Género del profesional (ej. "Hombre", "Mujer", "No binario").
    * Si está presente, habilita el matching contra `therapistPreferences.gender`.
@@ -324,11 +328,8 @@ function slotMatchesWindows(slot: MatchingSlot, windows: Set<AvailabilityWindow>
   return false;
 }
 
-function sortFutureSlots(slots: MatchingSlot[]): MatchingSlot[] {
-  const now = Date.now();
-  return [...slots]
-    .filter((slot) => new Date(slot.startsAt).getTime() > now)
-    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+function sortBookableSlots(slots: MatchingSlot[], cancellationHours?: number | null): MatchingSlot[] {
+  return filterSlotsByBookingNotice(slots, cancellationHours);
 }
 
 /**
@@ -670,7 +671,10 @@ export function rankProfessionalMatch(params: {
 
   const professionalTopics = extractProfessionalTopics(params.professional);
   const matchedTopics = patientTopics.filter((topic) => professionalTopics.includes(topic));
-  const suggestedSlots = sortFutureSlots(params.professional.slots).slice(0, 6);
+  const suggestedSlots = sortBookableSlots(
+    params.professional.slots,
+    params.professional.cancellationHours
+  ).slice(0, 6);
   const availabilityHasWindowPreference = availabilityWindows.size > 0;
   const availabilityMatches =
     availabilityHasWindowPreference

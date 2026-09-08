@@ -204,7 +204,88 @@ export async function getResilientUsdArsRate(): Promise<number> {
   return quote.rate;
 }
 
+/**
+ * Para listados/matching: **no esperamos** proveedores externos.
+ * Devolvemos memoria → DB → env → hardcoded al toque, y refrescamos live en background.
+ * Evita que un timeout de dLocal/Bluelytics (8–32s) deje al paciente mirando el spinner.
+ */
+export async function getResilientUsdArsQuotePreferCached(): Promise<ResilientUsdArsQuote> {
+  if (lastSuccessful) {
+    void refreshLiveQuoteInBackground();
+    return {
+      rate: lastSuccessful.rate,
+      provider: lastSuccessful.provider,
+      fetchedAt: lastSuccessful.fetchedAt,
+      source: "memory-stale",
+      stale: true
+    };
+  }
+
+  try {
+    const persisted = await loadPersistedSnapshot();
+    if (persisted) {
+      lastSuccessful = persisted;
+      void refreshLiveQuoteInBackground();
+      return {
+        rate: persisted.rate,
+        provider: persisted.provider,
+        fetchedAt: persisted.fetchedAt,
+        source: "db-snapshot",
+        stale: true
+      };
+    }
+  } catch (error) {
+    console.warn("[usdArsExchangeResilient] DB snapshot lookup failed", error);
+  }
+
+  const envFallback = parseEnvFallback();
+  const immediate: ResilientUsdArsQuote =
+    envFallback !== null
+      ? {
+          rate: envFallback,
+          provider: "fallback",
+          fetchedAt: new Date(),
+          source: "env-fallback",
+          stale: true
+        }
+      : {
+          rate: HARDCODED_FALLBACK_RATE,
+          provider: "fallback",
+          fetchedAt: new Date(),
+          source: "hardcoded-fallback",
+          stale: true
+        };
+
+  void refreshLiveQuoteInBackground();
+  return immediate;
+}
+
+export async function getResilientUsdArsRatePreferCached(): Promise<number> {
+  const quote = await getResilientUsdArsQuotePreferCached();
+  return quote.rate;
+}
+
+let liveRefreshInFlight: Promise<void> | null = null;
+
+function refreshLiveQuoteInBackground(): void {
+  if (liveRefreshInFlight) {
+    return;
+  }
+  liveRefreshInFlight = (async () => {
+    try {
+      const live = await getUsdArsQuote();
+      lastSuccessful = live;
+      await persistSnapshot(live).catch(() => undefined);
+    } catch {
+      // Silencioso: ya servimos un fallback. El próximo listado reintentará.
+    } finally {
+      liveRefreshInFlight = null;
+    }
+  })();
+}
+
 /** Sólo para tests: limpia el caché de memoria del módulo. */
 export function __resetResilientCacheForTests(): void {
   lastSuccessful = null;
+  liveRefreshInFlight = null;
 }

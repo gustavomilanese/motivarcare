@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
-import { fetchPublishedExercisesContent, type ExerciseCategory, type ExercisePost, type ExerciseRoutine } from "../services/exercisesApi";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 import { useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
+import { ExercisesBannerGlyph, ExercisesBannerIcon } from "../../home/ml/HomeBannerGlyphs";
+import { fetchPublishedExercisesContent, type ExerciseCategory, type ExercisePost, type ExerciseRoutine } from "../services/exercisesApi";
 import {
   ALL_CATEGORIES,
   categoryAccent,
@@ -92,6 +93,9 @@ export function ExercisesListPage(props: ExercisesListPageProps) {
                 })}
               </p>
               <h1 id="exercises-page-title" className="dashboard-ml-feature-banner-title">
+                <span className="dashboard-ml-feature-banner-title-icon" aria-hidden="true">
+                  <ExercisesBannerIcon />
+                </span>
                 {pageTitle}
               </h1>
               <p className="dashboard-ml-feature-banner-body">
@@ -121,12 +125,7 @@ export function ExercisesListPage(props: ExercisesListPageProps) {
               </div>
             </div>
             <div className="dashboard-ml-feature-banner-media" aria-hidden="true">
-              <img
-                className="dashboard-ml-feature-banner-photo"
-                src="/home/banner-home-exercises.png?v=4"
-                alt=""
-                decoding="async"
-              />
+              <ExercisesBannerGlyph />
             </div>
           </div>
         </article>

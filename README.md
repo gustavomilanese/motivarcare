@@ -167,11 +167,12 @@ Run only professional app:
    - `npm run prisma:generate -w @therapy/api`
    - `DATABASE_URL='mysql://root:root@127.0.0.1:3307/therapy_platform' npm run prisma:push -w @therapy/api`
    - `DATABASE_URL='mysql://root:root@127.0.0.1:3307/therapy_platform' npm run prisma:seed -w @therapy/api`
-4. Run all apps (Docker MySQL + Redis, wait for MySQL, then API + Vite apps):
-   - `npm run dev` → MySQL + Redis + API + patient + professional + admin.
-   - `npm run dev:all` → lo mismo + landings.
-   - `npm run dev:api` → también levanta MySQL/Redis antes del API (por si corrés solo eso).
-   - Sin Docker (DB ya corriendo): `npm run dev:apps` / `npm run dev:all:apps`.
+4. Run apps (Docker MySQL, wait for DB, then API + Vite):
+   - `npm run dev` → MySQL + API + **patient** (arranque liviano; pensado para 8 GB RAM).
+   - `npm run dev:portals` → lo mismo + professional + admin.
+   - `npm run dev:all` → lo mismo + landings + Expo paciente.
+   - `npm run dev:api` → también levanta MySQL antes del API (por si corrés solo eso).
+   - Sin Docker (DB ya corriendo): `npm run dev:lite:apps` / `npm run dev:apps` / `npm run dev:all:apps`.
 5. Run outbox worker (required for async events like Stripe webhook processing):
    - `npm run dev:outbox -w @therapy/api`
 

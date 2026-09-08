@@ -99,6 +99,14 @@ export type {
 } from "./emotionalDiary.js";
 
 export {
+  MIN_BOOKING_NOTICE_HOURS,
+  resolveMinimumBookingNoticeHours,
+  earliestBookableAtMs,
+  isSlotBookableByNotice,
+  filterSlotsByBookingNotice
+} from "./bookingNotice.js";
+
+export {
   MIN_COMPLETED_SESSIONS_FOR_PROFESSIONAL_REVIEW
 } from "./professionalReviews.js";
 export type {

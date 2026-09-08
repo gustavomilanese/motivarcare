@@ -17,6 +17,8 @@ export type PendingCheckoutDlocalReturn = {
   packageId?: string;
   paymentId?: string;
   orderId?: string;
+  /** Profesional elegido en matching / pricing al iniciar el checkout. */
+  professionalId?: string;
 };
 
 type PendingCheckoutDlocalReturnStored = PendingCheckoutDlocalReturn & {
@@ -32,7 +34,7 @@ function parsePending(raw: string | null): PendingCheckoutDlocalReturn | null {
     if (!parsed || typeof parsed !== "object") {
       return null;
     }
-    const { kind, sessionCount, packageName, packageId, paymentId, orderId } = parsed;
+    const { kind, sessionCount, packageName, packageId, paymentId, orderId, professionalId } = parsed;
     if (kind !== "individual" && kind !== "package") {
       return null;
     }
@@ -42,14 +44,17 @@ function parsePending(raw: string | null): PendingCheckoutDlocalReturn | null {
       ...(typeof packageName === "string" ? { packageName } : {}),
       ...(typeof packageId === "string" ? { packageId } : {}),
       ...(typeof paymentId === "string" ? { paymentId } : {}),
-      ...(typeof orderId === "string" ? { orderId } : {})
+      ...(typeof orderId === "string" ? { orderId } : {}),
+      ...(typeof professionalId === "string" && professionalId.trim()
+        ? { professionalId: professionalId.trim() }
+        : {})
     };
   } catch {
     return null;
   }
 }
 
-function readLocalPending(): PendingCheckoutDlocalReturn | null {
+function readLocalPendingMeta(): { pending: PendingCheckoutDlocalReturn; savedAt: number | null } | null {
   if (typeof localStorage === "undefined") {
     return null;
   }
@@ -67,7 +72,14 @@ function readLocalPending(): PendingCheckoutDlocalReturn | null {
       localStorage.removeItem(CHECKOUT_DLOCAL_RETURN_LOCAL_KEY);
       return null;
     }
-    return parsePending(raw);
+    const pending = parsePending(raw);
+    if (!pending) {
+      return null;
+    }
+    return {
+      pending,
+      savedAt: typeof parsed.savedAt === "number" ? parsed.savedAt : null
+    };
   } catch {
     return null;
   }
@@ -87,13 +99,22 @@ export function readPendingCheckoutDlocalReturn(): PendingCheckoutDlocalReturn |
   if (fromSession) {
     return fromSession;
   }
-  const fromLocal = readLocalPending();
+  const fromLocal = readLocalPendingMeta();
   if (fromLocal) {
     // Rehydrate sessionStorage so the rest of the return flow sees a consistent pending.
-    sessionStorage.setItem(CHECKOUT_DLOCAL_RETURN_STORAGE_KEY, JSON.stringify(fromLocal));
-    return fromLocal;
+    sessionStorage.setItem(CHECKOUT_DLOCAL_RETURN_STORAGE_KEY, JSON.stringify(fromLocal.pending));
+    return fromLocal.pending;
   }
   return null;
+}
+
+/** Edad del pending en localStorage (ms), o null si no hay / no se conoce. */
+export function readPendingCheckoutDlocalReturnAgeMs(): number | null {
+  const meta = readLocalPendingMeta();
+  if (!meta?.savedAt) {
+    return null;
+  }
+  return Math.max(0, Date.now() - meta.savedAt);
 }
 
 export function clearPendingCheckoutDlocalReturn(options?: { clearIdempotency?: boolean }): void {

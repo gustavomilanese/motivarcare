@@ -4,6 +4,7 @@ import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage }
 import {
   clearPendingCheckoutDlocalReturn,
   readPendingCheckoutDlocalReturn,
+  readPendingCheckoutDlocalReturnAgeMs,
   type PendingCheckoutDlocalReturn
 } from "../lib/checkoutDlocalReturn";
 import { friendlyCheckoutPackageMessage } from "../lib/friendlyPatientMessages";
@@ -105,6 +106,18 @@ export type DlocalCheckoutReturnState = {
   dismissError: () => void;
 };
 
+function paymentReturnFlagFromWindow(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  try {
+    const payment = new URLSearchParams(window.location.search).get("payment");
+    return payment === "success" || payment === "cancel";
+  } catch {
+    return false;
+  }
+}
+
 export function useDlocalCheckoutReturn(options: {
   language: AppLanguage;
   onSyncDlocalPayment?: (params: {
@@ -127,6 +140,14 @@ export function useDlocalCheckoutReturn(options: {
   const [processing, setProcessing] = useState(false);
   const [successSummary, setSuccessSummary] = useState<PaymentSuccessSummary | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  /**
+   * Gate sticky: al limpiar `?payment=` el param desaparece en el mismo tick y
+   * `processing` aún no re-renderiza → el lock a matching se reactivaba y el
+   * paciente veía matching unos segundos. Este flag se prende al detectar el
+   * retorno (o ya en el primer paint si la URL lo trae) y solo se apaga al
+   * cerrar el modal / error.
+   */
+  const [returnGate, setReturnGate] = useState(paymentReturnFlagFromWindow);
 
   const paymentParam = searchParams.get("payment");
   const hasReturnParam = paymentParam === "success" || paymentParam === "cancel";
@@ -136,8 +157,16 @@ export function useDlocalCheckoutReturn(options: {
   /** Evita que el efecto de resume dispare un segundo sync mientras el retorno principal sigue en curso. */
   const checkoutHandlingRef = useRef(false);
 
-  const dismissSuccess = useCallback(() => setSuccessSummary(null), []);
-  const dismissError = useCallback(() => setErrorMessage(null), []);
+  const releaseReturnGate = useCallback(() => setReturnGate(false), []);
+
+  const dismissSuccess = useCallback(() => {
+    setSuccessSummary(null);
+    releaseReturnGate();
+  }, [releaseReturnGate]);
+  const dismissError = useCallback(() => {
+    setErrorMessage(null);
+    releaseReturnGate();
+  }, [releaseReturnGate]);
 
   const goHome = useCallback(() => {
     navigate("/", { replace: true });
@@ -153,6 +182,7 @@ export function useDlocalCheckoutReturn(options: {
     }
     handledParamRef.current = true;
     checkoutHandlingRef.current = true;
+    setReturnGate(true);
     setProcessing(true);
     setErrorMessage(null);
     // Cualquier portal-sync iniciado al hidratar (antes del fulfill) no debe
@@ -168,7 +198,9 @@ export function useDlocalCheckoutReturn(options: {
     const orderId = pending?.orderId?.trim() || searchParams.get("dlocalOrder")?.trim() || null;
     const wasCancel = paymentParam === "cancel";
 
-    // Limpiar la URL de parámetros de checkout dejando al paciente en Home.
+    // Home primero (antes de limpiar params): evita que `Navigate` a matching
+    // gane la carrera mientras `processing` aún no está committeado.
+    goHome();
     const cleaned = new URLSearchParams(searchParams);
     for (const key of ["payment", "purchase", "dlocalOrder", "payment_id", "paymentId", "flow", "plan", "source"]) {
       cleaned.delete(key);
@@ -179,7 +211,7 @@ export function useDlocalCheckoutReturn(options: {
       try {
         if (wasCancel) {
           clearPendingCheckoutDlocalReturn({ clearIdempotency: true });
-          goHome();
+          releaseReturnGate();
           return;
         }
 
@@ -195,7 +227,6 @@ export function useDlocalCheckoutReturn(options: {
             setErrorMessage(
               friendlyCheckoutPackageMessage(synced.error ?? "Could not confirm payment", options.language)
             );
-            goHome();
             return;
           }
           if (!synced.fulfilled) {
@@ -206,7 +237,6 @@ export function useDlocalCheckoutReturn(options: {
                 pt: "Recebemos seu pagamento, mas ainda estamos confirmando. Atualize em alguns segundos ou fale conosco se as sessoes nao aparecerem."
               })
             );
-            goHome();
             return;
           }
         } else if (!paymentId && !orderId) {
@@ -217,17 +247,17 @@ export function useDlocalCheckoutReturn(options: {
               pt: "Nao foi possivel confirmar a compra automaticamente. Atualize a pagina; se o pagamento ja foi feito e as sessoes nao aparecem, fale conosco."
             })
           );
-          goHome();
           return;
         }
 
+        // Estado optimista (créditos + onboarding) ya deja el Home usable.
         options.onCheckoutFulfilled?.();
-        // Ir a Home y esperar el resync ANTES de mostrar el popup para no
-        // exponer la pantalla vieja sin actualizar (el loader sigue arriba).
-        goHome();
-        await Promise.resolve(options.onRefreshPortalFromApi?.());
         clearPendingCheckoutDlocalReturn({ clearIdempotency: true });
+        // Mostrar el aviso YA en Home; el resync largo va en background.
         setSuccessSummary(buildSuccessSummary(options.language, pending));
+        void Promise.resolve(options.onRefreshPortalFromApi?.()).catch(() => {
+          /* el modal ya explicó la compra; un refresh fallido no debe tumbar el flujo */
+        });
       } finally {
         checkoutHandlingRef.current = false;
         setProcessing(false);
@@ -236,13 +266,14 @@ export function useDlocalCheckoutReturn(options: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasReturnParam]);
 
-  // Reanudación: pending en storage (prod+local) o, solo en DEV, barrido de
-  // checkouts REDIRECTED (local no tiene webhook de dLocal).
+  // Reanudación solo si hay pending local (vuelta de dLocal / mobile sin query).
+  // No barrer sync-pending en cada refresh de DEV: eso re-mostraba "Pago confirmado".
   useEffect(() => {
     if (
       hasReturnParam
       || checkoutHandlingRef.current
       || processing
+      || returnGate
       || resumeRef.current
       || !options.onSyncDlocalPayment
     ) {
@@ -250,38 +281,52 @@ export function useDlocalCheckoutReturn(options: {
     }
     const pending = readPendingCheckoutDlocalReturn();
     const hasPendingRef = Boolean(pending?.paymentId?.trim() || pending?.orderId?.trim());
-    const isDev = import.meta.env.DEV;
-    if (!hasPendingRef && !isDev) {
+    if (!hasPendingRef) {
+      return;
+    }
+
+    // Pending viejo (p. ej. de un pago ya festejado): limpiar sin modal.
+    const ageMs = readPendingCheckoutDlocalReturnAgeMs();
+    if (ageMs != null && ageMs > 15 * 60 * 1000) {
+      clearPendingCheckoutDlocalReturn({ clearIdempotency: true });
       return;
     }
 
     resumeRef.current = true;
     options.onInvalidatePortalSync?.();
+    setReturnGate(true);
+    setProcessing(true);
+    goHome();
 
     void (async () => {
-      const synced = await options.onSyncDlocalPayment!({
-        paymentId: pending?.paymentId,
-        orderId: pending?.orderId,
-        allowPendingFallback: true
-      });
-      if (synced.ok && synced.fulfilled) {
-        options.onCheckoutFulfilled?.();
-        await Promise.resolve(options.onRefreshPortalFromApi?.());
-        clearPendingCheckoutDlocalReturn({ clearIdempotency: true });
-        setSuccessSummary(buildSuccessSummary(options.language, pending));
+      try {
+        const synced = await options.onSyncDlocalPayment!({
+          paymentId: pending?.paymentId,
+          orderId: pending?.orderId,
+          allowPendingFallback: true
+        });
+        if (synced.ok && synced.fulfilled) {
+          options.onCheckoutFulfilled?.();
+          clearPendingCheckoutDlocalReturn({ clearIdempotency: true });
+          setSuccessSummary(buildSuccessSummary(options.language, pending));
+          void Promise.resolve(options.onRefreshPortalFromApi?.()).catch(() => undefined);
+        } else {
+          // Pending viejo / ya acreditado: no molestar en cada F5.
+          clearPendingCheckoutDlocalReturn({ clearIdempotency: true });
+          releaseReturnGate();
+        }
+      } finally {
+        setProcessing(false);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasReturnParam, processing]);
+  }, [hasReturnParam, processing, returnGate]);
 
   return {
-    // Mantener el lock suprimido también mientras el modal de éxito está
-    // abierto: cubre la ventana entre el fin del proceso y el resync backend.
-    checkoutReturnActive: hasReturnParam || processing || successSummary != null,
-    // El loader tapa la pantalla mientras confirmamos+resincronizamos, y se va
-    // recién cuando aparece el popup de éxito (o un error). Así nunca se ve la
-    // pantalla vieja intermedia.
-    loaderVisible: (hasReturnParam || processing) && successSummary == null && errorMessage == null,
+    // Mantener el lock a matching apagado desde el return hasta cerrar el modal.
+    checkoutReturnActive: returnGate || hasReturnParam || processing || successSummary != null,
+    // Loader hasta que haya modal de éxito o error (resync ya no bloquea el aviso).
+    loaderVisible: (returnGate || hasReturnParam || processing) && successSummary == null && errorMessage == null,
     successSummary,
     errorMessage,
     dismissSuccess,

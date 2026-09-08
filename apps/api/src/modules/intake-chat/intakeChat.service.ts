@@ -84,6 +84,8 @@ export interface SubmitSessionResult {
   completedAt: string;
   /** Mercado derivado del país de residencia — alineado con el wizard tradicional. */
   market: ReturnType<typeof marketFromResidencyCountry>;
+  /** Respuestas persistidas (incluye defaults de early submit). */
+  answers: ExtractedIntakeAnswers;
 }
 
 /**
@@ -189,7 +191,10 @@ export async function sendMessage(params: { patientId: string; sessionId: string
     throw new IntakeChatError("PROVIDER_ERROR", "User message too long (max 4000 chars)");
   }
 
-  const session = await loadOwnedSession(params.patientId, params.sessionId);
+  const sessionLoaded = await loadOwnedSession(params.patientId, params.sessionId);
+  const session = sessionLoaded.residencyCountry
+    ? sessionLoaded
+    : await backfillSessionResidencyFromProfile(sessionLoaded);
   ensureSessionActive(session);
   ensureWithinQuotas(session);
 
@@ -283,10 +288,15 @@ export async function sendMessage(params: { patientId: string; sessionId: string
   };
   const messagesAfter: IntakeChatStoredMessage[] = [...updatedMessages, lastAssistant];
 
-  const mergedAnswers: ExtractedIntakeAnswers = sanitizeExtractedAnswers({
-    ...parseExtractedAnswers(session.extractedAnswers),
-    ...newExtracted
-  });
+  const mergedAnswers: ExtractedIntakeAnswers = sanitizeExtractedAnswers(
+    inferMissingClosedAnswersFromUserMessage(
+      {
+        ...parseExtractedAnswers(session.extractedAnswers),
+        ...newExtracted
+      },
+      trimmed
+    )
+  );
 
   const finalResidency = session.residencyCountry ?? detectedCountry ?? null;
   const newCostTotal = session.estimatedCostUsdCents + costFromTurnCents;
@@ -329,7 +339,10 @@ export async function submitSession(params: {
   mode?: "full" | "early";
 }): Promise<SubmitSessionResult> {
   ensureFeatureEnabled();
-  const session = await loadOwnedSession(params.patientId, params.sessionId);
+  const sessionLoaded = await loadOwnedSession(params.patientId, params.sessionId);
+  const session = sessionLoaded.residencyCountry
+    ? sessionLoaded
+    : await backfillSessionResidencyFromProfile(sessionLoaded);
   const mode = params.mode ?? "full";
 
   if (session.status !== "active" && session.status !== "safety_blocked") {
@@ -338,7 +351,13 @@ export async function submitSession(params: {
 
   await ensurePatientHasNoIntake(params.patientId);
 
-  const rawAnswers = parseExtractedAnswers(session.extractedAnswers);
+  const lastUserMessage = [...parseStoredMessages(session.messages)]
+    .reverse()
+    .find((m) => m.role === "user" && !m.hidden);
+  const rawAnswers = inferMissingClosedAnswersFromUserMessage(
+    parseExtractedAnswers(session.extractedAnswers),
+    lastUserMessage?.content ?? ""
+  );
   if (!session.residencyCountry) {
     throw new IntakeChatError("MISSING_RESIDENCY", "Falta país de residencia");
   }
@@ -431,7 +450,8 @@ export async function submitSession(params: {
     riskLevel,
     residencyCountry: session.residencyCountry,
     completedAt: intake.createdAt.toISOString(),
-    market: marketFromResidencyCountry(session.residencyCountry)
+    market: marketFromResidencyCountry(session.residencyCountry),
+    answers: sanitizedAnswers
   };
 }
 
@@ -579,6 +599,24 @@ function hasAllRequired(answers: ExtractedIntakeAnswers): boolean {
 }
 
 /**
+ * Si el paciente tocó un chip de safetyRisk ("No", "A veces", …) y el LLM no lo
+ * guardó, igual lo mapeamos. No inferimos otras preguntas: opciones como
+ * "Prefiero no responder" también existen en `supportNetwork`.
+ */
+function inferMissingClosedAnswersFromUserMessage(
+  answers: ExtractedIntakeAnswers,
+  userMessage: string
+): ExtractedIntakeAnswers {
+  if (answers.safetyRisk) return answers;
+  const trimmed = userMessage.trim();
+  if (!trimmed) return answers;
+  const safetyQuestion = INTAKE_CHAT_QUESTIONS.find((q) => q.id === "safetyRisk");
+  const hit = safetyQuestion?.options?.find((option) => option.trim().toLowerCase() === trimmed.toLowerCase());
+  if (!hit) return answers;
+  return { ...answers, safetyRisk: hit };
+}
+
+/**
  * Defaults conservadores que se aplican cuando el paciente pide submit "early"
  * para ir directo al matching sin haber respondido todas las preguntas requeridas.
  *
@@ -590,12 +628,10 @@ function hasAllRequired(answers: ExtractedIntakeAnswers): boolean {
  * - Para emocionalidad y red de apoyo: rellenamos con valores intermedios para no
  *   inflar ni desinflar el riesgo. evaluateIntakeRiskLevel se basa principalmente
  *   en safetyRisk y emotionalState explícitos.
- * - Para safetyRisk: "Prefiero no responder" como default conservador. Si en el chat
- *   se disparó safety high, el sistema ya marcó la sesión como flagged (eso domina).
- *
- * `mainReason` y `therapyGoal` no tienen default: si no respondió mainReason,
- * directamente no permitimos early submit. `therapyGoal` se llena con un genérico
- * para que el matcher tenga algo, aunque idealmente venga del paciente.
+ * - Para safetyRisk: NO hay default. "Prefiero no responder" es una respuesta
+ *   explícita de alto riesgo (bloquea el onboarding). Inventarla al saltar
+ *   preguntas hacía fallar el submit con un error genérico después de que el
+ *   paciente dijo "No" y el LLM no lo extrajo.
  */
 const EARLY_SUBMIT_DEFAULTS: Readonly<Record<string, string>> = {
   therapyGoal: "Sentirme mejor emocionalmente",
@@ -603,8 +639,7 @@ const EARLY_SUBMIT_DEFAULTS: Readonly<Record<string, string>> = {
   preferredApproach: "No estoy seguro/a; lo que recomiende el profesional",
   previousTherapy: "No, nunca fui a terapia",
   emotionalState: "Con altibajos",
-  supportNetwork: "Prefiero no responder",
-  safetyRisk: "Prefiero no responder"
+  supportNetwork: "Prefiero no responder"
 };
 
 function applyEarlySubmitDefaults(answers: ExtractedIntakeAnswers): ExtractedIntakeAnswers {
@@ -679,6 +714,8 @@ export const __internals = {
   parseStoredMessages,
   parseExtractedAnswers,
   sanitizeExtractedAnswers,
+  inferMissingClosedAnswersFromUserMessage,
+  applyEarlySubmitDefaults,
   hasAllRequired,
   normalizeCountryCode,
   isExpired

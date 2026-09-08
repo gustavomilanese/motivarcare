@@ -18,6 +18,7 @@ import {
 import type { AuthResponse } from "../../app/types";
 import { apiRequest } from "../../app/services/api";
 import { checkProfessionalEmailAvailable } from "../../app/services/checkProfessionalEmail";
+import { useProfessionalOnboardingDraft } from "./useProfessionalOnboardingDraft";
 import {
   FALLBACK_SESSION_PRICE_MAX_ARS,
   FALLBACK_SESSION_PRICE_MAX_USD,
@@ -155,6 +156,10 @@ export function useProfessionalWebOnboardingWizard(input: {
   const [resendVerificationLoading, setResendVerificationLoading] = useState(false);
   const [devVerifyLoading, setDevVerifyLoading] = useState(false);
   const [devVerifyError, setDevVerifyError] = useState("");
+
+  const markStepReached = useCallback((reached: number) => {
+    setMaxReachedStep((current) => Math.max(current, reached));
+  }, []);
 
   const turnstileRef = useRef<TurnstileInstance | null>(null);
 
@@ -296,6 +301,23 @@ export function useProfessionalWebOnboardingWizard(input: {
     t(input.language, { es: "Formación", en: "Education", pt: "Formacao" }),
     t(input.language, { es: "Recibir pagos", en: "Receive payments", pt: "Receber pagamentos" })
   ];
+
+  /**
+   * El wizard se puede abandonar a la mitad y retomar días después, incluso desde otra
+   * computadora: el progreso se guarda en servidor apenas hay sesión (o sea, desde que
+   * la cuenta existe, al terminar el paso de credenciales).
+   */
+  const onboardingDraft = useProfessionalOnboardingDraft({
+    token: webOnboardingSession?.token ?? "",
+    step,
+    form,
+    // Nunca antes del paso al que ya llegó por verificación de mail, ni más allá del último.
+    minStep: initialStep,
+    maxStep: labels.length - 1,
+    setForm,
+    setStep,
+    onStepRestored: markStepReached
+  });
 
   const stepSubtitles = [
     null,
@@ -1189,6 +1211,8 @@ export function useProfessionalWebOnboardingWizard(input: {
       googleCalendarConnected: webOnboardingSession.googleCalendarConnected
     };
 
+    // Perfil enviado: el borrador ya no debe reaparecer en el próximo ingreso.
+    void onboardingDraft.discard();
     input.onFinish(payload, meta);
   };
 
@@ -1272,6 +1296,8 @@ export function useProfessionalWebOnboardingWizard(input: {
     continueFromInterstitial,
     showCompletionCelebration,
     setShowCompletionCelebration,
-    finishWebOnboarding
+    finishWebOnboarding,
+    /** Estado del autoguardado: si se restauró progreso y qué archivos hay que resubir. */
+    onboardingDraft
   };
 }

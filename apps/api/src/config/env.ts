@@ -154,11 +154,19 @@ const EnvSchema = z.object({
   /** Cap duro de turnos del usuario por sesión de chat para acotar costo y evitar loops. */
   INTAKE_CHAT_MAX_TURNS: z.coerce.number().int().positive().default(30),
   /** Vida útil de una sesión de chat sin actividad antes de marcarla como `abandoned`. */
-  INTAKE_CHAT_SESSION_TTL_DAYS: z.coerce.number().int().positive().default(7),
+  INTAKE_CHAT_SESSION_TTL_DAYS: z.coerce.number().int().positive().default(15),
   /** Cap duro de USD (en centavos) que una sesión puede consumir antes de cortarla. */
   INTAKE_CHAT_MAX_COST_USD_CENTS: z.coerce.number().int().positive().default(50),
   /** Provider del intake-chat. `mock` no llama a la API y permite tests / demos sin costo. */
   INTAKE_CHAT_PROVIDER: z.enum(["openai", "mock"]).default("openai"),
+  /**
+   * Días que se conserva el progreso a medio completar de un onboarding (cuestionario del
+   * paciente, wizard del profesional) sin actividad. Alineado con el TTL del intake-chat
+   * para que el paciente tenga el mismo margen elija el camino que elija.
+   */
+  ONBOARDING_DRAFT_TTL_DAYS: z.coerce.number().int().positive().default(15),
+  /** Tope de tamaño del borrador de onboarding: evita que un data URL de video infle la tabla. */
+  ONBOARDING_DRAFT_MAX_BYTES: z.coerce.number().int().positive().default(2 * 1024 * 1024),
   /** Activa el chat IA flotante de acompañamiento del tratamiento (post-intake, durante terapia). */
   TREATMENT_CHAT_ENABLED: z.coerce.boolean().default(false),
   /** Cap diario de turnos del usuario para acotar costo y evitar abuso. */

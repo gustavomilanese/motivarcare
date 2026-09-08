@@ -26,6 +26,9 @@ function resolveApiProxyTarget(mode: string): string {
 export default defineConfig(({ mode }) => ({
   envDir: repoRoot,
   server: {
+    watch: {
+      ignored: ["**/node_modules/**", "**/.git/**", "**/dist/**"]
+    },
     proxy: {
       "/api": {
         target: resolveApiProxyTarget(mode),

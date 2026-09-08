@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { type AppLanguage, textByLanguage } from "@therapy/i18n-config";
+import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
+import { useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
+import { MusicBannerGlyph, MusicBannerIcon } from "../../home/ml/HomeBannerGlyphs";
 import { RELAXATION_CATALOG_FALLBACK } from "../data/relaxationCatalogFallback";
 import { groupRelaxationPlaylists } from "../lib/relaxationCategories";
 import {
@@ -11,8 +14,6 @@ import {
   extractYoutubeVideoId,
   youtubeThumbnailUrl
 } from "../utils/relaxationYoutube";
-import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
-import { useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
 
 export interface RelaxationMusicPageProps {
   language: AppLanguage;
@@ -141,6 +142,9 @@ export function RelaxationMusicPage(props: RelaxationMusicPageProps) {
                 })}
               </p>
               <h1 id="wellbeing-relax-page-title" className="dashboard-ml-feature-banner-title">
+                <span className="dashboard-ml-feature-banner-title-icon" aria-hidden="true">
+                  <MusicBannerIcon />
+                </span>
                 {pageTitle}
               </h1>
               <p className="dashboard-ml-feature-banner-body">
@@ -170,12 +174,7 @@ export function RelaxationMusicPage(props: RelaxationMusicPageProps) {
               </div>
             </div>
             <div className="dashboard-ml-feature-banner-media" aria-hidden="true">
-              <img
-                className="dashboard-ml-feature-banner-photo"
-                src="/home/banner-home-music.png?v=4"
-                alt=""
-                decoding="async"
-              />
+              <MusicBannerGlyph />
             </div>
           </div>
           <div id="wellbeing-relax-toolbar-mount" className="wellbeing-relax-toolbar-mount wellbeing-relax-page-ml-toolbar" />

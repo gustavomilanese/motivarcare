@@ -61,7 +61,10 @@ import { usePublicFeatures } from "./hooks/usePublicFeatures";
 import { MotivarCarePageLoader } from "./components/MotivarCarePageLoader";
 import { useDisplayFxRates } from "./hooks/useDisplayFxRates";
 import { API_BASE, STORAGE_KEY, apiRequest, resolvePublicAssetUrl, setPatientApiUnauthorizedHandler } from "./services/api";
-import { fetchPatientPortalSyncBatchShared } from "./lib/fetchPatientPortalSyncBatchShared";
+import {
+  fetchPatientPortalCoreSyncShared,
+  fetchPatientPortalDirectoryShared
+} from "./lib/fetchPatientPortalSyncBatchShared";
 import { isCheckoutCreditProtectionActive } from "./lib/checkoutCreditProtection";
 import { fetchProfessionalDirectory } from "../matching/services/professionals";
 import type {
@@ -698,6 +701,8 @@ export function App() {
   const [professionalDirectory, setProfessionalDirectory] = useState<Professional[]>(() => initialProfessionalDirectory());
   const [professionalPhotoMap, setProfessionalPhotoMap] = useState<Record<string, string>>(() => initialProfessionalPhotoMap());
   const [profileSyncReady, setProfileSyncReady] = useState(false);
+  const profileSyncReadyRef = useRef(profileSyncReady);
+  profileSyncReadyRef.current = profileSyncReady;
   /** GET /auth/me ya devolvió `googleCalendarConnected` en este login (evita CTA fantasma al refresh). */
   const [patientAuthCalendarSynced, setPatientAuthCalendarSynced] = useState(false);
   /**
@@ -994,6 +999,15 @@ export function App() {
     forceFreshNext: false,
     current: null
   });
+  /**
+   * Reintentos del sync del portal. Antes, cualquier rechazo (incluido 429) re-disparaba
+   * `schedulePortalSync(true)` a los 1.5s → el rate-limit nunca bajaba y la consola explotaba.
+   */
+  const portalSyncRetryRef = useRef<{
+    consecutiveFailures: number;
+    cooldownUntil: number;
+    timer: ReturnType<typeof setTimeout> | null;
+  }>({ consecutiveFailures: 0, cooldownUntil: 0, timer: null });
   /** Evita GET /matching duplicado al montar; solo refetch de directorio cuando el usuario cambia idioma. */
   const portalLanguageBootstrapRef = useRef(false);
 
@@ -1251,6 +1265,58 @@ export function App() {
      * Evita ráfagas paralelas a /profiles/me + /bookings/mine + /auth/me.
      * Throttle entre lotes (salvo `force`) corta bucles si el efecto se re-dispara más rápido que ~1s.
      */
+    const clearPortalSyncRetryTimer = () => {
+      if (portalSyncRetryRef.current.timer) {
+        clearTimeout(portalSyncRetryRef.current.timer);
+        portalSyncRetryRef.current.timer = null;
+      }
+    };
+
+    const isRateLimitFailure = (reason: unknown): boolean => {
+      const msg = reason instanceof Error ? reason.message : String(reason ?? "");
+      return /Too many requests|TOO_MANY_REQUESTS|\b429\b/i.test(msg);
+    };
+
+    /**
+     * Reintento controlado tras un sync fallido.
+     * - Si el perfil ya cargó una vez, no martillamos el API: el portal puede seguir con datos viejos.
+     * - Ante 429 esperamos la ventana del rate-limit (~60s), no 1.5s.
+     * - Tope de reintentos automáticos para no llenar la consola.
+     */
+    const scheduleFailedPortalSyncRetry = (input: {
+      rateLimited: boolean;
+      profileAlreadyReady: boolean;
+    }) => {
+      const retry = portalSyncRetryRef.current;
+
+      if (input.rateLimited) {
+        // Aunque el perfil ya esté listo, marcamos cooldown para que visibility/resync
+        // no sigan golpeando el rate-limit.
+        retry.cooldownUntil = Date.now() + 60_000;
+        if (input.profileAlreadyReady) {
+          return;
+        }
+      } else if (input.profileAlreadyReady) {
+        return;
+      }
+
+      retry.consecutiveFailures += 1;
+
+      // Nunca abandonamos si el spinner sigue visible: después del tope solo espaciamos más.
+      const delayMs = input.rateLimited
+        ? 60_000
+        : retry.consecutiveFailures > 4
+          ? 15_000
+          : Math.min(30_000, 1500 * 2 ** Math.max(0, retry.consecutiveFailures - 1));
+      retry.cooldownUntil = Date.now() + delayMs;
+      clearPortalSyncRetryTimer();
+      retry.timer = window.setTimeout(() => {
+        portalSyncRetryRef.current.timer = null;
+        portalSyncRetryRef.current.cooldownUntil = 0;
+        schedulePortalSyncRef.current?.(true);
+      }, delayMs);
+    };
+
     const runSyncFromApi = async (opts?: { forceFresh?: boolean }) => {
       const batchEpoch = portalSyncEpochRef.current;
       const { sessionId: sid, authToken: tokenFromRef, language: languageSnapshot } = portalSyncDepsRef.current;
@@ -1262,13 +1328,11 @@ export function App() {
         }
         attemptedSync = true;
         try {
-        const { profileResult, bookingsResult, authResult, professionalDirectoryResult } =
-          await fetchPatientPortalSyncBatchShared({
-            token: tokenSnapshot,
-            epoch: batchEpoch,
-            language: languageSnapshot,
-            forceFresh: Boolean(opts?.forceFresh)
-          });
+        const { profileResult, bookingsResult, authResult } = await fetchPatientPortalCoreSyncShared({
+          token: tokenSnapshot,
+          epoch: batchEpoch,
+          forceFresh: Boolean(opts?.forceFresh)
+        });
 
         if (batchEpoch !== portalSyncEpochRef.current) {
           return;
@@ -1277,32 +1341,15 @@ export function App() {
         const profileResponse = profileResult.status === "fulfilled" ? profileResult.value : null;
         const bookingsResponse = bookingsResult.status === "fulfilled" ? bookingsResult.value : null;
         const authResponse = authResult.status === "fulfilled" ? authResult.value : null;
-        const professionalDirectoryResponse = professionalDirectoryResult.status === "fulfilled" ? professionalDirectoryResult.value : null;
 
         let mergedPhotos: Record<string, string> = { ...initialProfessionalPhotoMap() };
         let directoryListForClamp: Professional[] | null = null;
 
-        if (professionalDirectoryResult.status === "fulfilled" && professionalDirectoryResponse !== null) {
-          let directoryList = professionalDirectoryResponse.map(mapDirectoryProfessionalToLegacyProfessional);
-          const assignedForDirectory = profileResponse?.profile?.activeProfessional;
-          if (assignedForDirectory?.id && !directoryList.some((p) => p.id === assignedForDirectory.id)) {
-            directoryList = [professionalStubFromActiveProfile(assignedForDirectory), ...directoryList];
-          }
-          directoryListForClamp = directoryList;
-          setProfessionalDirectory(directoryList);
-          for (const professional of professionalDirectoryResponse) {
-            const resolved = resolvePublicAssetUrl(professional.photoUrl);
-            if (resolved) {
-              mergedPhotos[professional.id] = resolved;
-            }
-          }
-        } else if (
-          professionalDirectoryResult.status === "rejected"
-          && profileResponse?.profile?.activeProfessional?.id
-        ) {
+        // Stub inmediato si ya hay profesional asignado; el matching completo llega en background.
+        if (profileResponse?.profile?.activeProfessional?.id) {
           const stubOnly = [professionalStubFromActiveProfile(profileResponse.profile.activeProfessional)];
           directoryListForClamp = stubOnly;
-          setProfessionalDirectory(stubOnly);
+          setProfessionalDirectory((current) => (current.length > 0 ? current : stubOnly));
         }
 
         const activePro = profileResponse?.profile?.activeProfessional;
@@ -1313,7 +1360,7 @@ export function App() {
           }
         }
 
-        setProfessionalPhotoMap(mergedPhotos);
+        setProfessionalPhotoMap((current) => ({ ...mergedPhotos, ...current }));
 
         const latestPackage = profileResponse?.profile?.latestPackage ?? null;
         const remoteAssignedProfessional = profileResponse?.profile?.activeProfessional ?? null;
@@ -1544,23 +1591,27 @@ export function App() {
         }
 
         if (profileResult.status === "rejected") {
-          console.error("Could not sync profile from API", profileResult.reason);
+          if (!isRateLimitFailure(profileResult.reason)) {
+            console.error("Could not sync profile from API", profileResult.reason);
+          }
         }
         if (bookingsResult.status === "rejected") {
-          console.error("Could not sync bookings from API", bookingsResult.reason);
+          if (!isRateLimitFailure(bookingsResult.reason)) {
+            console.error("Could not sync bookings from API", bookingsResult.reason);
+          }
         }
         if (authResult.status === "rejected") {
-          console.error("Could not sync auth state from API", authResult.reason);
+          if (!isRateLimitFailure(authResult.reason)) {
+            console.error("Could not sync auth state from API", authResult.reason);
+          }
         } else if (authResponse && sid) {
           setPatientAuthCalendarSynced(true);
         }
-        if (professionalDirectoryResult.status === "rejected") {
-          console.error("Could not sync professional directory from API", professionalDirectoryResult.reason);
-        }
 
         /**
-         * Solo desbloquear el shell cuando /profiles/me respondió. Si falló, reintentar:
-         * si no, un login fresco con intake=null mostraría el onboarding por error.
+         * Solo desbloquear el shell cuando /profiles/me respondió. Si falló, reintentar
+         * con backoff (y freno fuerte ante 429). Si el perfil ya estaba listo, no reintentamos
+         * en bucle: eso era lo que llenaba la consola de "Too many requests".
          */
         const deps = portalSyncDepsRef.current;
         const hasAuth =
@@ -1570,19 +1621,62 @@ export function App() {
           && String(deps.sessionId ?? "") === String(sid)
           && deps.authToken === tokenSnapshot;
         if (hasAuth && stillSameSession && profileResult.status === "fulfilled") {
+          portalSyncRetryRef.current.consecutiveFailures = 0;
+          portalSyncRetryRef.current.cooldownUntil = 0;
+          clearPortalSyncRetryTimer();
           setProfileSyncReady(true);
+
+          // Matching en background: no alarga el spinner del login.
+          const directoryEpoch = batchEpoch;
+          const directoryToken = tokenSnapshot;
+          const directoryLanguage = languageSnapshot;
+          const assignedForDirectory = profileResponse?.profile?.activeProfessional ?? null;
+          void fetchPatientPortalDirectoryShared({
+            token: directoryToken,
+            language: directoryLanguage
+          })
+            .then((professionalDirectoryResponse) => {
+              if (directoryEpoch !== portalSyncEpochRef.current) {
+                return;
+              }
+              if (portalSyncDepsRef.current.authToken !== directoryToken) {
+                return;
+              }
+              let directoryList = professionalDirectoryResponse.map(mapDirectoryProfessionalToLegacyProfessional);
+              if (assignedForDirectory?.id && !directoryList.some((p) => p.id === assignedForDirectory.id)) {
+                directoryList = [professionalStubFromActiveProfile(assignedForDirectory), ...directoryList];
+              }
+              setProfessionalDirectory(directoryList);
+              setProfessionalPhotoMap((current) => {
+                const next = { ...current };
+                for (const professional of professionalDirectoryResponse) {
+                  const resolved = resolvePublicAssetUrl(professional.photoUrl);
+                  if (resolved) {
+                    next[professional.id] = resolved;
+                  }
+                }
+                return next;
+              });
+            })
+            .catch((error) => {
+              if (!isRateLimitFailure(error)) {
+                console.error("Could not sync professional directory from API", error);
+              }
+            });
         } else if (hasAuth && stillSameSession && profileResult.status === "rejected") {
-          window.setTimeout(() => {
-            schedulePortalSyncRef.current?.(true);
-          }, 1500);
+          scheduleFailedPortalSyncRetry({
+            rateLimited: isRateLimitFailure(profileResult.reason),
+            profileAlreadyReady: profileSyncReadyRef.current
+          });
         }
         } catch (error) {
           console.error("Could not sync patient portal from API", error);
           const deps = portalSyncDepsRef.current;
           if (deps.sessionId && deps.authToken) {
-            window.setTimeout(() => {
-              schedulePortalSyncRef.current?.(true);
-            }, 1500);
+            scheduleFailedPortalSyncRetry({
+              rateLimited: isRateLimitFailure(error),
+              profileAlreadyReady: profileSyncReadyRef.current
+            });
           }
         }
       } finally {
@@ -1593,6 +1687,10 @@ export function App() {
     const PORTAL_SYNC_MIN_GAP_MS = 1100;
 
     const schedulePortalSync = (force = false): Promise<void> | void => {
+      if (Date.now() < portalSyncRetryRef.current.cooldownUntil) {
+        return;
+      }
+
       const startBatch = (): Promise<void> => {
         if (portalSyncMutexRef.current.inFlight) {
           portalSyncMutexRef.current.rerun = true;
@@ -1661,6 +1759,12 @@ export function App() {
         portalSyncThrottleTimerRef.current = null;
       }
       portalSyncLastBatchAtRef.current = 0;
+      if (portalSyncRetryRef.current.timer) {
+        clearTimeout(portalSyncRetryRef.current.timer);
+        portalSyncRetryRef.current.timer = null;
+      }
+      portalSyncRetryRef.current.consecutiveFailures = 0;
+      portalSyncRetryRef.current.cooldownUntil = 0;
     };
   }, [portalLoginKey]);
 
@@ -1675,6 +1779,9 @@ export function App() {
 
     function kickPortalSyncIfStuck() {
       if (!portalLoginKey || profileSyncReady) {
+        return;
+      }
+      if (Date.now() < portalSyncRetryRef.current.cooldownUntil) {
         return;
       }
       const now = Date.now();
@@ -1728,23 +1835,21 @@ export function App() {
   }, [state.language, sessionId, state.authToken]);
 
   useEffect(() => {
-    if (!sessionId || !state.authToken) {
+    if (!sessionId || !state.authToken || !profileSyncReady) {
       return;
     }
 
+    // Después de que el shell ya levantó. No disparamos otro portal-sync completo:
+    // eso alargaba el login y, si el API iba justo, alimentaba el rate-limit.
     void syncUserTimezone({
       baseUrl: API_BASE,
       token: state.authToken,
       timezone: sessionTimezone,
       persistPreference: false
-    })
-      .then(() => {
-        requestPortalResync();
-      })
-      .catch((error) => {
-        console.error("Could not sync patient timezone from session", error);
-      });
-  }, [sessionId, sessionTimezone, state.authToken, requestPortalResync]);
+    }).catch((error) => {
+      console.error("Could not sync patient timezone from session", error);
+    });
+  }, [sessionId, sessionTimezone, state.authToken, profileSyncReady]);
 
   useEffect(() => {
     const sessionUserId = state.session?.id;
@@ -2168,7 +2273,7 @@ export function App() {
           onCancel={cleanupAndLogout}
           onComplete={async (response) => {
             try {
-              applyIntakeCompletion(response, {});
+              applyIntakeCompletion(response, response.answers ?? {});
             } catch (err) {
               if (err instanceof Error && err.message.includes("Intake already completed")) {
                 setState((current) => ({

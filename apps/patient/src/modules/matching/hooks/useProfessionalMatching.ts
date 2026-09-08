@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { AppLanguage } from "@therapy/i18n-config";
 import type { Market } from "@therapy/types";
+import { filterSlotsByBookingNotice } from "@therapy/types";
 import { effectiveSessionListMajorUnits } from "../lib/sessionListPrice";
 import type { MatchCardProfessional, SortMode } from "../types";
 
@@ -24,11 +25,8 @@ interface RankedProfessionalView {
   }>;
 }
 
-function sortFutureSlots(slots: Array<{ id: string; startsAt: string; endsAt: string }>): Array<{ id: string; startsAt: string; endsAt: string }> {
-  const now = Date.now();
-  return [...slots]
-    .filter((slot) => new Date(slot.startsAt).getTime() > now)
-    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+function sortBookableSlots(slots: Array<{ id: string; startsAt: string; endsAt: string }>): Array<{ id: string; startsAt: string; endsAt: string }> {
+  return filterSlotsByBookingNotice(slots);
 }
 
 export function useProfessionalMatching(params: {
@@ -47,9 +45,9 @@ export function useProfessionalMatching(params: {
       score: Math.max(1, Math.min(99, Math.round(professional.matchScore ?? professional.compatibilityBase ?? 50))),
       reasons: (professional.matchReasons ?? []).length > 0 ? (professional.matchReasons ?? []) : ["Perfil compatible por disponibilidad y perfil clínico."],
       matchedTopics: professional.matchedTopics ?? [],
-      suggestedSlots: sortFutureSlots(
-        ((professional.suggestedSlots ?? []).length > 0 ? (professional.suggestedSlots ?? []) : professional.slots).slice(0, 6)
-      )
+      suggestedSlots: sortBookableSlots(
+        ((professional.suggestedSlots ?? []).length > 0 ? (professional.suggestedSlots ?? []) : professional.slots).slice(0, 12)
+      ).slice(0, 6)
     })),
     [params.professionals]
   );

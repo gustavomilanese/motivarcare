@@ -1,4 +1,5 @@
 import type { AppLanguage } from "@therapy/i18n-config";
+import { filterSlotsByBookingNotice } from "@therapy/types";
 import type { MatchCardProfessional } from "./types";
 
 interface TimeSlot {
@@ -271,11 +272,8 @@ function slotMatchesWindows(slot: TimeSlot, windows: Set<AvailabilityWindow>): b
   return false;
 }
 
-function sortFutureSlots(slots: TimeSlot[]): TimeSlot[] {
-  const now = Date.now();
-  return [...slots]
-    .filter((slot) => new Date(slot.startsAt).getTime() > now)
-    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+function sortBookableSlots(slots: TimeSlot[]): TimeSlot[] {
+  return filterSlotsByBookingNotice(slots);
 }
 
 type LanguageCode = "es" | "en" | "pt";
@@ -578,7 +576,7 @@ export function rankProfessionalsForPatient(params: {
     .map((professional) => {
       const professionalTopics = extractProfessionalTopics(professional);
       const matchedTopics = patientTopics.filter((topic) => professionalTopics.includes(topic));
-      const suggestedSlots = sortFutureSlots(professional.slots).slice(0, 6);
+      const suggestedSlots = sortBookableSlots(professional.slots).slice(0, 6);
       const availabilityHasWindowPreference = availabilityWindows.size > 0;
       const availabilityMatches =
         availabilityHasWindowPreference

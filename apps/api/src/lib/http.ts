@@ -9,7 +9,8 @@ export type ApiErrorCode =
   | "TOO_MANY_REQUESTS"
   | "SERVICE_UNAVAILABLE"
   | "INTERNAL_ERROR"
-  | "SAFETY_REFERRAL_REQUIRED";
+  | "SAFETY_REFERRAL_REQUIRED"
+  | "DRAFT_TOO_LARGE";
 
 export function sendApiError(params: {
   res: Response;

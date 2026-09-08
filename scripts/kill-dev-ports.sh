@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-PORTS=(4000 5172 5173 5174 5175 5176 5177 8081 8190)
+PORTS=(4000 5172 5173 5174 5175 5176 5177 8081 8190 8191)
 
 echo "Buscando procesos en puertos: ${PORTS[*]}"
 
@@ -23,5 +23,5 @@ for port in "${PORTS[@]}"; do
   fi
 done
 
-echo "Listo. Volvé a correr: npm run dev  o  npm run dev:all."
+echo "Listo. En Mac 8 GB: npm run dev  (API + paciente). Los 3 portales: npm run dev:portals"
 echo "Landings: 5176 LAND_FINAL = apps/patient-landing (última editada, teal). 5177 LAND_ALT1 = patient-landing-v2. 5172 LAND_ALT2 = apps/landing (marketing)."

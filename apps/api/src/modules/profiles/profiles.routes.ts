@@ -1,6 +1,6 @@
 import { Router, type Response } from "express";
 import { Prisma, ProfessionalRegistrationApproval, type Market } from "@prisma/client";
-import { billingCurrencyCodeForMarket, getEmergencyResources, marketFromResidencyCountry, PATIENT_PORTAL_RESIDENCY_CODES } from "@therapy/types";
+import { billingCurrencyCodeForMarket, earliestBookableAtMs, getEmergencyResources, marketFromResidencyCountry, PATIENT_PORTAL_RESIDENCY_CODES } from "@therapy/types";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { env } from "../../config/env.js";
@@ -22,7 +22,7 @@ import {
   resolvePackagePricingFromUsd
 } from "../../lib/resolveSessionPackagePrice.js";
 import { roundSessionPriceArsFromUsd } from "../../lib/usdArsExchange.js";
-import { getResilientUsdArsRate } from "../../lib/usdArsExchangeResilient.js";
+import { getResilientUsdArsRate, getResilientUsdArsRatePreferCached } from "../../lib/usdArsExchangeResilient.js";
 import { getFinanceRules } from "../finance/finance.service.js";
 import { readTrialProfessionalRateUsdCents } from "../finance/resolveFinanceSessionPricing.js";
 import { prismaErrorUserMessage, isPrismaUniqueViolation } from "../../lib/prismaUserError.js";
@@ -39,6 +39,7 @@ import {
   sendPatientEmailForPurchase
 } from "../notifications/patientEmailService.js";
 import { assertPatientMaySwitchActiveProfessional } from "../../lib/patientActiveProfessionalChange.js";
+import { discardDraft } from "../onboarding-drafts/onboardingDrafts.service.js";
 import {
   createProfessionalReviewSchema,
   listProfessionalReviewsQuerySchema
@@ -343,9 +344,27 @@ async function getOrCreateGlobalIndividualSessionPackage(market: Market): Promis
 }
 
 /** Franjas futuras por profesional en directorio y matching (payload acotado). */
-const DIRECTORY_AVAILABILITY_SLOT_TAKE = 60;
-/** Traemos más filas y luego excluimos días de vacaciones, para seguir entregando ~TAKE horarios elegibles. */
-const DIRECTORY_AVAILABILITY_SLOT_FETCH = 120;
+const DIRECTORY_AVAILABILITY_SLOT_TAKE = 12;
+/** Traemos un poco más y luego excluimos días de vacaciones, para seguir entregando ~TAKE horarios elegibles. */
+const DIRECTORY_AVAILABILITY_SLOT_FETCH = 24;
+
+/**
+ * Fotos `data:` enormes no van en el listado: rompen el matching (JSON multi-MB).
+ * El detalle / modal puede seguir usando la URL completa cuando haga falta.
+ */
+function directorySafePhotoUrl(photoUrl: string | null | undefined): string | null {
+  if (!photoUrl) {
+    return null;
+  }
+  const trimmed = photoUrl.trim();
+  if (trimmed.length === 0) {
+    return null;
+  }
+  if (trimmed.startsWith("data:") && trimmed.length > 2048) {
+    return null;
+  }
+  return trimmed;
+}
 
 /**
  * Días (clave YYYY-MM-DD UTC) bloqueados por vacaciones, por profesional — misma idea que en availability.routes.
@@ -432,48 +451,67 @@ interface DirectoryProfessional {
   }>;
 }
 
-function professionalDirectoryQueryInclude(): Prisma.ProfessionalProfileInclude {
+function professionalDirectoryQuerySelect(): Prisma.ProfessionalProfileSelect {
   return {
+    id: true,
+    market: true,
+    professionalTitle: true,
+    specialization: true,
+    focusPrimary: true,
+    focusAreas: true,
+    birthCountry: true,
+    gender: true,
+    graduationYear: true,
+    bio: true,
+    shortDescription: true,
+    therapeuticApproach: true,
+    languages: true,
+    yearsExperience: true,
+    sessionPriceArs: true,
+    sessionPriceUsd: true,
+    couplesSessionPriceUsd: true,
+    photoUrl: true,
+    videoUrl: true,
+    registrationApproval: true,
+    cancellationHours: true,
     user: {
       select: {
         id: true,
         fullName: true,
         firstName: true,
-        lastName: true,
-        email: true
+        lastName: true
       }
     },
     availabilitySlots: {
       where: {
-        startsAt: { gte: new Date() },
+        startsAt: { gte: new Date(earliestBookableAtMs()) },
         isBlocked: false
       },
       orderBy: { startsAt: "asc" },
-      take: DIRECTORY_AVAILABILITY_SLOT_FETCH
+      take: DIRECTORY_AVAILABILITY_SLOT_FETCH,
+      select: {
+        id: true,
+        startsAt: true,
+        endsAt: true
+      }
     }
   };
 }
 
 type ProfessionalProfileDirectoryRow = Prisma.ProfessionalProfileGetPayload<{
-  include: ReturnType<typeof professionalDirectoryQueryInclude>;
+  select: ReturnType<typeof professionalDirectoryQuerySelect>;
 }>;
 
 async function loadProfessionalProfilesForDirectory(where: Prisma.ProfessionalProfileWhereInput): Promise<ProfessionalProfileDirectoryRow[]> {
   return prisma.professionalProfile.findMany({
     where,
-    include: professionalDirectoryQueryInclude(),
+    select: professionalDirectoryQuerySelect(),
     orderBy: { createdAt: "asc" }
   });
 }
 
 /**
- * Cotización USD/ARS para derivar `sessionPriceArs` cuando el profesional sólo
- * tiene precio en USD, de modo que el paciente AR siempre vea pesos.
- *
- * Usa el wrapper resiliente: aún si los proveedores externos fallan, devuelve
- * un valor operativo (último éxito en memoria → snapshot DB → env → hardcoded).
- * Sólo retorna `null` si la propia query a DB del wrapper resiliente falla,
- * lo que es muy improbable.
+ * Cotización USD/ARS para cobros / flujos sensibles: intenta live y cae a fallback.
  */
 async function loadUsdArsRateOrNull(): Promise<number | null> {
   try {
@@ -484,13 +522,23 @@ async function loadUsdArsRateOrNull(): Promise<number | null> {
   }
 }
 
+/**
+ * Cotización para el listado/matching: nunca espera timeouts de red.
+ */
+async function loadUsdArsRateForDirectoryOrNull(): Promise<number | null> {
+  try {
+    return await getResilientUsdArsRatePreferCached();
+  } catch (error) {
+    console.warn("USD/ARS cached rate unavailable", error);
+    return null;
+  }
+}
+
 async function materializeDirectoryProfessionals(professionals: ProfessionalProfileDirectoryRow[]): Promise<DirectoryProfessional[]> {
   const professionalIds = professionals.map((professional) => professional.id);
   if (professionalIds.length === 0) {
     return [];
   }
-
-  const arsPerUsd = await loadUsdArsRateOrNull();
 
   const now = new Date();
   let vacationRangeEnd = new Date(now);
@@ -503,12 +551,22 @@ async function materializeDirectoryProfessionals(professionals: ProfessionalProf
   }
   const vacationRangeStart = new Date(now);
   vacationRangeStart.setHours(0, 0, 0, 0);
-  const vacationDaysByPro = await vacationDayKeysByProfessional({
-    professionalIds,
-    rangeStart: vacationRangeStart,
-    rangeEnd: vacationRangeEnd
-  });
-  const [sessionsByProfessional, completedByProfessional, activePatientPairs, displayConfig, reviewStatsByProfessional] = await Promise.all([
+
+  const [
+    arsPerUsd,
+    vacationDaysByPro,
+    sessionsByProfessional,
+    completedByProfessional,
+    activePatientPairs,
+    displayConfig,
+    reviewStatsByProfessional
+  ] = await Promise.all([
+    loadUsdArsRateForDirectoryOrNull(),
+    vacationDayKeysByProfessional({
+      professionalIds,
+      rangeStart: vacationRangeStart,
+      rangeEnd: vacationRangeEnd
+    }),
     prisma.booking.groupBy({
       by: ["professionalId"],
       where: {
@@ -594,8 +652,8 @@ async function materializeDirectoryProfessionals(professionals: ProfessionalProf
     ),
     sessionPriceUsd: professional.sessionPriceUsd,
     couplesSessionPriceUsd: professional.couplesSessionPriceUsd,
-    photoUrl: professional.photoUrl,
-    videoUrl: professional.videoUrl,
+    photoUrl: directorySafePhotoUrl(professional.photoUrl),
+    videoUrl: professional.videoUrl && !professional.videoUrl.startsWith("data:") ? professional.videoUrl : null,
     stripeVerified: isPublicListingVerified({ registrationApproval: professional.registrationApproval }),
     cancellationHours: professional.cancellationHours,
     compatibility: compatibilityScore(professional.id),
@@ -718,6 +776,7 @@ profilesRouter.get("/me/matching", requireAuth, async (req: AuthenticatedRequest
           ratingAverage: professional.ratingAverage,
           compatibilityBase: professional.compatibility,
           slots: professional.slots,
+          cancellationHours: professional.cancellationHours,
           gender: professional.gender,
           graduationYear: professional.graduationYear,
           focusAreas: professional.focusAreas
@@ -1864,6 +1923,9 @@ profilesRouter.post("/me/intake", requireAuth, async (req: AuthenticatedRequest,
     }
   });
 
+  // El cuestionario quedó guardado de verdad: el borrador ya no tiene razón de existir.
+  await discardDraft(req.auth.userId, "patient_intake");
+
   return res.status(201).json({
     intake: {
       id: intake.id,
@@ -2108,6 +2170,11 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
         });
       });
     }
+  }
+
+  if (req.auth?.userId) {
+    // El perfil quedó guardado: si venía de terminar el wizard, el borrador sobra.
+    await discardDraft(req.auth.userId, "professional_onboarding");
   }
 
   return res.json({

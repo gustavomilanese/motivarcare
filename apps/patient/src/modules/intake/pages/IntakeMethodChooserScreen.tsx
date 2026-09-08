@@ -33,7 +33,7 @@ export function IntakeMethodChooserScreen(props: {
           <h1 className="intake-chooser-title">
             {t({
               es: "¿Cómo querés hacer la entrevista?",
-              en: "How would you like to do the intake?",
+              en: "How would you like to do the interview?",
               pt: "Como você quer fazer a entrevista?"
             })}
           </h1>

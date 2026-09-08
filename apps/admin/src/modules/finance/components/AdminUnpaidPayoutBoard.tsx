@@ -190,10 +190,21 @@ function PackageSessionDetail(props: {
   );
 }
 
-function BodyFiller(props: { filled: number; emptyLabel: string }) {
+function SplitColGroup() {
   return (
-    <tr className="admin-unpaid-split-filler" aria-hidden={props.filled > 0}>
-      <td colSpan={4}>{props.filled === 0 ? props.emptyLabel : null}</td>
+    <colgroup>
+      <col />
+      <col className="admin-unpaid-col-sessions" />
+      <col className="admin-unpaid-col-net" />
+      <col className="admin-unpaid-col-move" />
+    </colgroup>
+  );
+}
+
+function EmptyBodyRow(props: { label: string }) {
+  return (
+    <tr className="admin-unpaid-split-empty-row">
+      <td colSpan={4}>{props.label}</td>
     </tr>
   );
 }
@@ -214,19 +225,24 @@ function TotalsFoot(props: {
   netCents: number;
 }) {
   return (
-    <tfoot>
-      <tr className="admin-unpaid-totals-row">
-        <td>
-          {t(props.language, { es: "Total", en: "Total", pt: "Total" })}
-          <span className="admin-unpaid-totals-count"> · {props.professionals}</span>
-        </td>
-        <td className="num">{props.sessionsCount}</td>
-        <td className="num">
-          <span className="admin-unpaid-package-amount">{formatAdminFinanceUsd(props.netCents, props.language)}</span>
-        </td>
-        <td />
-      </tr>
-    </tfoot>
+    <footer className="admin-unpaid-pane-foot">
+      <table className="admin-unpaid-professionals-table admin-unpaid-professionals-table--split admin-unpaid-pane-totals">
+        <SplitColGroup />
+        <tbody>
+          <tr className="admin-unpaid-totals-row">
+            <td>
+              {t(props.language, { es: "Total", en: "Total", pt: "Total" })}
+              <span className="admin-unpaid-totals-count"> · {props.professionals}</span>
+            </td>
+            <td className="num">{props.sessionsCount}</td>
+            <td className="num">
+              <span className="admin-unpaid-package-amount">{formatAdminFinanceUsd(props.netCents, props.language)}</span>
+            </td>
+            <td />
+          </tr>
+        </tbody>
+      </table>
+    </footer>
   );
 }
 
@@ -405,26 +421,20 @@ export function AdminUnpaidPayoutBoard(props: {
             {t(language, { es: "Cargando…", en: "Loading…", pt: "Carregando…" })}
           </p>
         ) : (
-          <div className="admin-unpaid-professionals-table-wrap">
-            <table className="admin-unpaid-professionals-table admin-unpaid-professionals-table--split">
-              <colgroup>
-                <col />
-                <col className="admin-unpaid-col-sessions" />
-                <col className="admin-unpaid-col-net" />
-                <col className="admin-unpaid-col-move" />
-              </colgroup>
-              <ColumnHead language={language} side="pending" sortKey={props.sortKey} onSort={props.onSort} />
-              <tbody>
-                {renderPackageRows(props.pageRows, "pending")}
-                <BodyFiller filled={props.pageRows.length} emptyLabel={props.emptyPending} />
-              </tbody>
-              <TotalsFoot
-                language={language}
-                professionals={props.queueRows.length}
-                sessionsCount={props.pendingTotals.sessionsCount}
-                netCents={props.pendingTotals.professionalNetCents}
-              />
-            </table>
+          <>
+            <div className="admin-unpaid-professionals-table-wrap">
+              <table className="admin-unpaid-professionals-table admin-unpaid-professionals-table--split">
+                <SplitColGroup />
+                <ColumnHead language={language} side="pending" sortKey={props.sortKey} onSort={props.onSort} />
+                <tbody>
+                  {props.pageRows.length > 0 ? (
+                    renderPackageRows(props.pageRows, "pending")
+                  ) : (
+                    <EmptyBodyRow label={props.emptyPending} />
+                  )}
+                </tbody>
+              </table>
+            </div>
             {props.pager.visible ? (
               <div className="admin-unpaid-pager" aria-label={t(language, { es: "Paginación", en: "Pagination", pt: "Paginacao" })}>
                 <span className="admin-unpaid-pager-range">{props.pager.rangeLabel}</span>
@@ -450,7 +460,13 @@ export function AdminUnpaidPayoutBoard(props: {
                 </div>
               </div>
             ) : null}
-          </div>
+            <TotalsFoot
+              language={language}
+              professionals={props.queueRows.length}
+              sessionsCount={props.pendingTotals.sessionsCount}
+              netCents={props.pendingTotals.professionalNetCents}
+            />
+          </>
         )}
       </section>
 
@@ -467,32 +483,29 @@ export function AdminUnpaidPayoutBoard(props: {
         />
         <div className="admin-unpaid-professionals-table-wrap">
           <table className="admin-unpaid-professionals-table admin-unpaid-professionals-table--split">
-            <colgroup>
-              <col />
-              <col className="admin-unpaid-col-sessions" />
-              <col className="admin-unpaid-col-net" />
-              <col className="admin-unpaid-col-move" />
-            </colgroup>
+            <SplitColGroup />
             <ColumnHead language={language} side="assemble" />
             <tbody>
-              {renderPackageRows(props.stagedRows, "assemble")}
-              <BodyFiller
-                filled={props.stagedRows.length}
-                emptyLabel={t(language, {
-                  es: "Aprobá con → o arrastrá acá",
-                  en: "Approve with → or drop here",
-                  pt: "Aprove com → ou arraste aqui"
-                })}
-              />
+              {props.stagedRows.length > 0 ? (
+                renderPackageRows(props.stagedRows, "assemble")
+              ) : (
+                <EmptyBodyRow
+                  label={t(language, {
+                    es: "Aprobá con → o arrastrá acá",
+                    en: "Approve with → or drop here",
+                    pt: "Aprove com → ou arraste aqui"
+                  })}
+                />
+              )}
             </tbody>
-            <TotalsFoot
-              language={language}
-              professionals={props.stagedRows.length}
-              sessionsCount={props.stagedTotals.sessionsCount}
-              netCents={props.stagedTotals.professionalNetCents}
-            />
           </table>
         </div>
+        <TotalsFoot
+          language={language}
+          professionals={props.stagedRows.length}
+          sessionsCount={props.stagedTotals.sessionsCount}
+          netCents={props.stagedTotals.professionalNetCents}
+        />
         {props.stagedRows.length > 0 ? (
           <button
             type="button"

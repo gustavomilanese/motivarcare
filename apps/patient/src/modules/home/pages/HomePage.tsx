@@ -562,6 +562,7 @@ export function HomePage(props: {
     pricingReady,
     packageCatalogFromApi,
     usesDlocalCheckout,
+    selectedProfessionalId: props.state.selectedProfessionalId || props.state.assignedProfessionalId,
     onPurchasePackage: props.onPurchasePackage,
     onGateBlocked: () => setAssignProModalOpen(true)
   });

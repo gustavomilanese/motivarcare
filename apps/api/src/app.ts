@@ -20,6 +20,7 @@ import { chatRouter } from "./modules/chat/chat.routes.js";
 import { professionalRouter } from "./modules/professional/professional.routes.js";
 import { publicRouter } from "./modules/public/public.routes.js";
 import { intakeChatRouter } from "./modules/intake-chat/intakeChat.routes.js";
+import { onboardingDraftsRouter } from "./modules/onboarding-drafts/onboardingDrafts.routes.js";
 import { treatmentChatRouter } from "./modules/treatment-chat/treatmentChat.routes.js";
 import { emotionalDiaryRouter } from "./modules/emotional-diary/emotionalDiary.routes.js";
 import { landingChatRouter } from "./modules/landing-chat/landingChat.routes.js";
@@ -120,14 +121,36 @@ function isRawBodyWebhookPath(path: string): boolean {
 }
 
 const jsonParser = express.json({ limit: "35mb" });
+/**
+ * Los borradores de onboarding se reescriben en cada autoguardado: se les corta el body
+ * mucho antes del límite general para no parsear decenas de MB por request.
+ */
+const draftJsonParser = express.json({ limit: "3mb" });
+function isOnboardingDraftPath(path: string): boolean {
+  return path.startsWith("/api/onboarding-drafts") || path.startsWith("/api/v1/onboarding-drafts");
+}
 app.use((req, res, next) => {
   if (isRawBodyWebhookPath(req.path)) {
     next();
     return;
   }
+  if (isOnboardingDraftPath(req.path)) {
+    draftJsonParser(req, res, next);
+    return;
+  }
   jsonParser(req, res, next);
 });
 app.use((error: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // body-parser corta el stream cuando excede el límite: devolverlo como JSON nuestro y no como HTML.
+  if (error instanceof Error && (error as { type?: string }).type === "entity.too.large") {
+    sendApiError({
+      res,
+      status: 413,
+      code: "DRAFT_TOO_LARGE",
+      message: "El contenido enviado es demasiado grande"
+    });
+    return;
+  }
   if (!(error instanceof SyntaxError) || !("body" in (error as object))) {
     next(error);
     return;
@@ -287,6 +310,7 @@ function mountApiRoutes(prefix: "/api" | "/api/v1") {
   app.use(`${prefix}/professional`, professionalRouter);
   app.use(`${prefix}/public`, publicRouter);
   app.use(`${prefix}/intake-chat`, intakeChatRouter);
+  app.use(`${prefix}/onboarding-drafts`, onboardingDraftsRouter);
   app.use(`${prefix}/treatment-chat`, treatmentChatRouter);
   app.use(`${prefix}/emotional-diary`, emotionalDiaryRouter);
   app.use(`${prefix}/landing-chat`, landingChatRouter);

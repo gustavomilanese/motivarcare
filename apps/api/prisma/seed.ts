@@ -13,7 +13,8 @@ type SeedContext = {
   professionalUserIds: [string, string, string];
 };
 
-const defaultPassword = "SecurePass123";
+// En local: `SEED_PASSWORD=... npm run db:seed` para usar tu contraseña de siempre (mínimo 8, igual que el login).
+const defaultPassword = process.env.SEED_PASSWORD?.trim() || "SecurePass123";
 
 /**
  * Rutas bajo el API (mismo host/puerto que login). Archivos en `apps/api/public/demo-avatars/`.
@@ -217,15 +218,75 @@ async function seedCoreUsers(): Promise<SeedContext> {
 }
 
 async function seedAvailability(context: SeedContext) {
-  const slots = [
-    { id: "slot-pro1-1", professionalId: context.professionalProfileIds[0], startsAt: dateFromNow(1, 9, 0), endsAt: dateFromNow(1, 9, 50) },
-    { id: "slot-pro1-2", professionalId: context.professionalProfileIds[0], startsAt: dateFromNow(1, 11, 0), endsAt: dateFromNow(1, 11, 50) },
-    { id: "slot-pro1-3", professionalId: context.professionalProfileIds[0], startsAt: dateFromNow(2, 16, 30), endsAt: dateFromNow(2, 17, 20) },
-    { id: "slot-pro2-1", professionalId: context.professionalProfileIds[1], startsAt: dateFromNow(1, 14, 0), endsAt: dateFromNow(1, 14, 50) },
-    { id: "slot-pro2-2", professionalId: context.professionalProfileIds[1], startsAt: dateFromNow(3, 15, 30), endsAt: dateFromNow(3, 16, 20) },
-    { id: "slot-pro3-1", professionalId: context.professionalProfileIds[2], startsAt: dateFromNow(2, 17, 0), endsAt: dateFromNow(2, 17, 50) },
-    { id: "slot-pro3-2", professionalId: context.professionalProfileIds[2], startsAt: dateFromNow(5, 9, 0), endsAt: dateFromNow(5, 9, 50) }
+  // Quitar slots previos del seed (IDs fijos viejos + regenerados) para no acumular fechas vencidas.
+  await prisma.availabilitySlot.deleteMany({
+    where: {
+      OR: [
+        { source: "seed" },
+        { id: { startsWith: "slot-pro" } },
+        { id: { startsWith: "slot-seed-" } }
+      ]
+    }
+  });
+
+  /** Ventanas típicas por profesional (sesión 50'). Variedad mañana / tarde / noche. */
+  const schedulesByPro: Array<Array<[hour: number, minute: number]>> = [
+    [
+      [9, 0],
+      [10, 0],
+      [11, 0],
+      [16, 30],
+      [18, 0]
+    ],
+    [
+      [12, 0],
+      [14, 0],
+      [15, 30],
+      [17, 0],
+      [19, 0]
+    ],
+    [
+      [9, 30],
+      [13, 0],
+      [16, 0],
+      [18, 30],
+      [20, 0]
+    ]
   ];
+
+  const SESSION_MINUTES = 50;
+  const DAYS_AHEAD = 21;
+  const slots: Array<{
+    id: string;
+    professionalId: string;
+    startsAt: Date;
+    endsAt: Date;
+  }> = [];
+
+  for (let proIdx = 0; proIdx < context.professionalProfileIds.length; proIdx += 1) {
+    const professionalId = context.professionalProfileIds[proIdx];
+    const dayTimes = schedulesByPro[proIdx] ?? schedulesByPro[0];
+
+    for (let dayOffset = 1; dayOffset <= DAYS_AHEAD; dayOffset += 1) {
+      const probe = dateFromNow(dayOffset, 12, 0);
+      const weekday = probe.getDay(); // 0=dom … 6=sáb
+      if (weekday === 0) continue; // sin domingos
+
+      for (const [hour, minute] of dayTimes) {
+        // Sábados: solo mañana / mediodía
+        if (weekday === 6 && hour >= 15) continue;
+
+        const startsAt = dateFromNow(dayOffset, hour, minute);
+        const endsAt = new Date(startsAt.getTime() + SESSION_MINUTES * 60 * 1000);
+        slots.push({
+          id: `slot-seed-pro${proIdx + 1}-d${dayOffset}-h${hour}m${minute}`,
+          professionalId,
+          startsAt,
+          endsAt
+        });
+      }
+    }
+  }
 
   for (const slot of slots) {
     await prisma.availabilitySlot.upsert({
@@ -734,12 +795,13 @@ async function main() {
   }
 
   console.log("Seed completed. Demo credentials (avatares de prueba Unsplash; reemplazar en producción):");
-  console.log("- Patient: alex@example.com / SecurePass123");
-  console.log("- Patient: lucia.torres@example.com / SecurePass123");
-  console.log("- Patient: marcos.diaz@example.com / SecurePass123");
-  console.log("- Professional Emma: emma.collins@motivarte.com / SecurePass123");
-  console.log("- Professional Michael: michael.rivera@motivarte.com / SecurePass123");
-  console.log("- Professional Sophia: sophia.nguyen@motivarte.com / SecurePass123");
+  console.log(`- Patient: alex@example.com / ${defaultPassword}`);
+  console.log(`- Patient: lucia.torres@example.com / ${defaultPassword}`);
+  console.log(`- Patient: marcos.diaz@example.com / ${defaultPassword}`);
+  console.log(`- Professional Emma: emma.collins@motivarte.com / ${defaultPassword}`);
+  console.log(`- Professional Michael: michael.rivera@motivarte.com / ${defaultPassword}`);
+  console.log(`- Professional Sophia: sophia.nguyen@motivarte.com / ${defaultPassword}`);
+  console.log(`- Admin: admin@motivarte.com / ${defaultPassword}`);
 }
 
 main()

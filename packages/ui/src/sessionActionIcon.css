@@ -1,0 +1,51 @@
+/*
+ * Iconos dibujados en CSS para las acciones sobre una sesión: reprogramar (flecha
+ * circular) y cancelar (cruz). Los usan el portal del paciente y el del profesional.
+ */
+.session-action-icon {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  color: currentColor;
+}
+
+.session-action-icon.reschedule::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+}
+
+.session-action-icon.reschedule::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 1px;
+  width: 5px;
+  height: 5px;
+  border-top: 1.5px solid currentColor;
+  border-right: 1.5px solid currentColor;
+  transform: rotate(35deg);
+}
+
+.session-action-icon.cancel::before,
+.session-action-icon.cancel::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 0;
+  width: 1.5px;
+  height: 14px;
+  background: currentColor;
+  border-radius: 999px;
+}
+
+.session-action-icon.cancel::before {
+  transform: rotate(45deg);
+}
+
+.session-action-icon.cancel::after {
+  transform: rotate(-45deg);
+}

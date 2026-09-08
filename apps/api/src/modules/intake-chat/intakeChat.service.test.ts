@@ -73,6 +73,29 @@ describe("intake-chat service internals", () => {
     });
   });
 
+  describe("inferMissingClosedAnswersFromUserMessage", () => {
+    it("mapea el chip No a safetyRisk si el LLM no lo extrajo", () => {
+      expect(__internals.inferMissingClosedAnswersFromUserMessage({ mainReason: "Ansiedad" }, "No")).toEqual({
+        mainReason: "Ansiedad",
+        safetyRisk: "No"
+      });
+    });
+
+    it("no pisa un safetyRisk ya extraído", () => {
+      expect(
+        __internals.inferMissingClosedAnswersFromUserMessage({ safetyRisk: "A veces" }, "No").safetyRisk
+      ).toBe("A veces");
+    });
+  });
+
+  describe("applyEarlySubmitDefaults", () => {
+    it("no inventa Prefiero no responder en safetyRisk", () => {
+      const result = __internals.applyEarlySubmitDefaults({ mainReason: "Ansiedad", safetyRisk: "No" });
+      expect(result.safetyRisk).toBe("No");
+      expect(__internals.applyEarlySubmitDefaults({ mainReason: "Ansiedad" }).safetyRisk).toBeUndefined();
+    });
+  });
+
   describe("parseStoredMessages", () => {
     it("filtra entries sin role o content válidos", () => {
       const raw = [
@@ -108,9 +131,15 @@ describe("intake-chat service internals", () => {
       expect(__internals.isExpired(session)).toBe(false);
     });
 
-    it("true si updatedAt es viejo (>7d default)", () => {
+    it("false a los 8 días: el paciente puede volver la semana siguiente", () => {
       const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
       const session = { updatedAt: eightDaysAgo } as Parameters<typeof __internals.isExpired>[0];
+      expect(__internals.isExpired(session)).toBe(false);
+    });
+
+    it("true si updatedAt es viejo (>15d default)", () => {
+      const sixteenDaysAgo = new Date(Date.now() - 16 * 24 * 60 * 60 * 1000);
+      const session = { updatedAt: sixteenDaysAgo } as Parameters<typeof __internals.isExpired>[0];
       expect(__internals.isExpired(session)).toBe(true);
     });
   });

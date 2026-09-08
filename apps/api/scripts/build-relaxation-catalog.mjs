@@ -18,16 +18,16 @@ const patientOutPath = path.join(
 const skipValidate = process.argv.includes("--skip-validate");
 
 /**
- * Pools curados (oEmbed OK, jun 2026). Reutilizar IDs entre categorías está permitido.
+ * Pools curados. Preferir VOD (isLiveContent=false); los radios 24/7 fallan el embed
+ * cuando la live no está disponible (“Video no disponible”).
  */
 const VIDEO_IDS_BY_CATEGORY = {
-  /** Sin radios 24/7 (jfKfPfyJRdk, 5qap5aO4i9A): suelen fallar el embed en iframe. */
   "lofi-estudio": [
-    "X4VbdwhkE10",
-    "GSfT7H87zq4",
-    "4xDzrJKXOOY",
-    "7NOSDKb0HlU",
+    "lTRiuFIWV54",
+    "wAPCSnAhhC8",
     "n61ULEU7CO0",
+    "M5QY2_8704o",
+    "2OEL4P1Rz04",
     "77ZozI0rw7w",
     "Lp6XlsBm_Lw",
     "xQIZti4K8_E",
@@ -40,7 +40,7 @@ const VIDEO_IDS_BY_CATEGORY = {
     "xQIZti4K8_E",
     "5LXhPbmoHmU",
     "8xY4N62ywWo",
-    "hHW1oY26kxQ",
+    "9E6b3swbnWg",
     "1ZYbU82GVz4",
     "hlWiI4xVXKY",
     "hEnkPV6w91M",
@@ -85,38 +85,38 @@ const VIDEO_IDS_BY_CATEGORY = {
   meditacion: [
     "inpok4MKVLM",
     "ZCk23KXDeXY",
-    "hHW1oY26kxQ",
+    "ZToicYcHIOU",
     "HLhld_L1WBA",
     "SBiwLibZqfw",
     "5BLZNhGVbEk",
     "8sYK7lm3UKg",
     "inpok4MKVLM",
     "ZCk23KXDeXY",
-    "hHW1oY26kxQ"
+    "1ZYbU82GVz4"
   ],
   "sueno-dormir": [
-    "DnJVE9sqPAM",
-    "txQ6t4yPIM0",
     "cEUpHtxcMzE",
+    "txQ6t4yPIM0",
     "1ZYbU82GVz4",
     "PgkvwG971hw",
-    "DnJVE9sqPAM",
-    "txQ6t4yPIM0",
+    "eTeD8DAta4c",
     "cEUpHtxcMzE",
+    "txQ6t4yPIM0",
     "1ZYbU82GVz4",
+    "2OEL4P1Rz04",
     "eTeD8DAta4c"
   ],
   "flauta-cello": [
     "hEnkPV6w91M",
     "6_pOwQBeHsQ",
     "Mx6xkyi5Ij8",
-    "Jhu74v62Mho",
     "wY5ZqkLO9CI",
+    "9E6b3swbnWg",
     "hEnkPV6w91M",
     "6_pOwQBeHsQ",
     "Mx6xkyi5Ij8",
-    "Jhu74v62Mho",
-    "wY5ZqkLO9CI"
+    "wY5ZqkLO9CI",
+    "9E6b3swbnWg"
   ],
   "ambient-drone": [
     "GoihJiAqI4s",

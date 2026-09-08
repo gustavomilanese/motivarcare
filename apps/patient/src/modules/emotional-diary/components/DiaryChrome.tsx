@@ -2,11 +2,9 @@ import { type ReactNode, useLayoutEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
 import { navigateToSectionTop } from "../../app/lib/navigateSectionTop";
+import { DiaryBannerGlyph, DiaryBannerIcon } from "../../home/ml/HomeBannerGlyphs";
 import { useDiaryPortalToolbarMountTarget } from "../context/DiaryPortalToolbarMount";
 import { t } from "../lib/labels";
-
-/** Arte del banner Diario (mismo cutout que Home). */
-const DIARY_BANNER_IMAGE_SRC = "/home/banner-home-diary.png?v=2";
 
 const DIARY_SECTIONS = [
   {
@@ -184,6 +182,9 @@ export function DiaryHomeHero(props: {
             })}
           </p>
           <h1 id="diary-page-title" className="dashboard-ml-diary-banner-title">
+            <span className="dashboard-ml-diary-banner-title-icon" aria-hidden="true">
+              <DiaryBannerIcon />
+            </span>
             {props.title}
           </h1>
           {props.subtitle ? (
@@ -215,12 +216,7 @@ export function DiaryHomeHero(props: {
           </div>
         </div>
         <div className="dashboard-ml-diary-banner-media" aria-hidden="true">
-          <img
-            className="dashboard-ml-diary-banner-photo"
-            src={DIARY_BANNER_IMAGE_SRC}
-            alt=""
-            decoding="async"
-          />
+          <DiaryBannerGlyph />
         </div>
       </div>
       <div id="diary-hero-toolbar-mount" className="sessions-hero-toolbar-mount diary-page-ml-toolbar" />
