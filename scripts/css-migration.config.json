@@ -8,6 +8,10 @@
     {
       "selector": "^\\.admin-unpaid-(actions|active-period|calc-hint|col-actions|col-pro|filters-dot|filters-toggle|icon-btn|month-clear|month-range|original|pay-btn|professionals-head-copy|professionals-head-total|professionals-lead|professionals-toolbar|professionals-total|professionals-totals|row-metrics|session-hint)\\b",
       "motivo": "CSS muerto del panel de pagos de admin: 23 clases sin uso en TSX. Los modificadores que se arman en runtime (admin-unpaid-status--*) NO estan en esta lista y siguen vivos."
+    },
+    {
+      "selector": "^\\.dashboard-ml-history-preview--calendar \\.sessions-calendar-card$",
+      "motivo": "Renombrado a .patient-dashboard-home .dashboard-ml-history-preview--calendar .sessions-calendar-card para ganar especificidad tras extraer sessions.css."
     }
   ],
   "allowCrossing": [
@@ -34,6 +38,158 @@
     {
       "selector": "^\\.preferences-group h3$",
       "motivo": "El h3 vive dentro del modal de preferencias; no es el mismo nodo que los h3 de las tarjetas de agenda o del diario."
+    },
+    {
+      "selector": "^\\.dashboard-ml-history-card > \\*$",
+      "motivo": "Hijo universal de la card de historial en Home. Al extraer .dashboard-ml a home.css cambió el orden relativo vs FAB/chat/artículos; esos nodos no viven dentro de la card."
+    },
+    {
+      "selector": "^\\.article-reader-content > \\*$",
+      "motivo": "Hijo universal del lector de artículos. El cruce con reglas .dashboard-ml movidas a home.css es ruido del extractor: promo/banner de Home no se renderizan dentro del article reader."
+    },
+    {
+      "selector": "\\.wa-messages > \\*$",
+      "motivo": "Hijo universal del chat WA. Al mover .sessions-* a sessions.css cruzó position/z-index con popover del calendario; el popover no vive dentro de .wa-messages."
+    },
+    {
+      "selector": "\\.diary-page--(records|entry) >",
+      "motivo": "Hijos universales del diario. Cruce de ancho/box-sizing con packs de Sesiones tras el extract; son pantallas distintas."
+    },
+    {
+      "selector": "\\.exercise-(routine|reader)-page >",
+      "motivo": "Hijos universales de ejercicios. Cruce con packs/toggles de Sesiones; pantallas distintas."
+    },
+    {
+      "selector": "\\.sessions-calendar-toggle \\+ \\*",
+      "motivo": "Hermano adyacente del toggle del calendario. Cruce de padding con chat/portal shell al reordenar; no comparten el mismo nodo."
+    },
+    {
+      "selector": "^button\\.sessions-balance$",
+      "motivo": "Botón de saldo en Sesiones vs botón de error del treatment chat: mismas props appearance, nodos distintos."
+    },
+    {
+      "selector": "\\.sessions-combined-section \\.label$",
+      "motivo": "Label de la card combinada de sesiones en Home vs label del hero de profesional: mismos tokens, nodos distintos."
+    },
+    {
+      "selector": "\\.sessions-booking-page .*\\.session-management-actions \\.(session-detail-button|icon-only)$",
+      "motivo": "Acciones de Sesiones (página) vs las mismas clases bajo .dashboard-ml-bookings-list en Home; el ancestro decide, no conviven."
+    },
+    {
+      "selector": "^\\.portal-main:has\\(\\.sessions-booking-page\\)$",
+      "motivo": "Layout del main en Sesiones vs portal-shell home-ml; el :has(.sessions-booking-page) no aplica en Home."
+    },
+    {
+      "selector": "\\.sessions-reservations-table-head > :last-child$",
+      "motivo": "Celda de cabezal de tabla vs wrap de acciones en Home; nodos hermanos distintos tras el extract de .sessions-*."
+    },
+    {
+      "selector": "^\\.sessions-calendar-card\\.dashboard$",
+      "motivo": "Fondo base del calendario; el preview de Home gana por mayor especificidad (.patient-dashboard-home .dashboard-ml-history-preview--calendar …)."
+    },
+    {
+      "selector": "^\\.acquire-sessions-choice-card > \\*$",
+      "motivo": "Hijo universal del modal de comprar sesiones. Cruce con .matching-flow-backdrop al extraer matching.css; el backdrop no es hijo de esa card."
+    },
+    {
+      "selector": "\\.session-management-actions \\.icon-only",
+      "motivo": "Hover genérico vs icon-only del listado Home (.dashboard-ml-bookings-list); el ancestro de Home es más específico en el estado base y el cruce es ruido del split home/sessions."
+    },
+    {
+      "selector": "\\.session-rn-name",
+      "motivo": "Nombre en card RN: variante Home vs .professional-name-link; conviven por ancestro, no por el mismo selector puro."
+    },
+    {
+      "selector": "\\.hero-card(\\.hero-card-button)?\\.active-professional-card--has-pro",
+      "motivo": "Misma tarjeta de profesional en Home: reglas con y sin .patient-dashboard-home quedaron en home.css; declaraciones equivalentes."
+    },
+    {
+      "selector": "\\.patient-dashboard-home \\.hero-card",
+      "motivo": "Misma familia hero-card de Home tras consolidar leftovers; cruce de padding/align entre variantes has-pro."
+    },
+    {
+      "selector": "\\.deal-select-button",
+      "motivo": "CTA de paquete: .featured (checkout.css) vs grid de Sesiones; pantallas/ancestros distintos o featured debe ganar a propósito."
+    },
+    {
+      "selector": "\\.session-rn-root \\.session-rn-card",
+      "motivo": "Card RN: selector de lista vs .session-management-card; mismo bloque visual, orden post-extract."
+    },
+    {
+      "selector": "\\.session-rn-root \\.sessions-confirmed-list--cards > \\.session-rn-card$",
+      "motivo": "Par del anterior: lista cards vs card con session-management-card."
+    },
+    {
+      "selector": "\\.patient-dashboard-home .*\\.sessions-",
+      "motivo": "Estilos de listas/calendario en Inicio vs los mismos bajo .sessions-booking-page; pantallas distintas tras el split home/sessions."
+    },
+    {
+      "selector": "\\.sessions-booking-page .*\\.sessions-",
+      "motivo": "Par del anterior: página Sesiones vs variantes de Home."
+    },
+    {
+      "selector": "\\.sessions-hero-toolbar-mount",
+      "motivo": "Toolbar montada en Sesiones vs Diario; el ancestro .sessions-booking-page / .diary-home-page decide."
+    },
+    {
+      "selector": "\\.dashboard-ml-(history-link|sessions-footer|diary-banner|sessions-banner)",
+      "motivo": "Links/iconos de banner ML: variantes sessions vs diary / hover genérico; no comparten el mismo nodo de pantalla."
+    },
+    {
+      "selector": "\\.dashboard-compact-section",
+      "motivo": "Toggle/lista de historial compacto en Home vs purchased-history en Sesiones."
+    },
+    {
+      "selector": "\\.session-detail-action--ghost",
+      "motivo": "Hover vs disabled:hover del mismo botón ghost; estados mutuamente excluyentes."
+    },
+    {
+      "selector": "\\.sessions-purchased-history",
+      "motivo": "Historial comprado: reglas Home vs Sesiones / hover vs base tras repartir hojas."
+    },
+    {
+      "selector": "^\\.dashboard-ml-",
+      "motivo": "Bloques ML de Home viven dentro de .portal-main, no son hijos directos de .portal-shell; cruce con .portal-shell > * al sacar overrides a home-mobile.css."
+    },
+    {
+      "selector": "\\.payment-modal--success \\.payment-modal-footer",
+      "motivo": "Footer del modal de pago vs margin de page-stack; el modal no es hijo de .page-stack."
+    },
+    {
+      "selector": "\\.wellbeing-relax-toolbar-mount \\.header-icon-link small",
+      "motivo": "Badge del toolbar wellbeing vs diary/chat mounts; mismos tokens, ancestros distintos."
+    },
+    {
+      "selector": "^\\.patient-dashboard-home",
+      "motivo": "Root de Home vive dentro de .portal-main; no es hijo directo de .portal-shell."
+    },
+    {
+      "selector": "\\.dashboard-package-options-panel",
+      "motivo": "Panel de paquetes embebido en Home vs .checkout-packages-panel-root--mobile en checkout; pantallas distintas tras absorber payment-* en checkout.css."
+    },
+    {
+      "selector": "\\.sessions-booking-page--ml .*\\.content-card$",
+      "motivo": "Cards de Sesiones ML vs profile-panel/sidebar; pantallas distintas."
+    },
+    {
+      "selector": "\\.sessions-upcoming-list--home-like \\.session-rn-card",
+      "motivo": "Lista upcoming Sesiones vs .dashboard-ml-bookings-list en Home; ancestros distintos."
+    },
+    {
+      "selector": "\\.(diary|chat)-.*toolbar-mount \\.header-icon-link small",
+      "motivo": "Badges de toolbar diary vs chat; mounts distintos."
+    },
+    {
+      "selector": "\\.diary-hero-card > p$",
+      "motivo": "Copy del hero del diario vs párrafos de mensaje WA; pantallas distintas."
+    },
+    {
+      "selector": "\\.chat-page-root \\.wa-shell$",
+      "motivo": "Shell del chat vs :has(.wa-shell) en portal-main; el shell no es el main."
+    },
+    {
+      "selector": "^\\.portal-main:has\\(\\.wa-shell\\)$",
+      "motivo": "Par del anterior: fondo del main con chat vs .wa-shell interno."
     }
   ]
 }

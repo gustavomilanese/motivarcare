@@ -1,0 +1,458 @@
+/* Modal detalle de sesión — familia .session-detail*.
+ */
+
+.sessions-booking-page .sessions-booking-desktop-only .session-management-actions .session-detail-button {
+  min-height: 32px;
+}
+.sessions-confirmed-list--desktop .session-management-actions .session-detail-button,
+.sessions-confirmed-list--dashboard-desktop .session-management-actions .session-detail-button {
+  min-height: 32px;
+  padding: 5px 10px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+.session-detail-pro h3 .professional-name-stack {
+  align-items: center;
+  text-align: center;
+}
+.session-detail-modal {
+  width: min(400px, 100%);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  padding: 16px 18px 18px;
+  gap: 16px;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.03),
+    0 24px 48px rgba(15, 23, 42, 0.14);
+  max-height: min(88dvh, 640px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.session-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.session-detail-status {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #5f44eb;
+  background: rgba(95, 68, 235, 0.1);
+}
+.session-detail-status--done {
+  color: #15803d;
+  background: rgba(22, 163, 74, 0.12);
+}
+.session-detail-status--cancelled {
+  color: #b91c1c;
+  background: rgba(239, 68, 68, 0.1);
+}
+.session-detail-close {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 22px;
+  line-height: 1;
+  padding: 0;
+  box-shadow: none;
+  cursor: pointer;
+}
+.session-detail-close:hover {
+  background: #e2e8f0;
+  border-color: transparent;
+  color: #334155;
+}
+.session-detail-pro {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+.session-detail-pro img {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  object-fit: cover;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+.session-detail-pro-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.session-detail-pro-reviews-trigger {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  max-width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.session-detail-pro-reviews-trigger:hover .session-detail-pro-name,
+.session-detail-pro-reviews-trigger:focus-visible .session-detail-pro-name {
+  color: var(--brand);
+}
+.session-detail-pro-reviews-trigger:focus-visible {
+  outline: 2px solid rgba(95, 68, 235, 0.35);
+  outline-offset: 2px;
+}
+.session-detail-pro-name {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+.session-detail-pro-rating {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 4px;
+}
+.session-detail-pro-rating--static {
+  display: inline-flex;
+}
+.session-detail-pro-rating-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.session-detail-pro-title {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.3;
+}
+.session-detail-when {
+  display: grid;
+  gap: 2px;
+  padding: 14px 14px 12px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+.session-detail-when-date {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #0f172a;
+  text-transform: capitalize;
+}
+.session-detail-when-time {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+.session-detail-when-tz {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  word-break: break-word;
+}
+.session-detail-footnote {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #94a3b8;
+  font-weight: 500;
+}
+.session-detail-modal--completed,
+.session-detail-modal--cancelled {
+  background: #ffffff;
+}
+.session-detail-modal--cancel {
+  gap: 14px;
+}
+.session-detail-cancel-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+}
+.session-detail-cancel-copy {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.session-detail-change-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.session-detail-action {
+  border-radius: 12px;
+  padding: 11px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+.session-detail-action--ghost {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #334155;
+}
+.session-detail-action--ghost:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+.session-detail-action--ghost:disabled,
+.session-detail-action--ghost:disabled:hover {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #fff;
+  color: #4a5568;
+}
+.session-detail-action--danger-outline {
+  border: 1px solid rgba(180, 35, 24, 0.4);
+  background: #fff;
+  color: #b42318;
+}
+.session-detail-action--danger-outline:hover:not(:disabled) {
+  background: #b42318;
+  border-color: #b42318;
+  color: #fff;
+}
+.session-detail-action--danger-outline:disabled,
+.session-detail-action--danger-outline:disabled:hover {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #fff;
+  border-color: rgba(180, 35, 24, 0.35);
+  color: #b42318;
+}
+.session-detail-action--danger {
+  border: 0;
+  background: #b42318;
+  color: #fff;
+}
+.session-detail-action--danger:hover:not(:disabled) {
+  background: #912018;
+  color: #fff;
+}
+.session-detail-action--danger:disabled,
+.session-detail-action--danger:disabled:hover,
+.session-detail-action--danger:disabled:focus-visible {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #b42318;
+  color: #fff;
+}
+.session-detail-cancel-confirm {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+.session-detail-cancel-confirm p {
+  margin: 0;
+  color: #4a5568;
+  font-size: 13px;
+}
+.session-detail-cancel-reason {
+  display: grid;
+  gap: 6px;
+}
+.session-detail-cancel-reason span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+.session-detail-cancel-reason textarea {
+  width: 100%;
+  border: 1px solid #d8deea;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  color: #1e293b;
+  resize: vertical;
+  min-height: 72px;
+}
+.session-detail-cancel-reason textarea:focus {
+  outline: 2px solid rgba(95, 68, 235, 0.25);
+  border-color: #7b5bff;
+}
+.session-detail-cancel-confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.session-detail-meet {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.session-detail-meet-fallback-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #94a3b8;
+  font-weight: 500;
+}
+.session-detail-meet-actions {
+  display: grid;
+  gap: 8px;
+}
+.session-detail-meet-empty {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px dashed #e2e8f0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #64748b;
+  font-weight: 500;
+  text-align: center;
+}
+.session-detail-change-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.session-detail-action {
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.session-detail-action--ghost {
+  border: 1px solid #d8deea;
+  background: #fff;
+  color: #4a5568;
+}
+.session-detail-action--ghost:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+.session-detail-action--danger-outline {
+  border: 1px solid rgba(180, 35, 24, 0.45);
+  background: #fff;
+  color: #b42318;
+}
+.session-detail-cancel-confirm {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+.session-detail-cancel-reason textarea {
+  width: 100%;
+  border: 1px solid #d8deea;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  color: #1e293b;
+  resize: vertical;
+  min-height: 72px;
+}
+.session-detail-cancel-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.session-detail-meet {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: linear-gradient(165deg, #ffffff 0%, #f8fafc 100%);
+  display: grid;
+  gap: 14px;
+}
+.session-detail-meet-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+.session-detail-meet-fallback-hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #94a3b8;
+  font-weight: 500;
+}
+.session-detail-meet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.session-detail-meet-empty {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #64748b;
+  font-weight: 500;
+}
+.session-management-actions .session-detail-button {
+  min-height: 32px;
+}
+.session-management-actions .session-detail-button {
+  white-space: nowrap;
+}
+@media (max-width: 680px) {
+  .session-detail-modal {
+    width: min(400px, calc(100vw - 24px));
+    max-width: min(400px, calc(100vw - 24px));
+    padding: 14px 16px 16px;
+    border-radius: 20px;
+    max-height: calc(100dvh - 28px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 1080px) {
+  .session-detail-modal {
+    width: min(400px, calc(100vw - 24px));
+    max-height: calc(100dvh - 28px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+

@@ -10,7 +10,40 @@
 @import "@therapy/ui/sessionActionIcon.css";
 @import "@therapy/ui/sessionModal.css";
 @import "@therapy/ui/intakeCard.css";
+/* Tokens + resto no particionado. Pantallas nuevas: su propio .css, no acá. */
 @import "./legacy.css";
+@import "../modules/app/styles/portal-shell.css";
+@import "../modules/app/styles/portal-nav.css";
+@import "../modules/app/styles/portal-notifications.css";
+@import "../modules/auth/auth.css";
+@import "../modules/home/home.css";
+@import "../modules/home/home-promo.css";
+@import "../modules/home/home-dashboard.css";
+@import "../modules/home/home-widgets.css";
+@import "../modules/home/home-patient.css";
+@import "../modules/home/home-sessions.css";
+@import "../modules/home/home-history.css";
+@import "../modules/booking/sessions.css";
+@import "../modules/booking/sessions-calendar.css";
+@import "../modules/booking/sessions-booking-ui.css";
+@import "../modules/booking/sessions-lists.css";
+@import "../modules/booking/session-detail.css";
+@import "../modules/booking/session-booking.css";
+@import "../modules/booking/availability.css";
+@import "../modules/checkout/checkout.css";
+@import "../modules/checkout/checkout-trial.css";
+@import "../modules/intake/intake.css";
+@import "../modules/matching/matching.css";
+@import "../modules/exercises/exercises.css";
+@import "../modules/articles/articles.css";
+@import "../modules/wellbeing/wellbeing.css";
+@import "../modules/chat/chat.css";
 @import "../modules/emotional-diary/emotional-diary.css";
+@import "../modules/emotional-diary/diary-entry.css";
+@import "../modules/emotional-diary/diary-charts.css";
+/* Overrides ≤1080 por dominio (antes en mobile-portal-flat). */
+@import "../modules/home/home-mobile.css";
+@import "../modules/booking/sessions-mobile.css";
+@import "../modules/emotional-diary/diary-mobile.css";
+@import "../modules/chat/chat-mobile.css";
 @import "../mobile-portal-flat.css";
-/* Pantallas nuevas: @import "./booking.css"; — no agregar reglas acá ni en legacy.css. */

@@ -21,6 +21,11 @@ import {
 } from "./ProfessionalIdentityStepProgress";
 import { ProfessionalPayoutSetupPanel } from "./ProfessionalPayoutSetupPanel";
 import {
+  markProfessionalOnboardingPrepSeen,
+  ProfessionalOnboardingPrepDialog,
+  shouldShowProfessionalOnboardingPrep
+} from "./ProfessionalOnboardingPrepDialog";
+import {
   PROFESSIONAL_VIDEO_MAX_DURATION_SEC
 } from "../constants/professionalProfileGuidanceCopy";
 import { PROFESSIONAL_THERAPY_MODALITY_ROWS } from "../constants/professionalTherapyModalityOptions";
@@ -58,6 +63,12 @@ export function ProfessionalWebOnboardingWizard(props: {
   const interstitialByStep = wizard.interstitialByStep;
   const [mediaStepError, setMediaStepError] = useState("");
   const [identityTherapyUnlocked, setIdentityTherapyUnlocked] = useState(false);
+  const [showPrepDialog, setShowPrepDialog] = useState(() =>
+    shouldShowProfessionalOnboardingPrep({
+      initialWizardStep: props.initialWizardStep,
+      hasExistingSession: Boolean(props.initialWebSession)
+    })
+  );
   const therapySectionRef = useRef<HTMLDivElement | null>(null);
   const focusAreasSectionRef = useRef<HTMLDivElement | null>(null);
   const languagesSectionRef = useRef<HTMLDivElement | null>(null);
@@ -83,6 +94,7 @@ export function ProfessionalWebOnboardingWizard(props: {
     update,
     updateDiploma,
     addDiploma,
+    removeDiploma,
     toggleLanguage,
     toggleFocusArea,
     toggleTherapyModality,
@@ -1054,7 +1066,23 @@ export function ProfessionalWebOnboardingWizard(props: {
               </div>
               {form.diplomas.map((diploma, index) => (
                 <div className="pro-web-diploma-card" key={`web-diploma-${index}`}>
-                  <h4>{t(props.language, { es: `Diploma #${index + 1}`, en: `Diploma #${index + 1}`, pt: `Diploma #${index + 1}` })}</h4>
+                  <div className="pro-web-diploma-card__head">
+                    <h4>{t(props.language, { es: `Diploma #${index + 1}`, en: `Diploma #${index + 1}`, pt: `Diploma #${index + 1}` })}</h4>
+                    {form.diplomas.length > 1 ? (
+                      <button
+                        type="button"
+                        className="pro-web-diploma-card__remove"
+                        aria-label={t(props.language, {
+                          es: `Eliminar diploma ${index + 1}`,
+                          en: `Remove diploma ${index + 1}`,
+                          pt: `Remover diploma ${index + 1}`
+                        })}
+                        onClick={() => removeDiploma(index)}
+                      >
+                        ×
+                      </button>
+                    ) : null}
+                  </div>
                   <McInput
                     label="Institución"
                     value={diploma.institution}
@@ -1220,6 +1248,16 @@ export function ProfessionalWebOnboardingWizard(props: {
           </footer>
         </div>
       </section>
+
+      {showPrepDialog ? (
+        <ProfessionalOnboardingPrepDialog
+          language={props.language}
+          onContinue={() => {
+            markProfessionalOnboardingPrepSeen();
+            setShowPrepDialog(false);
+          }}
+        />
+      ) : null}
 
       {activeInterstitialStep !== null && interstitialByStep[activeInterstitialStep] ? (
         <div className="pro-web-interstitial" role="dialog" aria-modal="true">

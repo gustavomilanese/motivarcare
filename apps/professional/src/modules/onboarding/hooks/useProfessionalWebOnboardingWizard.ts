@@ -558,6 +558,53 @@ export function useProfessionalWebOnboardingWizard(input: {
     }));
   };
 
+  const removeDiploma = (index: number) => {
+    setForm((current) => {
+      if (current.diplomas.length <= 1) {
+        return current;
+      }
+      return {
+        ...current,
+        diplomas: current.diplomas.filter((_, diplomaIndex) => diplomaIndex !== index)
+      };
+    });
+    setActiveDiplomaUploadIndex((current) => {
+      if (current === null) {
+        return null;
+      }
+      if (current === index) {
+        return null;
+      }
+      return current > index ? current - 1 : current;
+    });
+  };
+
+  const isDiplomaEntryBlank = (diploma: {
+    institution: string;
+    degree: string;
+    startYear: string;
+    graduationYear: string;
+    diplomaUploaded: boolean;
+  }) =>
+    !diploma.institution.trim()
+    && !diploma.degree.trim()
+    && !diploma.startYear
+    && !diploma.graduationYear
+    && !diploma.diplomaUploaded;
+
+  const isDiplomaEntryComplete = (diploma: {
+    institution: string;
+    degree: string;
+    startYear: string;
+    graduationYear: string;
+  }) =>
+    Boolean(
+      diploma.institution.trim()
+      && diploma.degree.trim()
+      && diploma.startYear
+      && diploma.graduationYear
+    );
+
   const toggleLanguage = (value: string) => {
     const next = form.languages.includes(value)
       ? form.languages.filter((item) => item !== value)
@@ -676,15 +723,10 @@ export function useProfessionalWebOnboardingWizard(input: {
       })()
     ),
     Boolean(form.profilePhotoReady && form.profilePhotoPreview.trim() && form.videoReady && form.videoFileUrl.trim()),
-    Boolean(
-      form.diplomas.length
-      && form.diplomas.every((diploma) =>
-        diploma.institution.trim()
-        && diploma.degree.trim()
-        && diploma.startYear
-        && diploma.graduationYear
-      )
-    ),
+    (() => {
+      const filled = form.diplomas.filter((diploma) => !isDiplomaEntryBlank(diploma));
+      return filled.length > 0 && filled.every(isDiplomaEntryComplete);
+    })(),
     isPayoutFormComplete(
       form.payoutProvider,
       {
@@ -910,6 +952,18 @@ export function useProfessionalWebOnboardingWizard(input: {
         return;
       }
       setPricingStepError("");
+    }
+    if (step === 6) {
+      setForm((current) => {
+        const kept = current.diplomas.filter((diploma) => !isDiplomaEntryBlank(diploma));
+        if (kept.length === current.diplomas.length) {
+          return current;
+        }
+        return {
+          ...current,
+          diplomas: kept.length > 0 ? kept : current.diplomas.slice(0, 1)
+        };
+      });
     }
     if (step < labels.length - 1) {
       setMaxReachedStep((current) => Math.max(current, step + 1));
@@ -1260,6 +1314,7 @@ export function useProfessionalWebOnboardingWizard(input: {
     update,
     updateDiploma,
     addDiploma,
+    removeDiploma,
     toggleLanguage,
     toggleFocusArea,
     toggleTherapyModality,

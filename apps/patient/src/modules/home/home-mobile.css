@@ -1,0 +1,849 @@
+/* Overrides mobile (≤1080) para Home — sacado de mobile-portal-flat.css.
+ */
+
+@media (max-width: 1080px) {
+  .dashboard-ml-home,
+  .dashboard-ml-brand-band,
+  .dashboard-ml-promo,
+  .dashboard-ml-promo-viewport,
+  .dashboard-ml-promo-slide,
+  .dashboard-ml-promo-frame,
+  .dashboard-ml-promo-frame--media,
+  .dashboard-ml-surface,
+  .dashboard-ml-surface--brand,
+  .dashboard-ml-surface--bridge,
+  .dashboard-ml-diary,
+  .dashboard-ml-feature-section,
+  .dashboard-ml-sessions-banner,
+  .dashboard-ml-diary-banner,
+  .dashboard-ml-feature-banner,
+  .dashboard-ml-sessions-banner-frame,
+  .dashboard-ml-diary-banner-frame,
+  .dashboard-ml-feature-banner-frame,
+  .dashboard-ml-sessions-pack,
+  .dashboard-ml-diary-pack,
+  .dashboard-ml-feature-panel,
+  .dashboard-ml-diary-mood,
+  .dashboard-ml-diary-mood .diary-mood-scroll,
+  .dashboard-ml-diary-mood .diary-mood-scroll-inner {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+  .patient-dashboard-home .dashboard-ml-sessions,
+  .patient-dashboard-home .dashboard-ml-diary,
+  .patient-dashboard-home .dashboard-ml-feature-section {
+    width: calc(100% + 20px) !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin-left: -10px !important;
+    margin-right: -10px !important;
+    box-sizing: border-box !important;
+  }
+  .patient-dashboard-home .dashboard-ml-surface {
+    /*
+     * No clip acá: overflow-x:clip fuerza overflow-y:auto y corta
+     * las Accesos + el aire hacia “Tus próximas sesiones”.
+     */
+    overflow: visible;
+  }
+  .patient-dashboard-home .dashboard-ml-surface--bridge {
+    /* Aire Accesos → Sesiones (mitad del 30 previo) */
+    padding-bottom: 15px !important;
+    overflow: visible !important;
+  }
+  .patient-dashboard-home .dashboard-ml-surface--bridge + .dashboard-ml-surface {
+    padding-top: 0 !important;
+  }
+  .patient-dashboard-home .dashboard-ml-diary,
+  .patient-dashboard-home .dashboard-ml-diary-pack {
+    overflow-x: clip;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-scroll-inner {
+    overflow-x: auto !important;
+  }
+  .portal-main .patient-dashboard-home .dashboard-ml-home {
+    background: var(--mobile-canvas, #f4f4f5) !important;
+    padding-bottom: 0 !important;
+  }
+  .dashboard-ml-benefit-row,
+  .patient-dashboard-home .dashboard-ml-benefit-row {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+  }
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link,
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .menu-toggle {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    color: #fff !important;
+    filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.35));
+  }
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link:hover,
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link:focus-visible,
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link.active,
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .menu-toggle:hover,
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .menu-toggle:focus-visible {
+    background: transparent !important;
+    color: #fff !important;
+  }
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .header-bell-icon,
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .header-heart-icon {
+    width: 26px;
+    height: 26px;
+  }
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .menu-toggle-icon {
+    width: 28px;
+    height: 28px;
+  }
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link small {
+    font-size: 0.7rem;
+    min-width: 1.15rem;
+    height: 1.15rem;
+  }
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-banner.dashboard-ml-feature-banner,
+  .portal-main .wellbeing-relax-page--ml .dashboard-ml-feature-banner.wellbeing-relax-page-ml-banner {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-banner .dashboard-ml-feature-banner-frame {
+    /* Mismo aire superior que Inicio / Sesiones / Diario */
+    padding: calc(52px + env(safe-area-inset-top, 0px)) var(--mobile-pad-x-end) 28px var(--mobile-pad-x) !important;
+    gap: 12px !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-banner .dashboard-ml-feature-banner-media {
+    display: none !important;
+  }
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-banner .dashboard-ml-feature-banner-kicker {
+    display: none !important;
+  }
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-banner .dashboard-ml-feature-banner-title {
+    font-size: clamp(1.55rem, 7.2vw, 2.05rem) !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.04em !important;
+    font-weight: 800 !important;
+    margin: 0 0 8px !important;
+  }
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-banner .dashboard-ml-feature-banner-body {
+    font-size: 1rem !important;
+    line-height: 1.4 !important;
+    max-width: none !important;
+    margin: 0 0 14px !important;
+  }
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-banner .dashboard-ml-feature-banner-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-banner .dashboard-ml-feature-banner-cta {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 44px !important;
+  }
+  .portal-main .diary-home-page--ml .diary-page-ml-banner.dashboard-ml-diary-banner,
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner-frame {
+    /* Mismo aire superior que Inicio / Sesiones */
+    padding: calc(52px + env(safe-area-inset-top, 0px)) var(--mobile-pad-x-end) 28px var(--mobile-pad-x) !important;
+    gap: 12px !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner-media {
+    display: none !important;
+  }
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner-kicker {
+    display: none !important;
+  }
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner-title {
+    font-size: clamp(1.55rem, 7.2vw, 2.05rem) !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.04em !important;
+    font-weight: 800 !important;
+    margin: 0 0 8px !important;
+  }
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner-body {
+    font-size: 1rem !important;
+    line-height: 1.4 !important;
+    max-width: none !important;
+    margin: 0 0 14px !important;
+  }
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner-cta,
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner-link {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 44px !important;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-banner-title-icon {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1080px) {
+  .patient-dashboard-home {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-icon-link,
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .menu-toggle {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    color: #fff !important;
+    filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.35));
+  }
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-icon-link:hover,
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-icon-link:focus-visible,
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-icon-link.active,
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .menu-toggle:hover,
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .menu-toggle:focus-visible {
+    background: transparent !important;
+    color: #fff !important;
+  }
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-bell-icon,
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-heart-icon {
+    width: 26px;
+    height: 26px;
+  }
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .menu-toggle-icon {
+    width: 28px;
+    height: 28px;
+  }
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-icon-link small {
+    font-size: 0.7rem;
+    min-width: 1.15rem;
+    height: 1.15rem;
+  }
+@media (hover: hover) and (pointer: fine) {
+    .portal-main .patient-dashboard-home .dashboard-hero-buy-on-photo:hover {
+      transform: translateY(-2px);
+      background: #f3efff;
+      color: #4c2fd4;
+      box-shadow:
+        0 12px 32px rgba(95, 68, 235, 0.22),
+        0 6px 18px rgba(15, 23, 42, 0.2);
+    }
+    .portal-main .patient-dashboard-home .dashboard-hero-buy-on-photo:active {
+      transform: translateY(0) scale(0.98);
+    }
+}
+
+  .portal-main .patient-dashboard-home .dashboard-hero-buy-on-photo {
+    min-height: 40px;
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: var(--portal-radius);
+  }
+  .portal-main .patient-dashboard-home .dashboard-hero-buy-button {
+    width: 100%;
+    min-height: var(--mobile-row-min);
+    margin: 0;
+    padding: 14px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--brand);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    box-shadow: none;
+    text-align: left;
+  }
+  .portal-main .patient-dashboard-home .dashboard-hero-buy-button:hover,
+  .portal-main .patient-dashboard-home .dashboard-hero-buy-button:active {
+    background: rgba(95, 68, 235, 0.04);
+    box-shadow: none;
+    transform: none;
+  }
+  .portal-main .patient-dashboard-home .dashboard-compact-section {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-bottom: 1px solid var(--mobile-divider) !important;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-session-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: var(--mobile-canvas);
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-session-list {
+    padding: 0 var(--mobile-pad-x-end) 0 var(--mobile-pad-x);
+  }
+  .portal-main .patient-dashboard-home .hero-grid {
+    gap: 0;
+    margin-top: 0;
+  }
+  .portal-main .patient-dashboard-home .hero-card,
+  .portal-main .patient-dashboard-home .active-professional-card {
+    min-height: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--mobile-surface);
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+  .portal-main .patient-dashboard-home .hero-card::before {
+    display: none;
+  }
+  .portal-main .patient-dashboard-home .trial-priority-banner.content-card {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: linear-gradient(180deg, #f3edff 0%, #faf8ff 100%);
+    border-bottom: 1px solid rgba(95, 68, 235, 0.12);
+  }
+  .portal-main .patient-dashboard-home.page-stack,
+  .portal-main .patient-dashboard-home .dashboard-legacy-home {
+    gap: 0;
+    background: var(--mobile-canvas);
+  }
+  .portal-main .patient-dashboard-home .dashboard-legacy-home {
+    padding-inline: 0;
+    box-sizing: border-box;
+  }
+  .portal-main .patient-dashboard-home .dashboard-hero-immersive {
+    margin-inline: 0;
+    width: 100%;
+    max-width: none;
+  }
+  .portal-main .patient-dashboard-home .dashboard-hero-immersive {
+    margin-bottom: 0;
+    background: var(--mobile-surface);
+  }
+  .portal-main .patient-dashboard-home .dashboard-hero-subtitle-on-photo {
+    max-width: none;
+    font-size: 14px;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .portal-main .patient-dashboard-home .dashboard-hero-cta-band {
+    display: none !important;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-home {
+    margin-top: 0;
+    background: var(--mobile-surface);
+    padding-bottom: calc(var(--portal-tab-clear, 72px) + 8px);
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-scroll {
+    padding: 0;
+    background: var(--mobile-surface);
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-toolbar {
+    margin: 0 !important;
+    padding: 16px var(--mobile-pad-x-end) 16px var(--mobile-pad-x) !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: var(--mobile-surface) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-bottom: 1px solid var(--mobile-divider);
+    min-height: var(--mobile-row-min);
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-toolbar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-sessions-pill,
+  .portal-main .patient-dashboard-home .dashboard-rn-sessions-pill--muted {
+    max-width: 100%;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-sessions-num {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--brand) !important;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-sessions-suffix,
+  .portal-main .patient-dashboard-home .dashboard-rn-sessions-pill--muted .dashboard-rn-sessions-num,
+  .portal-main .patient-dashboard-home .dashboard-rn-sessions-pill--muted .dashboard-rn-sessions-suffix {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--mobile-text-secondary) !important;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-sessions-empty {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--mobile-text-secondary);
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-fab {
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(95, 68, 235, 0.25);
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-fab--buy {
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.14);
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-section {
+    padding: 0 0 14px;
+    margin: 0 !important;
+    background: var(--mobile-canvas) !important;
+    border-bottom: none;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0;
+    padding: 14px var(--mobile-pad-x-end) 10px var(--mobile-pad-x);
+    background: var(--mobile-canvas);
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-section-head .dashboard-rn-section-title {
+    padding: 0;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--brand);
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-link-all {
+    color: var(--brand);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-google-cta-wrap {
+    margin: 0 0 var(--mobile-section-gap);
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-empty-card,
+  .portal-main .patient-dashboard-home .dashboard-rn-empty-card--plain {
+    border: none !important;
+    border-radius: 0 !important;
+    background: var(--mobile-canvas) !important;
+    box-shadow: none !important;
+    padding: 0 var(--mobile-pad-x-end) 8px var(--mobile-pad-x) !important;
+    margin: 0;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-empty-title {
+    color: var(--mobile-text-primary);
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-empty-meta {
+    color: var(--mobile-text-secondary);
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-google-calendar-button {
+    width: 100%;
+    min-height: var(--mobile-row-min);
+    margin: 0;
+    padding: 12px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
+    border: none;
+    border-radius: 0;
+    border-top: 1px solid var(--mobile-divider);
+    border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
+    background: var(--mobile-surface);
+    box-shadow: none;
+    color: var(--brand);
+    font-size: 15px;
+    font-weight: 600;
+    text-align: left;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-google-calendar-button:hover {
+    background: rgba(95, 68, 235, 0.04);
+    box-shadow: none;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-outer {
+    margin: 0;
+    padding: 0;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-gradient {
+    display: none;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-inner {
+    padding: var(--mobile-section-y) 0 calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-head {
+    margin: 0 0 10px;
+    padding: 0 var(--mobile-pad-x-end) 0 var(--mobile-pad-x);
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-title {
+    display: block;
+    padding: 0;
+    border-radius: 0;
+    background: transparent !important;
+    color: var(--mobile-text-primary) !important;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    text-transform: none;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-stack {
+    gap: 12px;
+    padding: 0 var(--mobile-pad-x-end) 4px var(--mobile-pad-x);
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-card {
+    position: relative;
+    width: 100%;
+    margin: 0 !important;
+    padding: 16px !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+    background: #fafafa !important;
+    min-height: 0;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-card--selected {
+    border-color: rgba(95, 68, 235, 0.45) !important;
+    background: linear-gradient(180deg, #faf8ff 0%, #ffffff 100%) !important;
+    box-shadow: 0 2px 12px rgba(95, 68, 235, 0.08) !important;
+    padding: 16px !important;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-marketing {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--mobile-text-secondary);
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-price-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-credits-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--mobile-text-primary);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-unit {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--mobile-text-secondary);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+    min-width: 5.5rem;
+    text-align: right;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-divider {
+    display: none;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-save {
+    border-radius: var(--portal-radius-sm);
+    padding: 2px 6px;
+    font-size: 11px;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-sticky {
+    padding: 12px var(--mobile-pad-x-end) calc(12px + env(safe-area-inset-bottom, 0px)) var(--mobile-pad-x);
+    background: var(--mobile-surface) !important;
+    border-top: 1px solid var(--mobile-divider);
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-cta {
+    min-height: 48px;
+    border-radius: 12px;
+    box-shadow: none;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-foot {
+    padding: 4px var(--mobile-pad-x-end) 8px var(--mobile-pad-x);
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-inline-cta {
+    width: 100%;
+    min-height: 48px;
+    border: none;
+    border-radius: 12px;
+    background: var(--brand);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-inline-cta:active {
+    opacity: 0.92;
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-empty-card--plain {
+    display: grid;
+    gap: 12px;
+    padding: 4px var(--mobile-pad-x-end) 8px var(--mobile-pad-x);
+  }
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-inline-cta--empty {
+    margin-top: 4px;
+  }
+  .portal-main .patient-dashboard-home .dashboard-hero-banner,
+  .portal-main .patient-dashboard-home .dashboard-hero-banner--loading {
+    min-height: clamp(208px, 41.6vw, 288px);
+    max-height: none;
+  }
+  .portal-main .patient-dashboard-home .dashboard-hero-banner-copy {
+    padding-left: var(--mobile-pad-x);
+    padding-right: var(--mobile-pad-x-end);
+  }
+@media (orientation: landscape), (max-height: 500px) {
+    .portal-main .patient-dashboard-home .dashboard-hero-banner {
+      min-height: clamp(96px, 38dvh, 140px);
+      max-height: 34dvh;
+    }
+    .portal-main .patient-dashboard-home .dashboard-hero-banner--loading {
+      min-height: clamp(88px, 34dvh, 128px);
+      max-height: 32dvh;
+    }
+    .portal-main .patient-dashboard-home .dashboard-hero-banner-copy {
+      padding: 10px var(--mobile-pad-x-end) 10px var(--mobile-pad-x);
+      gap: 4px;
+    }
+    .portal-main .patient-dashboard-home .dashboard-hero-title-on-photo {
+      font-size: clamp(1.05rem, 4vw, 1.3rem);
+      line-height: 1.15;
+    }
+    .portal-main .patient-dashboard-home .dashboard-hero-subtitle-on-photo {
+      font-size: 12px;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: unset;
+      line-height: 1.3;
+    }
+    .portal-main .patient-dashboard-home .dashboard-hero-immersive {
+      margin-bottom: 0 !important;
+    }
+    .portal-main .patient-dashboard-home .dashboard-rn-home {
+      padding-bottom: calc(var(--portal-tab-clear, 50px) + 4px);
+    }
+    .portal-main .patient-dashboard-home .dashboard-rn-toolbar {
+      padding: 10px var(--mobile-pad-x-end) 10px var(--mobile-pad-x) !important;
+      min-height: 44px;
+    }
+    .portal-main .patient-dashboard-home .dashboard-rn-fab {
+      width: 38px;
+      height: 38px;
+    }
+    .portal-main .patient-dashboard-home .dashboard-rn-section-head {
+      padding: 10px var(--mobile-pad-x-end) 6px var(--mobile-pad-x);
+    }
+}
+
+}
+
+@media (max-width: 1080px) {
+  .dashboard-home-purchase-backdrop.matching-flow-backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .dashboard-home-purchase-modal.matching-flow-modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: min(96vh, 100%);
+    border-radius: 16px 16px 0 0;
+    background: #ffffff;
+  }
+  .dashboard-home-purchase-head {
+    padding: 16px 14px 12px;
+    background: #ffffff;
+  }
+  .dashboard-home-purchase-body {
+    padding: 6px 12px calc(18px + env(safe-area-inset-bottom, 0px));
+    background: #ffffff;
+  }
+  .dashboard-home-purchase-modal .checkout-package-column,
+  .portal-main .dashboard-home-purchase-modal .checkout-package-column {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 1080px) {
+  .portal-main .dashboard-rn-section-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--mobile-text-primary);
+  }
+  .portal-main .dashboard-rn-mcare-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--mobile-label);
+  }
+  .portal-main .dashboard-package-options-panel .deal-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 0;
+    width: 100%;
+    min-width: 0;
+  }
+  .portal-main .dashboard-package-options-panel .checkout-package-column {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .portal-main .dashboard-package-options-panel .checkout-packages-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 0 12px;
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+  .portal-main .dashboard-package-options-panel .checkout-packages-head-inner h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--mobile-text-primary);
+  }
+  .portal-main .dashboard-package-options-panel .checkout-packages-head-inner p {
+    margin: 4px 0 0;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--mobile-text-secondary);
+  }
+  .portal-main .dashboard-package-options-panel .checkout-packages-head > button {
+    flex-shrink: 0;
+    min-height: 36px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--brand);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .portal-main .dashboard-package-options-panel .deal-card-shell {
+    display: block;
+    grid-template-rows: none;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+  }
+  .portal-main .dashboard-package-options-panel .deal-card-shell .deal-card-roof {
+    display: none;
+  }
+  .portal-main .dashboard-package-options-panel .deal-card {
+    min-height: 0 !important;
+    height: auto;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--mobile-divider);
+    color: var(--mobile-text-primary);
+    transform: none !important;
+  }
+  .portal-main .dashboard-package-options-panel .deal-card.selected {
+    background: rgba(95, 68, 235, 0.04);
+    box-shadow: inset 3px 0 0 var(--brand);
+    padding: 16px 0;
+  }
+  .portal-main .dashboard-package-options-panel .deal-select-button {
+    width: 100%;
+    min-height: var(--mobile-row-min);
+    margin-top: 8px;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .portal-main .dashboard-package-options-panel .packages-choose-professional-cta {
+    width: 100%;
+    min-height: var(--mobile-row-min);
+    border-radius: var(--portal-radius-sm);
+    margin-top: 4px;
+  }
+  .portal-main .dashboard-package-options-panel .packages-catalog-skeleton-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .portal-main .dashboard-package-options-panel .packages-catalog-skeleton-card {
+    min-height: 220px;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+  .portal-main .dashboard-package-options-panel .packages-catalog-error {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--mobile-surface);
+    padding: 16px 0;
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+  .portal-main .dashboard-package-options-panel .packages-catalog-error-copy strong {
+    font-size: 15px;
+    color: var(--mobile-text-primary);
+  }
+  .portal-main .dashboard-package-options-panel .packages-catalog-error-copy p {
+    color: var(--mobile-text-secondary);
+  }
+  .portal-main .dashboard-package-options-panel .packages-catalog-error-retry {
+    width: 100%;
+    min-height: var(--mobile-row-min);
+  }
+  .portal-main .dashboard-package-options-panel .deal-price-pending-label {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+  .portal-main .dashboard-package-options-panel .deal-main-price--placeholder {
+    font-size: 22px;
+  }
+  .portal-main .dashboard-package-options-panel .deal-card h3 {
+    color: var(--mobile-text-primary);
+  }
+  .portal-main .dashboard-package-options-panel .deal-card p {
+    color: var(--mobile-text-secondary);
+  }
+}
+

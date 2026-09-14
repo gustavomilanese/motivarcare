@@ -1,0 +1,839 @@
+/* Home — promo carousel / orbs / slides (.dashboard-ml-promo*).
+ */
+
+.dashboard-ml-promo-slide--access .dashboard-ml-promo-orbs {
+  background:
+    radial-gradient(circle 280px at 78% 48%, rgba(220, 252, 231, 0.35) 0%, transparent 70%),
+    radial-gradient(circle 220px at 22% 40%, rgba(187, 247, 208, 0.28) 0%, transparent 68%);
+}
+.dashboard-ml-brand-band--access .dashboard-ml-promo-photo,
+.dashboard-ml-promo-slide--access .dashboard-ml-promo-photo {
+  /* ~10% más chica: evita que el reloj se corte contra la card de saldo */
+  max-width: min(270px, 42vw);
+  max-height: min(223px, 78%);
+}
+.dashboard-ml-promo {
+  position: relative;
+  width: 100%;
+  height: clamp(240px, 32vh, 300px);
+  min-height: 240px;
+  background: transparent;
+  overflow: hidden;
+  margin-bottom: 0;
+  z-index: 1;
+}
+.dashboard-ml-promo-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  overflow: hidden;
+  background: transparent;
+}
+.dashboard-ml-promo-viewport::after {
+  display: none;
+}
+.dashboard-ml-promo-track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+.dashboard-ml-promo-track--no-anim {
+  transition: none;
+}
+.dashboard-ml-promo-slide {
+  position: relative;
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: 100%;
+  min-height: inherit;
+  overflow: hidden;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: 20px clamp(16px, 3vw, 28px) 40px;
+}
+.dashboard-ml-promo-slide--care,
+.dashboard-ml-promo-slide--access,
+.dashboard-ml-promo-slide--match {
+  background: transparent;
+}
+.dashboard-ml-promo-slide--match .dashboard-ml-promo-media {
+  background: transparent;
+  overflow: visible;
+}
+.dashboard-ml-promo-slide--match .dashboard-ml-promo-photo {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.28));
+}
+.dashboard-ml-promo-orbs {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 280px at 78% 48%, rgba(221, 214, 254, 0.35) 0%, transparent 70%),
+    radial-gradient(circle 220px at 22% 40%, rgba(196, 181, 253, 0.28) 0%, transparent 68%);
+}
+.dashboard-ml-promo-frame {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.dashboard-ml-promo-frame--media {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(18px, 2.2vw, 32px);
+  width: 100%;
+  max-width: min(1100px, 100%);
+  margin-inline: auto;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.dashboard-ml-promo-media {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  margin: 0;
+  overflow: visible;
+}
+.dashboard-ml-promo-photo {
+  display: none;
+}
+.dashboard-ml-promo-glyph {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  pointer-events: none;
+  user-select: none;
+}
+.dashboard-ml-promo-glyph .dashboard-ml-banner-glyph,
+.dashboard-ml-promo-glyph .dashboard-ml-promo-banner-glyph {
+  width: 112px;
+  height: 112px;
+  border-radius: 28px;
+}
+.dashboard-ml-promo-glyph .dashboard-ml-banner-glyph svg,
+.dashboard-ml-promo-glyph .dashboard-ml-promo-banner-glyph svg {
+  width: 54px;
+  height: 54px;
+}
+.dashboard-ml-promo-copy {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 12px;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+  width: min(720px, 100%);
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  color: #fff;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.dashboard-ml-promo-frame--media .dashboard-ml-promo-copy {
+  flex: 1 1 0;
+  flex-basis: 0;
+  justify-items: start;
+  text-align: left;
+  width: auto;
+  max-width: 58%;
+  min-width: 0;
+}
+.dashboard-ml-promo-kicker {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff;
+}
+.dashboard-ml-promo-title {
+  margin: 0;
+  font-size: clamp(2rem, 4.2vw, 3.25rem);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+  font-weight: 800;
+  text-wrap: balance;
+  color: #fff;
+}
+.dashboard-ml-promo-title--lines {
+  display: grid;
+  gap: 0.02em;
+  text-wrap: unset;
+}
+.dashboard-ml-promo-title-line {
+  display: block;
+  white-space: nowrap;
+}
+.dashboard-ml-promo-body {
+  display: block;
+  margin: 0;
+  font-size: clamp(0.95rem, 1.2vw, 1.08rem);
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.92);
+  max-width: 34rem;
+}
+.dashboard-ml-promo-body--lines {
+  display: grid;
+  gap: 0;
+  width: max-content;
+  max-width: 100%;
+}
+.dashboard-ml-promo-body-line {
+  display: block;
+}
+.dashboard-ml-promo-frame--media .dashboard-ml-promo-title {
+  font-size: clamp(1.7rem, 3.4vw, 2.75rem);
+}
+.dashboard-ml-promo-frame--media .dashboard-ml-promo-body {
+  max-width: none;
+}
+@media (min-width: 900px) {
+  .dashboard-ml-promo-body-line--lead {
+    white-space: nowrap;
+  }
+}
+
+.dashboard-ml-promo-badge {
+  display: inline-block;
+  min-height: 0;
+  margin-top: 4px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  box-shadow: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+  padding-bottom: 2px;
+  line-height: 1.3;
+}
+.dashboard-ml-promo-arrow {
+  position: absolute;
+  top: 42%;
+  z-index: 5;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.96);
+  color: #1e293b;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
+}
+@media (max-width: 1080px) {
+  .dashboard-ml-promo-arrow {
+    display: none;
+  }
+  .dashboard-ml-promo {
+    touch-action: pan-y;
+  }
+  .dashboard-ml-promo-dots {
+    bottom: 12px;
+  }
+}
+
+.dashboard-ml-promo-arrow--prev {
+  left: 16px;
+}
+.dashboard-ml-promo-arrow--next {
+  right: 16px;
+}
+@media (min-width: 1081px) {
+  .portal-main--home-ml .dashboard-ml-promo-arrow--prev {
+    left: max(16px, calc(var(--portal-home-ml-rail-collapsed, 58px) + 12px));
+  }
+  .portal-main--home-ml .dashboard-ml-promo-arrow--next {
+    right: 16px;
+  }
+}
+
+.dashboard-ml-promo-arrow:hover {
+  background: #fff;
+}
+.dashboard-ml-promo-dots {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  z-index: 5;
+  transform: translateX(-50%);
+  display: inline-flex;
+  gap: 7px;
+}
+.dashboard-ml-promo-dot {
+  appearance: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+}
+.dashboard-ml-promo-dot.is-active {
+  width: 18px;
+  background: #fff;
+}
+@media (max-width: 860px) {
+  .dashboard-ml-promo-slide {
+    padding: 20px 40px 36px;
+  }
+  .dashboard-ml-promo-frame--media {
+    gap: 14px;
+    width: 100%;
+    max-width: 100%;
+  }
+  .dashboard-ml-promo-frame--media .dashboard-ml-promo-copy {
+    flex: 1 1 0;
+    flex-basis: 0;
+    min-width: 0;
+    max-width: 58%;
+  }
+  .dashboard-ml-promo-photo {
+    max-width: min(34vw, 160px);
+    max-height: 148px;
+  }
+  .dashboard-ml-promo-title {
+    font-size: clamp(1.55rem, 6vw, 2.1rem);
+  }
+}
+
+@media (max-width: 560px) {
+  .dashboard-ml-promo-frame--media {
+    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+  }
+  .dashboard-ml-promo-frame--media .dashboard-ml-promo-copy {
+    flex: 1 1 0;
+    flex-basis: 0;
+    min-width: 0;
+    max-width: 58%;
+  }
+  .dashboard-ml-promo-photo {
+    max-width: min(32vw, 120px);
+    max-height: 118px;
+  }
+  .dashboard-ml-promo-frame--media .dashboard-ml-promo-badge {
+    display: none;
+  }
+}
+
+.dashboard-ml-benefit-row {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+@media (min-width: 1081px) {
+  .dashboard-ml-benefit-row {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 18px;
+  }
+}
+
+.dashboard-ml-benefit-card {
+  appearance: none;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "title"
+    "visual"
+    "cta";
+  gap: 12px;
+  width: 100%;
+  min-height: 235px;
+  padding: 16px 12px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.04);
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.04),
+    0 10px 28px rgba(15, 23, 42, 0.12),
+    0 22px 40px rgba(95, 68, 235, 0.08);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.dashboard-ml-benefit-card:focus-visible {
+  outline: 2px solid #5f44eb;
+  outline-offset: 3px;
+}
+.dashboard-ml-benefit-card:hover {
+  transform: translateY(-3px);
+  background: #fff;
+  box-shadow:
+    0 4px 8px rgba(15, 23, 42, 0.06),
+    0 16px 36px rgba(15, 23, 42, 0.14),
+    0 28px 48px rgba(95, 68, 235, 0.12);
+}
+.dashboard-ml-benefit-card--buy {
+  --dashboard-ml-buy: #2563eb;
+  --dashboard-ml-buy-deep: #1d4ed8;
+  --dashboard-ml-buy-bg: linear-gradient(165deg, #3b82f6 0%, #2563eb 48%, #1d4ed8 100%);
+  background: var(--dashboard-ml-buy-bg);
+  border: 1px solid rgba(29, 78, 216, 0.35);
+  box-shadow:
+    0 4px 10px rgba(29, 78, 216, 0.22),
+    0 14px 32px rgba(37, 99, 235, 0.36),
+    0 24px 44px rgba(37, 99, 235, 0.18);
+  color: #fff;
+}
+.dashboard-ml-benefit-card--book {
+  --dashboard-ml-book: #2563eb;
+  --dashboard-ml-book-deep: #1d4ed8;
+  --dashboard-ml-book-bg: linear-gradient(165deg, #3b82f6 0%, #2563eb 48%, #1d4ed8 100%);
+  background: var(--dashboard-ml-book-bg);
+  border: 1px solid rgba(29, 78, 216, 0.35);
+  box-shadow:
+    0 4px 10px rgba(29, 78, 216, 0.22),
+    0 14px 32px rgba(37, 99, 235, 0.36),
+    0 24px 44px rgba(37, 99, 235, 0.18);
+  color: #fff;
+}
+.dashboard-ml-benefit-card--buy:hover,
+.dashboard-ml-benefit-card--buy:focus,
+.dashboard-ml-benefit-card--buy:active {
+  background: var(--dashboard-ml-buy-bg);
+  color: #fff;
+  box-shadow:
+    0 6px 14px rgba(29, 78, 216, 0.26),
+    0 18px 40px rgba(37, 99, 235, 0.4),
+    0 28px 52px rgba(37, 99, 235, 0.22);
+}
+.dashboard-ml-benefit-card--book:hover,
+.dashboard-ml-benefit-card--book:focus,
+.dashboard-ml-benefit-card--book:active {
+  background: var(--dashboard-ml-book-bg);
+  color: #fff;
+  box-shadow:
+    0 6px 14px rgba(29, 78, 216, 0.26),
+    0 18px 40px rgba(37, 99, 235, 0.4),
+    0 28px 52px rgba(37, 99, 235, 0.22);
+}
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-title {
+  color: #fff;
+  border-bottom-color: rgba(255, 255, 255, 0.28);
+}
+.dashboard-ml-benefit-card--book .dashboard-ml-benefit-title {
+  color: #fff;
+  border-bottom-color: rgba(255, 255, 255, 0.28);
+}
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-icon {
+  color: #fff;
+}
+.dashboard-ml-benefit-card--book .dashboard-ml-benefit-icon {
+  color: #fff;
+}
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-cta,
+.dashboard-ml-benefit-card--book .dashboard-ml-benefit-cta {
+  color: #fff;
+  font-weight: 700;
+}
+.dashboard-ml-benefit-card--buy:hover .dashboard-ml-benefit-cta,
+.dashboard-ml-benefit-card--buy:hover .dashboard-ml-benefit-title,
+.dashboard-ml-benefit-card--book:hover .dashboard-ml-benefit-cta,
+.dashboard-ml-benefit-card--book:hover .dashboard-ml-benefit-title {
+  color: #fff;
+}
+.dashboard-ml-benefit-card--buy:hover .dashboard-ml-benefit-cta,
+.dashboard-ml-benefit-card--book:hover .dashboard-ml-benefit-cta {
+  text-decoration: underline;
+}
+.dashboard-ml-benefit-title {
+  grid-area: title;
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(26, 26, 26, 0.12);
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+.dashboard-ml-benefit-icon {
+  grid-area: visual;
+  display: grid;
+  place-items: center;
+  justify-items: center;
+  width: 100%;
+  min-height: 101px;
+  margin: 0 auto;
+  color: #1a1a1a;
+}
+.dashboard-ml-benefit-icon-svg {
+  display: block;
+  width: 77px;
+  height: 77px;
+  margin-inline: auto;
+  filter: drop-shadow(0 8px 16px rgba(95, 68, 235, 0.18));
+}
+.dashboard-ml-benefit-icon-img {
+  display: block;
+  width: min(106px, 82%);
+  height: auto;
+  max-height: 106px;
+  margin-inline: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 18px rgba(95, 68, 235, 0.22));
+  pointer-events: none;
+  user-select: none;
+}
+.dashboard-ml-benefit-icon-img--photo {
+  width: 86px;
+  height: 86px;
+  max-height: 86px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.08),
+    0 10px 22px rgba(95, 68, 235, 0.2);
+  filter: none;
+}
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-icon-img {
+  filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.28));
+}
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-icon-svg,
+.dashboard-ml-benefit-card--book .dashboard-ml-benefit-icon-svg {
+  filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.28));
+}
+.dashboard-ml-benefit-body {
+  display: none;
+}
+.dashboard-ml-benefit-cta {
+  grid-area: cta;
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #5f44eb;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 650;
+  text-align: left;
+}
+.dashboard-ml-benefit-card .dashboard-ml-benefit-cta {
+  justify-self: center;
+  text-align: center;
+  width: 100%;
+  pointer-events: none;
+  cursor: inherit;
+}
+.dashboard-ml-benefit-card:hover .dashboard-ml-benefit-cta,
+.dashboard-ml-benefit-cta:hover {
+  text-decoration: underline;
+  background: transparent;
+}
+.dashboard-ml-benefit-card--tone-sessions .dashboard-ml-benefit-cta {
+  color: #1d4ed8;
+}
+.dashboard-ml-benefit-card--tone-diary .dashboard-ml-benefit-cta {
+  color: #5f44eb;
+}
+.dashboard-ml-benefit-card--tone-exercises .dashboard-ml-benefit-cta {
+  color: #7e22ce;
+}
+.dashboard-ml-benefit-card--tone-music .dashboard-ml-benefit-cta {
+  color: #16a34a;
+}
+.dashboard-ml-benefit-card--tone-sessions .dashboard-ml-benefit-icon-svg {
+  filter: drop-shadow(0 8px 16px rgba(29, 78, 216, 0.22));
+}
+.dashboard-ml-benefit-card--tone-exercises .dashboard-ml-benefit-icon-svg {
+  filter: drop-shadow(0 8px 16px rgba(126, 34, 206, 0.22));
+}
+.dashboard-ml-benefit-card--tone-music .dashboard-ml-benefit-icon-svg {
+  filter: drop-shadow(0 8px 16px rgba(22, 163, 74, 0.22));
+}
+.dashboard-ml-benefit-card--professional {
+  cursor: pointer;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "title"
+    "visual"
+    "cta";
+  align-content: stretch;
+}
+.dashboard-ml-benefit-card--professional:hover {
+  cursor: pointer;
+}
+.dashboard-ml-benefit-card--professional:focus-visible {
+  outline: 2px solid #5f44eb;
+  outline-offset: 3px;
+}
+.dashboard-ml-benefit-card--professional .dashboard-ml-benefit-icon {
+  min-height: 0;
+}
+.dashboard-ml-benefit-card--professional-empty {
+  cursor: default;
+  grid-template-areas:
+    "title"
+    "visual"
+    "body"
+    "cta";
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+.dashboard-ml-benefit-card--professional-empty:hover {
+  cursor: default;
+}
+.dashboard-ml-benefit-card--professional-empty .dashboard-ml-benefit-body {
+  display: block;
+  grid-area: body;
+  margin: 0;
+  padding: 0 4px;
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(26, 26, 26, 0.72);
+}
+.dashboard-ml-benefit-card--professional-empty .dashboard-ml-benefit-icon {
+  min-height: 72px;
+}
+.dashboard-ml-benefit-card--professional-empty .dashboard-ml-benefit-icon-svg {
+  width: 64px;
+  height: 64px;
+}
+.dashboard-ml-pro-main .dashboard-ml-benefit-icon {
+  grid-area: auto;
+  min-height: 0;
+}
+.dashboard-ml-pro-main .dashboard-ml-benefit-icon-img--photo {
+  width: 86px;
+  height: 86px;
+  max-height: 86px;
+}
+.dashboard-ml-benefit-card--professional:hover .dashboard-ml-pro-name {
+  color: #5f44eb;
+}
+.dashboard-ml-history-icon .dashboard-ml-benefit-icon-svg {
+  width: 40px;
+  height: 40px;
+  filter: drop-shadow(0 4px 10px rgba(95, 68, 235, 0.16));
+}
+.dashboard-ml-history-icon .dashboard-ml-benefit-icon-img {
+  width: 40px;
+  max-height: 40px;
+  filter: none;
+}
+@media (max-width: 1080px) {
+  .patient-dashboard-home .dashboard-ml-sessions-banner-title-icon .dashboard-ml-benefit-icon-svg,
+  .patient-dashboard-home .dashboard-ml-sessions-banner-title-icon .dashboard-ml-benefit-icon-img {
+    width: 1.15em !important;
+    height: 1.15em !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    margin: 0 !important;
+    display: block;
+    object-fit: contain;
+    filter: none !important;
+  }
+}
+
+.dashboard-ml-credits-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0 6px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid rgba(95, 68, 235, 0.14);
+  box-shadow:
+    0 8px 22px rgba(15, 23, 42, 0.1),
+    0 2px 8px rgba(95, 68, 235, 0.1);
+}
+.dashboard-ml-credits-bar--empty {
+  border-color: rgba(15, 23, 42, 0.08);
+  background: #fff;
+  box-shadow:
+    0 6px 16px rgba(15, 23, 42, 0.06),
+    0 1px 4px rgba(15, 23, 42, 0.04);
+}
+.dashboard-ml-brand-band--access .dashboard-ml-credits-bar {
+  border-color: rgba(15, 23, 42, 0.1);
+  box-shadow:
+    0 8px 22px rgba(15, 23, 42, 0.08),
+    0 2px 8px rgba(21, 128, 61, 0.16);
+}
+.dashboard-ml-credits {
+  display: flex;
+  justify-content: flex-start;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  pointer-events: none;
+  user-select: none;
+  cursor: default;
+  color: #1e1b4b;
+  text-shadow: none;
+}
+.dashboard-ml-credits-num {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #1e1b4b;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.dashboard-ml-credits-num--empty {
+  color: #7c6cf0;
+  opacity: 0.72;
+}
+.dashboard-ml-credits-label {
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: #475569;
+  min-width: 0;
+}
+.dashboard-ml-credits-label--empty {
+  color: #64748b;
+  font-weight: 650;
+  font-size: 0.92rem;
+  letter-spacing: -0.01em;
+}
+.dashboard-ml-credits-bar--empty .dashboard-ml-book-cta {
+  background: #5f44eb;
+  box-shadow: 0 6px 16px rgba(95, 68, 235, 0.32);
+}
+.dashboard-ml-credits-bar--empty .dashboard-ml-book-cta:hover {
+  background: #4c31d8;
+  box-shadow: 0 8px 20px rgba(76, 49, 216, 0.38);
+}
+@media (max-width: 640px) {
+  .dashboard-ml-credits-bar--mobile {
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin: 5px 0;
+    padding: 8px 8px 8px 11px;
+    border-radius: 11px;
+  }
+  .dashboard-ml-credits-bar--mobile .dashboard-ml-credits {
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .dashboard-ml-credits-bar--mobile .dashboard-ml-credits-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #5f44eb;
+    font-size: 0.8rem;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: #ffffff;
+    font-variant-numeric: tabular-nums;
+  }
+  .dashboard-ml-credits-bar--mobile .dashboard-ml-credits-num--empty {
+    background: #94a3b8;
+    color: #ffffff;
+    opacity: 1;
+  }
+  .dashboard-ml-credits-bar--mobile .dashboard-ml-credits-label {
+    font-size: 0.76rem;
+    font-weight: 650;
+    line-height: 1.25;
+    color: #334155;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .dashboard-ml-credits-bar--mobile .dashboard-ml-book-cta {
+    margin-left: 0;
+    min-height: 32px;
+    padding: 0 11px;
+    font-size: 0.76rem;
+  }
+  .dashboard-ml-credits-bar--mobile .dashboard-ml-book-cta--plus {
+    width: 32px;
+    min-width: 32px;
+    padding: 0;
+    font-size: 1.24rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+  .dashboard-ml-credits-bar--mobile.dashboard-ml-credits-bar--empty .dashboard-ml-book-cta {
+    background: #2563eb;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.26);
+  }
+  .dashboard-ml-credits-bar--mobile.dashboard-ml-credits-bar--empty .dashboard-ml-book-cta:hover {
+    background: #1d4ed8;
+  }
+}
+
+.dashboard-ml-book-cta {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  background: #5f44eb;
+  color: #fff;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  box-shadow: 0 6px 16px rgba(95, 68, 235, 0.32);
+  transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+.dashboard-ml-book-cta:hover {
+  background: #4c31d8;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(76, 49, 216, 0.38);
+  transform: translateY(-1px);
+}
+.dashboard-ml-book-cta:focus-visible {
+  outline: 2px solid #c4b5fd;
+  outline-offset: 2px;
+}

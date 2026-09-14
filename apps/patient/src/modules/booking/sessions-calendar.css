@@ -1,0 +1,723 @@
+/* Sesiones — calendario (.sessions-calendar*).
+ */
+
+@media (min-width: 1081px) {
+  .sessions-booking-page--ml .sessions-page-ml-pack .sessions-calendar-collapsible.sessions-secondary-section {
+    margin: 0 !important;
+    padding: 0;
+    border-radius: 12px;
+    border: 1px solid rgba(95, 68, 235, 0.14);
+    background:
+      linear-gradient(165deg, #fff 0%, #faf8ff 55%, #f3efff 100%);
+    box-shadow: 0 2px 10px rgba(95, 68, 235, 0.06);
+    overflow: hidden;
+  }
+  .sessions-booking-page--ml .sessions-page-ml-pack .sessions-secondary-section .sessions-calendar-toggle,
+  .sessions-booking-page--ml .sessions-page-ml-pack .sessions-calendar-collapsible .sessions-calendar-toggle {
+    padding: 14px 16px;
+  }
+}
+
+.sessions-booking-page .sessions-calendar-standalone-wrap {
+  min-width: 0;
+  width: 100%;
+}
+.sessions-booking-page .sessions-calendar-standalone-wrap .sessions-calendar-card {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  box-sizing: border-box;
+}
+@media (min-width: 1081px) {
+  .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible.sessions-secondary-section {
+    margin: 0;
+    margin-top: 0 !important;
+    padding: 0;
+    border-top: 0;
+    border-radius: var(--sessions-ui-radius);
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+  }
+  .sessions-booking-page .sessions-booking-body .sessions-secondary-section .sessions-calendar-toggle,
+  .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible .sessions-calendar-toggle {
+    margin: 0;
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 0;
+    align-items: center;
+    box-sizing: border-box;
+    transition: background-color 0.18s ease;
+  }
+  .sessions-booking-page .sessions-booking-body .sessions-secondary-section .sessions-calendar-toggle:hover,
+  .sessions-booking-page .sessions-booking-body .sessions-secondary-section .sessions-calendar-toggle:focus-visible,
+  .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible .sessions-calendar-toggle:hover,
+  .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible .sessions-calendar-toggle:focus-visible {
+    background: rgba(95, 68, 235, 0.05);
+  }
+  .sessions-booking-page .sessions-booking-body .sessions-secondary-section .sessions-calendar-toggle + *,
+  .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible .sessions-calendar-toggle + * {
+    /* Mantener padding horizontal del panel (listas / vacío); el calendario ya trae el suyo */
+    padding: 14px 16px 16px;
+  }
+  .sessions-booking-page .sessions-booking-body .sessions-secondary-section .sessions-calendar-toggle + .sessions-collapsible-panel--calendar,
+  .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible .sessions-calendar-toggle + .sessions-collapsible-panel--calendar {
+    padding: 12px 16px 16px;
+  }
+}
+
+.sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body .sessions-calendar-collapsible.sessions-secondary-section {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(95, 68, 235, 0.14);
+  background: linear-gradient(165deg, #fff 0%, #faf8ff 55%, #f3efff 100%);
+  box-shadow: 0 2px 10px rgba(95, 68, 235, 0.06);
+  overflow: hidden;
+}
+.sessions-calendar-toggle:hover .sessions-collapse-icon,
+.sessions-calendar-toggle:focus-visible .sessions-collapse-icon {
+  background: #f3efff;
+  border-color: rgba(95, 68, 235, 0.28);
+  color: #5136df;
+  box-shadow: 0 2px 8px rgba(95, 68, 235, 0.12);
+}
+.sessions-collapsible-panel--calendar .sessions-calendar-card {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #e8ecf4;
+  border-radius: var(--portal-radius);
+  background: #fff;
+  overflow: hidden;
+}
+.sessions-collapsible-panel--calendar .sessions-calendar-grid-wrap {
+  border: 1px solid #eef1f6;
+  border-radius: var(--portal-radius);
+  background: #fafbfe;
+  padding: 8px;
+}
+.sessions-booking-page .sessions-collapsible-panel--calendar .sessions-calendar-card,
+.sessions-booking-page .sessions-collapsible-panel--calendar .sessions-calendar-grid-wrap,
+.patient-dashboard-home .sessions-collapsible-panel--calendar .sessions-calendar-card,
+.patient-dashboard-home .sessions-collapsible-panel--calendar .sessions-calendar-grid-wrap {
+  border-radius: var(--sessions-ui-radius);
+}
+.sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible {
+  gap: 0;
+}
+.sessions-booking-page .sessions-calendar-collapsible {
+  gap: 0;
+}
+.sessions-calendar-card {
+  padding: 18px;
+}
+.sessions-calendar-card.dashboard {
+  margin-top: 4px;
+  background:
+    radial-gradient(circle at top left, rgba(111, 89, 245, 0.08), transparent 26%),
+    linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+}
+.sessions-calendar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 0 12px;
+}
+.sessions-calendar-head.no-title {
+  justify-content: flex-end;
+}
+.sessions-calendar-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sessions-calendar-month-nav strong {
+  min-width: 160px;
+  text-align: center;
+  font-size: 15px;
+}
+.sessions-calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.sessions-calendar-collapsible {
+  display: grid;
+  gap: 12px;
+}
+.sessions-calendar-collapsible.sessions-secondary-section {
+  margin-top: 0;
+}
+.sessions-purchased-history .sessions-calendar-toggle + ul,
+.sessions-purchased-history .sessions-calendar-toggle + p {
+  margin-top: 0;
+  padding: 0 16px 16px;
+}
+.sessions-calendar-toggle .sessions-secondary-title {
+  font-size: 20px;
+  line-height: normal;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+.sessions-calendar-toggle {
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 14px 16px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+.sessions-calendar-toggle:hover .sessions-secondary-title {
+  color: #0f1a31;
+}
+.sessions-secondary-section.sessions-purchased-history .sessions-calendar-toggle {
+  align-items: center;
+  margin: 0;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 0;
+  box-sizing: border-box;
+  transition: background-color 0.18s ease;
+}
+.sessions-secondary-section.sessions-purchased-history
+  .sessions-calendar-toggle[aria-expanded="false"] {
+  margin-bottom: 0;
+  border-radius: 0;
+}
+.sessions-purchased-history .sessions-calendar-toggle:focus-visible {
+  outline: 2px solid rgba(95, 68, 235, 0.35);
+  outline-offset: -2px;
+}
+.sessions-purchased-history .sessions-calendar-toggle:hover,
+.sessions-purchased-history .sessions-calendar-toggle:focus-visible {
+  background: rgba(95, 68, 235, 0.07);
+}
+.sessions-purchased-history .sessions-calendar-toggle:hover .sessions-secondary-title,
+.sessions-purchased-history .sessions-calendar-toggle:focus-visible .sessions-secondary-title {
+  color: #0f172a;
+}
+.patient-dashboard-home .sessions-calendar-collapsible.dashboard-compact-section.sessions-secondary-section {
+  padding: 0;
+  border-radius: var(--portal-radius-sm);
+  border: 1px solid #e4e8f0;
+  background: #fff;
+  border-top: 1px solid #e4e8f0;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+}
+.dashboard-compact-section:not(.sessions-purchased-history) .sessions-calendar-toggle {
+  margin: 0;
+  padding: 14px 16px;
+  width: 100%;
+  max-width: none;
+  border-radius: 0;
+  box-sizing: border-box;
+  transition: background-color 0.18s ease;
+}
+.dashboard-compact-section:not(.sessions-purchased-history)
+  .sessions-calendar-toggle[aria-expanded="false"] {
+  margin-bottom: 0;
+  border-radius: 0;
+}
+.dashboard-compact-section:not(.sessions-purchased-history) .sessions-calendar-toggle + * {
+  padding: 0 16px 16px;
+}
+.patient-dashboard-home .dashboard-compact-section:not(.sessions-purchased-history) .sessions-calendar-toggle:hover,
+.patient-dashboard-home .dashboard-compact-section:not(.sessions-purchased-history) .sessions-calendar-toggle:focus-visible {
+  background: rgba(95, 68, 235, 0.07);
+}
+.dashboard-compact-section .sessions-calendar-dayname {
+  font-size: 10px;
+}
+.dashboard-compact-section .sessions-calendar-date {
+  font-size: 12px;
+}
+.dashboard-compact-section .sessions-calendar-count,
+.dashboard-compact-section .sessions-calendar-time {
+  font-size: 10px;
+}
+.sessions-calendar-collapsible .sessions-calendar-card {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  gap: 12px;
+}
+.sessions-calendar-collapsible .sessions-calendar-head {
+  padding: 0;
+}
+.sessions-collapsible-panel--calendar .sessions-calendar-head {
+  padding: 6px 10px 12px 4px;
+}
+.sessions-collapsible-panel--calendar .sessions-calendar-month-nav {
+  margin-top: 2px;
+  margin-right: 2px;
+}
+.sessions-calendar-collapsible .sessions-calendar-grid-wrap {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+.sessions-booking-page .sessions-calendar-collapsible.sessions-history-section .sessions-calendar-toggle {
+  align-items: center;
+  box-sizing: border-box;
+  transition: background-color 0.18s ease;
+}
+.sessions-booking-page .sessions-calendar-collapsible.sessions-history-section .sessions-calendar-toggle:hover .sessions-secondary-title,
+.sessions-booking-page .sessions-calendar-collapsible.sessions-history-section .sessions-calendar-toggle:focus-visible .sessions-secondary-title {
+  color: #111827;
+}
+.sessions-booking-page .sessions-calendar-collapsible.sessions-history-section .sessions-calendar-toggle:focus-visible {
+  outline: 2px solid rgba(95, 68, 235, 0.4);
+  outline-offset: 2px;
+}
+.sessions-calendar-grid-wrap {
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-surface-solid);
+  padding: 14px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+}
+.sessions-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+.sessions-calendar-grid.month-grid {
+  gap: 7px;
+}
+.sessions-calendar-dayname {
+  padding: 0 4px 6px;
+  color: #697790;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.sessions-calendar-day {
+  min-height: 92px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius-sm);
+  background: #fafbfe;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.sessions-calendar-day:hover:not(:disabled) {
+  background: rgba(95, 68, 235, 0.07);
+  border-color: rgba(139, 124, 248, 0.42);
+  box-shadow: 0 2px 10px rgba(95, 68, 235, 0.1);
+}
+.sessions-calendar-card.dashboard .sessions-calendar-day {
+  min-height: 82px;
+  padding: 9px;
+}
+.sessions-calendar-day.outside {
+  opacity: 0.48;
+}
+.sessions-calendar-day.today {
+  border-color: #bdb3ff;
+  box-shadow: 0 0 0 2px rgba(111, 89, 245, 0.12);
+}
+.sessions-calendar-day.selected {
+  border-color: #6f59f5;
+  background: linear-gradient(180deg, #f4f0ff 0%, #fcfbff 100%);
+  box-shadow: 0 0 0 3px rgba(111, 89, 245, 0.12);
+}
+.sessions-calendar-day.busy {
+  background: linear-gradient(180deg, #f8f6ff 0%, #fdfdff 100%);
+}
+.sessions-calendar-day.selected.busy {
+  background: linear-gradient(180deg, #efe9ff 0%, #fbf9ff 100%);
+}
+.sessions-calendar-date {
+  font-size: 14px;
+  font-weight: 600;
+  color: #172136;
+}
+.sessions-calendar-count {
+  color: #5f45ee;
+  font-size: 12px;
+  font-weight: 600;
+}
+.sessions-calendar-time {
+  color: #48566d;
+  font-size: 12px;
+}
+.sessions-calendar-empty {
+  height: 8px;
+}
+.sessions-calendar-card.week-google .sessions-calendar-grid-wrap {
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  background: transparent;
+}
+.sessions-calendar-week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-items: stretch;
+  border-top: 1px solid #dadce0;
+  background: #fff;
+}
+.sessions-calendar-week-col {
+  min-height: 132px;
+  height: 100%;
+  border-right: 1px solid #dadce0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+.sessions-calendar-week-col:last-child {
+  border-right: none;
+}
+.sessions-calendar-week-col-head {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 10px 4px 8px;
+  border-bottom: 1px solid #eceff1;
+  background: #fafafa;
+}
+.sessions-calendar-week-dayname {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #70757a;
+}
+.sessions-calendar-week-date {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #3c4043;
+}
+.sessions-calendar-week-col.today .sessions-calendar-week-date {
+  background: #1a73e8;
+  color: #fff;
+}
+.sessions-calendar-week-events {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  align-self: stretch;
+  padding: 6px 4px 8px;
+  min-height: 0;
+}
+.sessions-calendar-week-empty {
+  display: block;
+  min-height: 4px;
+}
+.sessions-calendar-event {
+  width: 100%;
+  margin: 0;
+  padding: 6px 8px 6px 10px;
+  border: none;
+  border-left: 3px solid #1a73e8;
+  border-radius: 6px;
+  background: #e8f0fe;
+  text-align: left;
+  display: grid;
+  gap: 2px;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.sessions-calendar-event:hover {
+  background: #d2e3fc;
+  box-shadow: 0 1px 3px rgba(26, 115, 232, 0.18);
+}
+.sessions-calendar-event--trial {
+  border-left-color: var(--brand-2);
+  background: linear-gradient(90deg, rgba(95, 68, 235, 0.1) 0%, rgba(95, 68, 235, 0.03) 100%);
+}
+.sessions-calendar-event--trial:hover {
+  background: linear-gradient(90deg, rgba(95, 68, 235, 0.14) 0%, rgba(95, 68, 235, 0.05) 100%);
+  box-shadow: 0 1px 3px rgba(95, 68, 235, 0.14);
+}
+.sessions-calendar-event-time {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1a73e8;
+  line-height: 1.2;
+}
+.sessions-calendar-event--trial .sessions-calendar-event-time {
+  color: #5f44eb;
+}
+.sessions-calendar-event-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: #202124;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sessions-calendar-event-wrap {
+  position: relative;
+}
+.sessions-calendar-event.is-active {
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.4);
+}
+.sessions-calendar-event--trial.is-active {
+  box-shadow: 0 0 0 2px rgba(95, 68, 235, 0.4);
+}
+.sessions-calendar-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  border: none;
+  background: transparent;
+  cursor: default;
+  padding: 0;
+  margin: 0;
+}
+.sessions-calendar-popover {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 244px;
+  max-width: min(244px, 78vw);
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #e2e6f2;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(23, 20, 58, 0.18);
+  text-align: left;
+}
+.sessions-calendar-popover.align-start {
+  left: 0;
+  transform: none;
+}
+.sessions-calendar-popover.align-end {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.sessions-calendar-popover-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sessions-calendar-popover-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1c1633;
+  line-height: 1.25;
+}
+.sessions-calendar-popover-close {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 8px;
+  background: #f2f2f7;
+  color: #55507a;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.sessions-calendar-popover-close:hover {
+  background: #e7e6f0;
+}
+.sessions-calendar-popover-when {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #3f3a5c;
+  text-transform: capitalize;
+}
+.sessions-calendar-popover-time {
+  margin: 0;
+  font-size: 12px;
+  color: #6f668f;
+}
+.sessions-calendar-popover-pill {
+  justify-self: start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #e8f0fe;
+  color: #1a73e8;
+  font-size: 11px;
+  font-weight: 700;
+}
+.sessions-calendar-popover-pill.trial {
+  background: rgba(95, 68, 235, 0.12);
+  color: #5f44eb;
+}
+.sessions-calendar-popover-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sessions-calendar-popover-action {
+  flex: 1 1 auto;
+  min-width: 88px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.sessions-calendar-popover-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.sessions-calendar-popover-action.ghost {
+  background: #f4f4fb;
+  color: #4c31d8;
+}
+.sessions-calendar-popover-action.ghost:hover:not(:disabled) {
+  background: #ecebf7;
+}
+.sessions-calendar-popover-action.primary {
+  background: #5f44eb;
+  color: #fff;
+}
+.sessions-calendar-popover-action.primary:hover:not(:disabled) {
+  background: #4c31d8;
+}
+.sessions-calendar-popover-action.danger-ghost {
+  background: #fff;
+  border-color: rgba(214, 69, 69, 0.45);
+  color: #c0392b;
+}
+.sessions-calendar-popover-action.danger-ghost:hover:not(:disabled) {
+  background: #d64545;
+  border-color: #d64545;
+  color: #fff;
+}
+.sessions-calendar-popover-action.danger-ghost:disabled,
+.sessions-calendar-popover-action.danger-ghost:disabled:hover {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #fff;
+  border-color: rgba(214, 69, 69, 0.35);
+  color: #c0392b;
+}
+.sessions-calendar-popover-action.danger {
+  background: #d64545;
+  color: #fff;
+}
+.sessions-calendar-popover-action.danger:hover:not(:disabled) {
+  background: #bf3b3b;
+}
+.sessions-calendar-popover-action.danger:disabled,
+.sessions-calendar-popover-action.danger:disabled:hover {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #d64545;
+  color: #fff;
+}
+.sessions-calendar-popover-hint {
+  margin: 0;
+  font-size: 11px;
+  color: #8a819f;
+  line-height: 1.35;
+}
+.sessions-calendar-popover-confirm {
+  display: grid;
+  gap: 8px;
+}
+.sessions-calendar-popover-confirm p {
+  margin: 0;
+  font-size: 12px;
+  color: #3f3a5c;
+  line-height: 1.4;
+}
+@media (max-width: 1080px) {
+  .sessions-calendar-layout {
+    grid-template-columns: 1fr;
+  }
+  .sessions-calendar-head {
+    display: grid;
+    gap: 10px;
+  }
+  .sessions-calendar-toggle .sessions-secondary-title {
+    font-size: 20px;
+  }
+  .sessions-calendar-month-nav {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 680px) {
+  .sessions-calendar-week-grid {
+    grid-template-columns: 1fr;
+    border-top: none;
+    gap: 0;
+  }
+  .sessions-calendar-week-col {
+    min-height: auto;
+    border-right: none;
+    border-bottom: 1px solid #eceff1;
+  }
+  .sessions-calendar-week-col-head {
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    justify-items: start;
+    gap: 8px;
+    padding: 10px 20px 8px 16px;
+    background: #f8f9fa;
+  }
+  .sessions-calendar-week-events {
+    padding: 8px 20px 12px 16px;
+  }
+  .sessions-calendar-event {
+    padding: 10px 12px 10px 14px;
+    border-radius: 10px;
+  }
+  .sessions-calendar-event-time {
+    font-size: 12px;
+  }
+  .sessions-calendar-event-title {
+    font-size: 13px;
+    white-space: normal;
+  }
+  .sessions-calendar-toggle .sessions-secondary-title {
+    font-size: 20px;
+  }
+  .sessions-calendar-grid {
+    gap: 6px;
+  }
+  .sessions-calendar-day {
+    min-height: 78px;
+    padding: 8px;
+  }
+}
+
+@media (min-width: 1081px) {
+  .patient-dashboard-home .sessions-purchased-history .sessions-calendar-toggle:hover,
+  .patient-dashboard-home .sessions-purchased-history .sessions-calendar-toggle:focus-visible,
+  .sessions-booking-page .sessions-purchased-history .sessions-calendar-toggle:hover,
+  .sessions-booking-page .sessions-purchased-history .sessions-calendar-toggle:focus-visible {
+    background: rgba(95, 68, 235, 0.07) !important;
+  }
+}
+

@@ -1,0 +1,407 @@
+/* Sesiones — listas confirmed/purchased y afines.
+ */
+
+.sessions-confirmed-panel {
+  background: linear-gradient(180deg, #f8f9fc 0%, #eef1f8 100%);
+  border-color: var(--portal-border);
+  margin-top: 2%;
+}
+.sessions-confirmed-panel .sessions-empty-state strong {
+  font-size: 16px;
+}
+.sessions-confirmed-list {
+  display: grid;
+  gap: 10px;
+}
+.sessions-confirmed-list--desktop .sessions-reservations-table-head,
+.sessions-confirmed-list--dashboard-desktop .sessions-reservations-table-head {
+  border-inline: 1px solid transparent;
+}
+.sessions-confirmed-list--desktop .sessions-reservations-table-head > :last-child,
+.sessions-confirmed-list--dashboard-desktop .sessions-reservations-table-head > :last-child {
+  justify-self: end;
+  text-align: right;
+}
+.sessions-confirmed-list--desktop .session-management-card,
+.sessions-confirmed-list--dashboard-desktop .session-management-card {
+  grid-template-columns: minmax(180px, 1.45fr) minmax(110px, 0.8fr) minmax(220px, 1.4fr) minmax(120px, 0.9fr) minmax(210px, 1.15fr);
+  padding: 12px 16px;
+  gap: 12px;
+}
+.sessions-confirmed-list--desktop .session-management-main,
+.sessions-confirmed-list--dashboard-desktop .session-management-main {
+  display: contents;
+}
+.sessions-confirmed-list--desktop .session-management-actions-wrap,
+.sessions-confirmed-list--dashboard-desktop .session-management-actions-wrap {
+  grid-column: 5;
+  justify-self: stretch;
+}
+.sessions-confirmed-list--desktop .session-management-actions .session-detail-button,
+.sessions-confirmed-list--dashboard-desktop .session-management-actions .session-detail-button {
+  min-height: 32px;
+  padding: 5px 10px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+.sessions-confirmed-list--desktop .session-management-actions .icon-only,
+.sessions-confirmed-list--dashboard-desktop .session-management-actions .icon-only {
+  width: 34px;
+  min-width: 34px;
+  min-height: 34px;
+}
+.sessions-confirmed-list--desktop .session-management-professional-link,
+.sessions-confirmed-list--dashboard-desktop .session-management-professional-link {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+}
+.sessions-confirmed-list--desktop .session-pro-rating-compact--table,
+.sessions-confirmed-list--dashboard-desktop .session-pro-rating-compact--table {
+  margin-top: 0;
+}
+@media (min-width: 1081px) {
+  .sessions-confirmed-list--desktop .session-status-pill,
+  .sessions-confirmed-list--dashboard-desktop .session-status-pill {
+    border: none;
+  }
+}
+
+.sessions-confirmed-panel .sessions-panel-head h2 {
+  font-size: 20px;
+  line-height: normal;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+.sessions-confirmed-panel .sessions-panel-head h2 {
+  font-size: 20px;
+  font-weight: 600;
+}
+@media (max-width: 1080px) {
+  .sessions-confirmed-panel .sessions-panel-head h2 {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 680px) {
+  .patient-dashboard-home .dashboard-upcoming-mobile-only .sessions-confirmed-list--dashboard-mobile.sessions-confirmed-list--cards,
+  .patient-dashboard-home .dashboard-rn-session-list .sessions-confirmed-list--cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+  }
+  .session-rn-root .sessions-confirmed-list--cards > .session-rn-card + .session-rn-card {
+    margin-top: 12px;
+  }
+  .patient-dashboard-home .sessions-confirmed-panel.content-card {
+    padding: 0;
+    gap: 12px;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+  .patient-dashboard-home .sessions-confirmed-panel .sessions-panel-head h2 {
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+  }
+  .session-rn-root .sessions-confirmed-list--cards .professional-name-stack,
+  .session-rn-root .sessions-confirmed-list--cards .professional-name-link {
+    align-items: flex-start;
+    text-align: left;
+    width: 100%;
+  }
+  .session-rn-root .sessions-confirmed-list--cards .professional-name-link {
+    display: block;
+  }
+  .sessions-confirmed-panel .sessions-panel-head h2 {
+    font-size: 20px;
+  }
+}
+
+.dashboard-ml-bookings-list .sessions-confirmed-list--cards {
+  gap: 12px;
+}
+.dashboard-ml-bookings-list--cards .sessions-confirmed-list--cards {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop {
+  gap: 8px;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-card {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.2fr) minmax(88px, 0.7fr) minmax(160px, 1.25fr) minmax(110px, 0.85fr) minmax(180px, 1.1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e8e8ee;
+  background: #fff;
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 8px 18px rgba(15, 23, 42, 0.07);
+  overflow: hidden;
+  min-width: 0;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-card:hover {
+  border-color: #d8d8e4;
+  box-shadow:
+    0 4px 10px rgba(15, 23, 42, 0.06),
+    0 12px 24px rgba(15, 23, 42, 0.1);
+  transform: none;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-main {
+  display: contents;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-actions-wrap {
+  grid-column: 5;
+  justify-self: stretch;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-actions .session-detail-button {
+  min-height: 30px;
+  padding: 4px 11px;
+  font-size: 12px;
+  line-height: 1.2;
+  border-radius: 8px;
+  border: 1px solid #3483fa;
+  background: #3483fa;
+  color: #fff;
+  box-shadow: none;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-actions .session-detail-button:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-actions .icon-only {
+  width: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  border-radius: 8px;
+  border: 1px solid #3483fa;
+  background: #3483fa;
+  color: #fff;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-actions .icon-only:hover:not(:disabled) {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-actions .icon-only:disabled {
+  opacity: 0.4;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-cell-label {
+  display: none;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-card.session-rn-card--trial {
+  border-color: rgba(95, 68, 235, 0.28);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.35) 0%, transparent 28%),
+    linear-gradient(105deg, #ede9fe 0%, #e0e7ff 55%, #f5f3ff 100%);
+  box-shadow:
+    0 2px 6px rgba(95, 68, 235, 0.08),
+    0 10px 22px rgba(95, 68, 235, 0.12);
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-card.session-rn-card--trial-completed {
+  border-color: rgba(15, 23, 42, 0.1);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.55) 0%, transparent 30%),
+    linear-gradient(105deg, #eef2ff 0%, #e0e7ff 50%, #f8fafc 100%);
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.06),
+    0 8px 18px rgba(99, 102, 241, 0.1);
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-status-pill {
+  font-size: 11px;
+  padding: 3px 8px;
+}
+@media (max-width: 900px) {
+  .dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-card {
+    grid-template-columns: minmax(120px, 1.1fr) minmax(72px, 0.65fr) minmax(140px, 1.2fr) minmax(96px, 0.8fr) minmax(150px, 1fr);
+    padding: 9px 10px;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 1080px) {
+  .patient-dashboard-home .dashboard-ml-bookings-list--cards .sessions-confirmed-list--cards,
+  .patient-dashboard-home .dashboard-ml-bookings-list .sessions-confirmed-list--cards {
+    gap: 8px;
+    background: #fff;
+    width: 100%;
+  }
+  .patient-dashboard-home .dashboard-ml-bookings-list--cards .sessions-confirmed-list--cards > .session-rn-card + .session-rn-card,
+  .patient-dashboard-home .dashboard-ml-bookings-list .sessions-confirmed-list--cards > .session-rn-card + .session-rn-card {
+    margin-top: 0 !important;
+  }
+}
+
+.patient-dashboard-home .dashboard-upcoming-desktop-only .sessions-confirmed-list--dashboard-desktop {
+  display: grid;
+  gap: 10px;
+}
+@media (min-width: 1081px) {
+  .patient-dashboard-home .sessions-confirmed-panel {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .patient-dashboard-home .dashboard-rn-session-list .sessions-confirmed-list--cards {
+    gap: 0;
+  }
+  .session-rn-root .sessions-confirmed-list--cards > .session-rn-card {
+    width: 100%;
+    text-align: left;
+    justify-content: flex-start;
+    align-items: stretch;
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .session-rn-root .sessions-confirmed-list--cards > .session-rn-card:active {
+    opacity: 0.96;
+    background: #f8fafc;
+    border-color: rgba(95, 68, 235, 0.35);
+  }
+}
+
+
+/* --- sessions-purchased --- */
+
+.sessions-purchased-history .sessions-collapsible-list li,
+.dashboard-compact-section.sessions-purchased-history .sessions-collapsible-list li {
+  border: 1px solid rgba(139, 124, 248, 0.16) !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  box-shadow: none !important;
+}
+.sessions-purchased-history .sessions-collapsible-list li:hover,
+.dashboard-compact-section.sessions-purchased-history .sessions-collapsible-list li:hover {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(139, 124, 248, 0.28) !important;
+  box-shadow: 0 4px 14px rgba(95, 68, 235, 0.08) !important;
+}
+.sessions-secondary-section.sessions-purchased-history {
+  margin-top: 0;
+  padding: 0;
+  border-radius: var(--portal-radius);
+  background: linear-gradient(175deg, #fefeff 0%, #f7f4ff 45%, #f0ecfc 100%);
+  border: 1px solid rgba(139, 92, 246, 0.14);
+  box-shadow: 0 6px 22px rgba(95, 68, 235, 0.07);
+  overflow: hidden;
+}
+.sessions-purchased-history .sessions-secondary-title {
+  color: #0f172a;
+}
+.sessions-purchased-history > p,
+.sessions-purchased-history p {
+  color: #4b5872;
+}
+.sessions-purchased-history .session-history-list li,
+.dashboard-compact-section.sessions-purchased-history .session-history-list li {
+  border: 1px solid rgba(139, 124, 248, 0.16);
+  border-radius: var(--portal-radius-sm);
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: none;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.sessions-purchased-history .session-history-list li:hover,
+.dashboard-compact-section.sessions-purchased-history .session-history-list li:hover {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(139, 124, 248, 0.28);
+  box-shadow: 0 4px 14px rgba(95, 68, 235, 0.08);
+}
+.sessions-purchased-history .session-history-list li:last-child,
+.dashboard-compact-section.sessions-purchased-history .session-history-list li:last-child {
+  border-bottom: 1px solid var(--portal-border);
+}
+.sessions-purchased-history .session-history-list li strong {
+  color: #131f39;
+}
+.sessions-purchased-history .session-history-list li span:not(.session-status-pill) {
+  color: var(--text-soft);
+}
+.sessions-purchased-history .session-purchase-row-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 0;
+  flex-shrink: 0;
+  text-align: right;
+  margin-top: 2px;
+  margin-right: 4px;
+  padding-top: 2px;
+  padding-right: 2px;
+}
+.sessions-purchased-history .session-history-list li span.session-purchase-row-amount {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #3730a3;
+}
+.sessions-purchased-history .simple-list li {
+  border-color: rgba(139, 124, 248, 0.16);
+  background: rgba(255, 255, 255, 0.72);
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.sessions-purchased-history .simple-list li:hover {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(139, 124, 248, 0.28);
+  box-shadow: 0 4px 14px rgba(95, 68, 235, 0.08);
+}
+.dashboard-compact-section.sessions-purchased-history {
+  margin-left: 0 !important;
+  padding-left: 0;
+  padding-right: 0;
+}
+@media (min-width: 1081px) {
+  .patient-dashboard-home .sessions-purchased-history .session-purchase-row-amount {
+    color: #3730a3;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .patient-dashboard-home .sessions-secondary-section.sessions-purchased-history {
+    background: linear-gradient(175deg, #fefeff 0%, #f7f4ff 45%, #f0ecfc 100%) !important;
+    border: 1px solid rgba(139, 92, 246, 0.14) !important;
+    box-shadow: 0 6px 22px rgba(95, 68, 235, 0.07) !important;
+    overflow: hidden !important;
+  }
+  .patient-dashboard-home .sessions-purchased-history .sessions-collapsible-list li,
+  .patient-dashboard-home .sessions-purchased-history .session-history-list li {
+    border: 1px solid rgba(139, 124, 248, 0.16) !important;
+    border-radius: var(--portal-radius-sm) !important;
+    padding: 12px 14px !important;
+    background: rgba(255, 255, 255, 0.72) !important;
+    box-shadow: none !important;
+    transition:
+      background 0.18s ease,
+      border-color 0.18s ease,
+      box-shadow 0.18s ease !important;
+  }
+  .patient-dashboard-home .sessions-purchased-history .sessions-collapsible-list li:hover,
+  .patient-dashboard-home .sessions-purchased-history .session-history-list li:hover {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-color: rgba(139, 124, 248, 0.28) !important;
+    box-shadow: 0 4px 14px rgba(95, 68, 235, 0.08) !important;
+  }
+}
+

@@ -1,0 +1,246 @@
+/* Home — historial ML (.dashboard-ml-history*).
+ */
+
+.dashboard-ml-history-icon--minimal {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+}
+.dashboard-ml-history-minimal-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+.dashboard-ml-history-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr;
+  margin-top: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+@media (min-width: 900px) {
+  .dashboard-ml-history-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dashboard-ml-history-card--calendar.is-expanded {
+    grid-column: 1 / -1;
+  }
+  .dashboard-ml-history-grid:has(.dashboard-ml-history-card--calendar.is-expanded) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .dashboard-ml-history-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .dashboard-ml-history-grid:has(.dashboard-ml-history-card--calendar.is-expanded) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.dashboard-ml-history-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto;
+  gap: 0;
+  min-height: 0;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background:
+    linear-gradient(165deg, rgba(239, 246, 255, 0.95) 0%, rgba(255, 255, 255, 0) 44%),
+    linear-gradient(180deg, #ffffff 0%, #faf9ff 100%);
+  border: 1px solid rgba(95, 68, 235, 0.12);
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.04),
+    0 10px 28px rgba(95, 68, 235, 0.1),
+    0 18px 36px rgba(37, 99, 235, 0.06);
+  color: #1a1a1a;
+}
+.dashboard-ml-history-card--nav {
+  appearance: none;
+  width: 100%;
+  margin: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: grid;
+  gap: 10px;
+  align-content: space-between;
+  min-height: 108px;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.dashboard-ml-history-card--nav:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 8px rgba(15, 23, 42, 0.06),
+    0 14px 32px rgba(95, 68, 235, 0.14),
+    0 18px 36px rgba(37, 99, 235, 0.08);
+}
+.dashboard-ml-history-card--nav:focus-visible {
+  outline: 2px solid #5f44eb;
+  outline-offset: 3px;
+}
+.dashboard-ml-history-nav-cta {
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: #5f44eb;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.dashboard-ml-history-nav-chevron {
+  display: none;
+}
+.dashboard-ml-history-card.is-expanded {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  min-height: 220px;
+  padding: 16px;
+}
+.dashboard-ml-history-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 58% 52% at 100% 0%, rgba(95, 68, 235, 0.2) 0%, transparent 72%),
+    radial-gradient(ellipse 42% 38% at 92% 12%, rgba(96, 165, 250, 0.16) 0%, transparent 70%);
+}
+.dashboard-ml-history-card::after {
+  display: none;
+}
+.dashboard-ml-history-card > * {
+  position: relative;
+  z-index: 1;
+}
+.dashboard-ml-history-toggle {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+.dashboard-ml-history-toggle:hover {
+  background: transparent;
+}
+.dashboard-ml-history-toggle:focus-visible {
+  outline: 2px solid #5f44eb;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.dashboard-ml-history-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.dashboard-ml-history-card .dashboard-ml-panel-title,
+.dashboard-ml-history-toggle .dashboard-ml-panel-title {
+  margin: 0;
+  color: #1a1a1a;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.dashboard-ml-history-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  color: #1a1a1a;
+}
+.dashboard-ml-history-preview {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+}
+.dashboard-ml-history-card--calendar.is-expanded {
+  min-height: 0;
+}
+.dashboard-ml-history-preview--calendar {
+  width: 100%;
+  min-width: 0;
+}
+.dashboard-ml-history-preview--calendar .content-card {
+  box-shadow: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+.dashboard-ml-history-preview--calendar .sessions-calendar-head.no-title {
+  justify-content: flex-end;
+  padding: 0 0 8px;
+  gap: 0;
+}
+.dashboard-ml-history-preview--calendar .sessions-calendar-month-nav strong {
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+.dashboard-ml-history-link {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin-top: auto;
+  justify-self: start;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #5f44eb;
+  text-align: left;
+}
+.dashboard-ml-history-link:hover {
+  text-decoration: underline;
+  background: transparent;
+  color: #4c31d8;
+}
+.dashboard-ml-diary-actions-row .dashboard-ml-history-card {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  color: #1a1a1a;
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 12px 28px rgba(15, 23, 42, 0.1);
+}
+.dashboard-ml-diary-actions-row .dashboard-ml-history-card::before,
+.dashboard-ml-diary-actions-row .dashboard-ml-history-card::after {
+  display: none;
+}
+.dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:hover,
+.dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:focus,
+.dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:active {
+  background: #fff;
+  border-color: rgba(37, 99, 235, 0.22);
+  color: #1a1a1a;
+  box-shadow:
+    0 4px 10px rgba(15, 23, 42, 0.06),
+    0 14px 32px rgba(15, 23, 42, 0.12);
+  transform: translateY(-1px);
+}

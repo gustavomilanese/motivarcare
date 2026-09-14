@@ -1,0 +1,180 @@
+/* Overrides mobile diario — sacado de mobile-portal-flat.css.
+ */
+
+@media (max-width: 1080px) {
+  .diary-hero-toolbar-mount .header-icon-link,
+  .diary-hero-toolbar-mount .menu-toggle {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    color: #fff !important;
+    filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.35));
+  }
+  .diary-hero-toolbar-mount .header-icon-link:hover,
+  .diary-hero-toolbar-mount .header-icon-link:focus-visible,
+  .diary-hero-toolbar-mount .header-icon-link.active,
+  .diary-hero-toolbar-mount .menu-toggle:hover,
+  .diary-hero-toolbar-mount .menu-toggle:focus-visible {
+    background: transparent !important;
+    color: #fff !important;
+  }
+  .diary-portal-toolbar-mount .header-icon-link,
+  .diary-portal-toolbar-mount .menu-toggle {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    color: #1e293b !important;
+    filter: none !important;
+  }
+  .diary-portal-toolbar-mount .header-icon-link:hover,
+  .diary-portal-toolbar-mount .header-icon-link:focus-visible,
+  .diary-portal-toolbar-mount .header-icon-link.active,
+  .diary-portal-toolbar-mount .menu-toggle:hover,
+  .diary-portal-toolbar-mount .menu-toggle:focus-visible {
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #5f44eb !important;
+  }
+  .diary-hero-toolbar-mount .header-bell-icon,
+  .diary-hero-toolbar-mount .header-heart-icon,
+  .diary-portal-toolbar-mount .header-bell-icon,
+  .diary-portal-toolbar-mount .header-heart-icon {
+    width: 26px;
+    height: 26px;
+  }
+  .diary-hero-toolbar-mount .menu-toggle-icon,
+  .diary-portal-toolbar-mount .menu-toggle-icon {
+    width: 28px;
+    height: 28px;
+  }
+  .diary-hero-toolbar-mount .header-icon-link small,
+  .diary-portal-toolbar-mount .header-icon-link small {
+    font-size: 0.7rem;
+    min-width: 1.15rem;
+    height: 1.15rem;
+  }
+  .portal-main .diary-home-band--intro,
+  .portal-main .diary-section-intro,
+  .portal-main .diary-page-header--hero-banner,
+  .portal-main .diary-hero-banner-wrap {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .portal-main .diary-hero-banner-copy {
+    padding-left: var(--mobile-pad-x);
+    padding-right: var(--mobile-pad-x-end);
+  }
+  .portal-main .diary-home-page--ml .diary-page-ml {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 0 !important;
+  }
+  .portal-main .diary-home-page--ml,
+  .portal-main--home-ml .diary-home-page--ml {
+    padding-inline: 0 !important;
+    /* Sin aire extra post-última sección: el clear del tab lo da portal-main / footer */
+    padding-bottom: 0 !important;
+    background: var(--mobile-canvas, #f4f4f5) !important;
+  }
+  .portal-main .diary-page--home,
+  .portal-main--home-ml .diary-page--home {
+    padding-bottom: 0 !important;
+  }
+  .portal-main .diary-home-page--ml .diary-page-ml-pack {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    /* Un poco de aire interno; el margen grande post-sección lo quitamos arriba */
+    padding-bottom: 8px !important;
+  }
+  .portal-main .diary-home-page.page-stack,
+  .portal-main .diary-page--home {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+    box-sizing: border-box;
+  }
+  .portal-main .diary-home-page .diary-home-subnav-band {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 12px var(--mobile-pad-x-end) 10px var(--mobile-pad-x);
+    background: var(--mobile-surface);
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+  .portal-main .diary-home-band {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: var(--mobile-section-y) var(--mobile-pad-x-end) var(--mobile-section-y) var(--mobile-pad-x);
+  }
+  .portal-main .diary-home-page--ml .diary-page-ml-pack > .diary-home-band {
+    padding: 14px 16px;
+  }
+  .portal-main .diary-home-band--checkin .diary-hero-card {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .portal-main .diary-hero-card > p {
+    white-space: normal;
+    font-size: 0.88rem;
+  }
+  .portal-main .diary-mood-scroll,
+  .portal-main .diary-checkin-actions,
+  .portal-main .diary-checkin-actions .diary-btn--wide {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+@media (orientation: landscape), (max-height: 500px) {
+    .portal-main .diary-hero-banner {
+      min-height: clamp(96px, 38dvh, 140px);
+      max-height: 34dvh;
+    }
+    .portal-main .diary-home-band {
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+    .portal-main .diary-hero-card {
+      padding: 12px 14px;
+    }
+    .portal-main--diary-home .diary-page--records,
+    .portal-main--diary-home .diary-page--entry {
+      padding-bottom: calc(var(--portal-tab-clear, 50px) + 12px);
+    }
+}
+
+}
+

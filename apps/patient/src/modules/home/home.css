@@ -1,0 +1,1391 @@
+/* Home ML — familia .dashboard-ml (core de Inicio).
+ * Relacionados: home-dashboard.css, home-patient.css.
+ */
+
+@media (max-width: 1080px) {
+  .portal-shell:has(.portal-main--dashboard-home) .dashboard-ml-home {
+    margin-top: 0;
+    padding-top: 0;
+  }
+}
+
+@media (min-width: 1081px) {
+  .portal-main--home-ml .diary-page-ml-banner.dashboard-ml-diary-banner::after,
+.portal-main--home-ml .exercises-page-ml-banner.dashboard-ml-feature-banner::after,
+.portal-main--home-ml .wellbeing-relax-page-ml-banner.dashboard-ml-feature-banner::after {
+    inset: auto 0 0 0;
+    height: var(--section-ml-band-fade, 160px);
+    z-index: 2;
+    mix-blend-mode: normal;
+    opacity: 1;
+    background: linear-gradient(
+      180deg,
+      rgba(235, 235, 235, 0) 0%,
+      rgba(235, 235, 235, 0.02) 12%,
+      rgba(235, 235, 235, 0.08) 28%,
+      rgba(235, 235, 235, 0.2) 44%,
+      rgba(235, 235, 235, 0.4) 60%,
+      rgba(235, 235, 235, 0.65) 76%,
+      rgba(235, 235, 235, 0.88) 90%,
+      #ebebeb 100%
+    );
+  }
+  .portal-main--home-ml .diary-page-ml-banner .dashboard-ml-diary-banner-frame,
+.portal-main--home-ml .exercises-page-ml-banner .dashboard-ml-feature-banner-frame,
+.portal-main--home-ml .wellbeing-relax-page-ml-banner .dashboard-ml-feature-banner-frame {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: clamp(28px, 4vw, 40px) clamp(16px, 3vw, 28px) clamp(36px, 4vw, 48px);
+    box-sizing: border-box;
+  }
+  
+  .portal-main--home-ml .dashboard-ml-diary-pack:not(.diary-page-ml-pack),
+  .portal-main--home-ml .dashboard-ml-feature-section .dashboard-ml-feature-panel {
+    border-radius: 0 0 12px 12px;
+    border: none;
+    border-top: none;
+    box-shadow:
+      0 2px 4px rgba(15, 23, 42, 0.04),
+      0 12px 28px rgba(95, 68, 235, 0.14);
+  }
+  
+  .portal-main--home-ml .diary-page-ml-pack.dashboard-ml-diary-pack {
+    border-radius: 12px;
+    border: 1px solid rgba(95, 68, 235, 0.12);
+    border-top: 1px solid rgba(95, 68, 235, 0.12);
+  }
+}
+
+@media (min-width: 1081px) {
+  .portal-shell--home-ml .dashboard-ml-toolbar-mount {
+    display: none !important;
+  }
+}
+
+.dashboard-ml-home {
+  --dashboard-ml-page: #ebebeb;
+  --dashboard-ml-ink: #1a1a1a;
+  --dashboard-ml-muted: #666;
+  --dashboard-ml-cta: #3483fa;
+  --dashboard-ml-brand: #5f44eb;
+  --dashboard-ml-panel: #ffffff;
+  width: 100%;
+  max-width: none;
+  display: grid;
+  gap: 0;
+  background: var(--dashboard-ml-page);
+  position: relative;
+  /* visible en Y: el bridge Accesos se monta con margin negativo.
+     No usar overflow-x:clip acá — en CSS eso convierte overflow-y a auto y corta el +. */
+  overflow: visible;
+}
+.dashboard-ml-brand-band {
+  --dashboard-ml-band-fade: 180px;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  /* Color base + velo al gris de página (evita corte al pie de las Accesos) */
+  background-color: #5f44eb;
+  background-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent calc(100% - var(--dashboard-ml-band-fade)),
+    var(--dashboard-ml-page) 100%
+  );
+  padding-bottom: 140px;
+  overflow: visible;
+  transition: background-color 420ms ease;
+}
+.dashboard-ml-brand-band--access {
+  background-color: #15803d;
+  background-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent calc(100% - var(--dashboard-ml-band-fade)),
+    var(--dashboard-ml-page) 100%
+  );
+}
+.dashboard-ml-brand-band::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 80% at 50% 32%, rgba(167, 139, 250, 0.45) 0%, rgba(95, 68, 235, 0) 72%),
+    radial-gradient(circle 320px at 12% 55%, rgba(199, 180, 255, 0.28) 0%, rgba(199, 180, 255, 0) 72%),
+    radial-gradient(circle 360px at 88% 50%, rgba(199, 180, 255, 0.3) 0%, rgba(199, 180, 255, 0) 74%);
+  mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 calc(100% - var(--dashboard-ml-band-fade) - 20px),
+    rgba(0, 0, 0, 0.55) calc(100% - 90px),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 calc(100% - var(--dashboard-ml-band-fade) - 20px),
+    rgba(0, 0, 0, 0.55) calc(100% - 90px),
+    transparent 100%
+  );
+  transition: opacity 420ms ease;
+}
+.dashboard-ml-brand-band--access::before {
+  background:
+    radial-gradient(ellipse 70% 80% at 50% 32%, rgba(134, 239, 172, 0.42) 0%, rgba(21, 128, 61, 0) 72%),
+    radial-gradient(circle 320px at 12% 55%, rgba(187, 247, 208, 0.28) 0%, rgba(187, 247, 208, 0) 72%),
+    radial-gradient(circle 360px at 88% 50%, rgba(187, 247, 208, 0.3) 0%, rgba(187, 247, 208, 0) 74%);
+}
+
+.dashboard-ml-brand-band::after {
+  content: none;
+}
+
+.dashboard-ml-home .dashboard-ml-toolbar-mount .header-actions,
+.dashboard-ml-home .dashboard-ml-toolbar-mount .menu-wrap {
+  pointer-events: auto;
+  overflow: visible;
+}
+.dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link,
+.dashboard-ml-home .dashboard-ml-toolbar-mount .menu-toggle {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  color: #fff;
+  filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.35));
+}
+.dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link:hover,
+.dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link:focus-visible,
+.dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link.active,
+.dashboard-ml-home .dashboard-ml-toolbar-mount .menu-toggle:hover,
+.dashboard-ml-home .dashboard-ml-toolbar-mount .menu-toggle:focus-visible {
+  background: transparent !important;
+  color: #fff;
+}
+.dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link small {
+  border: 2px solid transparent;
+}
+
+.dashboard-ml-surface {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px clamp(16px, 3vw, 28px) 32px;
+  box-sizing: border-box;
+  background: transparent;
+}
+.dashboard-ml-surface--brand {
+  padding-top: 0;
+  padding-bottom: 8px;
+  z-index: 2;
+}
+.dashboard-ml-surface--bridge {
+  position: relative;
+  z-index: 3;
+  padding-top: 0;
+  padding-bottom: 4px;
+  /* Cards montadas sobre el fade (misma posición que antes) */
+  margin-top: -140px;
+}
+.dashboard-ml-surface:not(.dashboard-ml-surface--brand):not(.dashboard-ml-surface--bridge) {
+  padding-top: 8px;
+}
+.dashboard-ml-calendar-wrap {
+  display: flex;
+}
+.dashboard-ml-calendar-btn {
+  appearance: none;
+  cursor: pointer;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  background: #fff;
+  font: inherit;
+  font-weight: 650;
+  color: #1e293b;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.dashboard-ml-pro-main {
+  grid-area: visual;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  align-content: center;
+  width: 100%;
+  min-width: 0;
+  pointer-events: none;
+}
+
+.dashboard-ml-pro-name {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 2px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #1a1a1a;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-ml-pro-actions {
+  grid-area: cta;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  width: 100%;
+  margin-top: 2px;
+}
+.dashboard-ml-pro-actions--solo {
+  grid-template-columns: 1fr;
+  justify-items: center;
+}
+.dashboard-ml-pro-actions--solo .dashboard-ml-pro-action {
+  width: auto;
+  min-width: min(100%, 140px);
+  max-width: 100%;
+  padding-left: 18px;
+  padding-right: 18px;
+}
+.dashboard-ml-pro-action {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.2;
+  cursor: pointer;
+  text-align: center;
+}
+.dashboard-ml-pro-action--primary {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
+  box-shadow: 0 6px 14px rgba(95, 68, 235, 0.22);
+}
+.dashboard-ml-pro-action--primary:hover {
+  background: linear-gradient(135deg, #5136df 0%, #6b4ef4 100%);
+}
+.dashboard-ml-pro-action--secondary {
+  color: #4f3cd2;
+  background: #fff;
+  border: 1px solid #c5d2eb;
+}
+.dashboard-ml-pro-action--secondary:hover {
+  background: #f4f5fa;
+  border-color: #b8c5e0;
+}
+
+.dashboard-ml-section-banner-head--nav {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 160ms ease;
+}
+.dashboard-ml-section-banner-head--nav:hover,
+.dashboard-ml-section-banner-head--nav:focus-visible,
+.dashboard-ml-section-banner-head--nav:active {
+  /* Anula button:hover global (#f8fbff) sobre el banner de color */
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    0 8px 22px rgba(15, 23, 42, 0.12);
+}
+.dashboard-ml-section-banner-head--nav:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+.dashboard-ml-section-banner-head--nav:active {
+  background: rgba(255, 255, 255, 0.16);
+  transform: scale(0.985);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+.dashboard-ml-section-banner-head--nav:hover .dashboard-ml-diary-banner-title,
+.dashboard-ml-section-banner-head--nav:focus-visible .dashboard-ml-diary-banner-title,
+.dashboard-ml-section-banner-head--nav:active .dashboard-ml-diary-banner-title,
+.dashboard-ml-section-banner-head--nav:hover .dashboard-ml-feature-banner-title,
+.dashboard-ml-section-banner-head--nav:focus-visible .dashboard-ml-feature-banner-title,
+.dashboard-ml-section-banner-head--nav:active .dashboard-ml-feature-banner-title {
+  color: #fff;
+  text-shadow: 0 1px 14px rgba(255, 255, 255, 0.22);
+}
+
+.dashboard-ml-feature-banner-action {
+  appearance: none;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 650;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.dashboard-ml-feature-banner-action:hover {
+  background: rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+.dashboard-ml-feature-banner-action:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.dashboard-ml-banner-glyph {
+  width: 92px;
+  height: 92px;
+  border-radius: 26px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.dashboard-ml-banner-glyph svg {
+  width: 46px;
+  height: 46px;
+  display: block;
+}
+
+.dashboard-ml-panel-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+.dashboard-ml-empty {
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+  padding: 12px 4px 4px;
+}
+.dashboard-ml-empty strong {
+  color: #1a1a1a;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--cards {
+  gap: 12px;
+}
+.dashboard-ml-bookings-list--cards .sessions-confirmed-list--cards {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+.dashboard-ml-bookings-list--cards .session-management-card.session-rn-card {
+  width: 100%;
+  max-width: none;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop {
+  gap: 8px;
+}
+.dashboard-ml-bookings-list .sessions-reservations-table-head {
+  padding: 0 12px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-card {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.2fr) minmax(88px, 0.7fr) minmax(160px, 1.25fr) minmax(110px, 0.85fr) minmax(180px, 1.1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e8e8ee;
+  background: #fff;
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 8px 18px rgba(15, 23, 42, 0.07);
+  overflow: hidden;
+  min-width: 0;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-card:hover {
+  border-color: #d8d8e4;
+  box-shadow:
+    0 4px 10px rgba(15, 23, 42, 0.06),
+    0 12px 24px rgba(15, 23, 42, 0.1);
+  transform: none;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-main {
+  display: contents;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-actions-wrap {
+  grid-column: 5;
+  justify-self: stretch;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-actions .session-detail-button {
+  min-height: 30px;
+  padding: 4px 11px;
+  font-size: 12px;
+  line-height: 1.2;
+  border-radius: 8px;
+  border: 1px solid #3483fa;
+  background: #3483fa;
+  color: #fff;
+  box-shadow: none;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-actions .session-detail-button:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-actions .icon-only {
+  width: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  border-radius: 8px;
+  border: 1px solid #3483fa;
+  background: #3483fa;
+  color: #fff;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-actions .icon-only:hover:not(:disabled) {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-actions .icon-only:disabled {
+  opacity: 0.4;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-cell-label {
+  display: none;
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-card.session-rn-card--trial {
+  border-color: rgba(95, 68, 235, 0.28);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.35) 0%, transparent 28%),
+    linear-gradient(105deg, #ede9fe 0%, #e0e7ff 55%, #f5f3ff 100%);
+  box-shadow:
+    0 2px 6px rgba(95, 68, 235, 0.08),
+    0 10px 22px rgba(95, 68, 235, 0.12);
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-card.session-rn-card--trial-completed {
+  border-color: rgba(15, 23, 42, 0.1);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.55) 0%, transparent 30%),
+    linear-gradient(105deg, #eef2ff 0%, #e0e7ff 50%, #f8fafc 100%);
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.06),
+    0 8px 18px rgba(99, 102, 241, 0.1);
+}
+.dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-status-pill {
+  font-size: 11px;
+  padding: 3px 8px;
+}
+.dashboard-ml-bookings-list .session-management-card.session-rn-card,
+.dashboard-ml-bookings-list .session-rn-card.session-management-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  background: #fff;
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 8px 18px rgba(15, 23, 42, 0.07);
+  overflow: hidden;
+  min-width: 0;
+}
+.dashboard-ml-bookings-list .session-rn-card--compact.session-management-card {
+  gap: 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  box-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.05),
+    0 4px 12px rgba(15, 23, 42, 0.06);
+}
+.dashboard-ml-bookings-list .session-rn-card--compact .session-rn-top {
+  align-items: center;
+  gap: 10px;
+}
+.dashboard-ml-bookings-list .session-rn-card--compact .session-rn-avatar {
+  width: 40px;
+  height: 40px;
+}
+.dashboard-ml-bookings-list .session-rn-card--compact .session-rn-body-main {
+  flex: 1 1 0;
+  min-width: 0;
+  gap: 1px;
+}
+.dashboard-ml-bookings-list .session-rn-card--compact .session-rn-date-line {
+  font-size: 11px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.dashboard-ml-bookings-list .session-rn-card--compact .session-rn-name {
+  font-size: 14px;
+  line-height: 1.2;
+}
+.dashboard-ml-bookings-list .session-rn-card--compact .session-rn-body-header {
+  align-items: center;
+  gap: 8px;
+}
+.dashboard-ml-bookings-list .session-rn-card--compact .session-rn-reschedule {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+.dashboard-ml-bookings-list .session-rn-card--compact .session-rn-trial-badge {
+  font-size: 8px;
+  padding: 0;
+  margin: 0;
+  flex-shrink: 0;
+  align-self: flex-start;
+  max-width: 4.6em;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  text-align: center;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.dashboard-ml-bookings-list .session-rn-card--compact .session-rn-trial-badge--stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+.dashboard-ml-bookings-list .session-rn-card--trial.session-management-card {
+  border-color: rgba(95, 68, 235, 0.32);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, transparent 42%),
+    linear-gradient(145deg, #ede9fe 0%, #ddd6fe 48%, #c7d2fe 100%);
+  box-shadow:
+    0 10px 28px rgba(95, 68, 235, 0.14);
+}
+.dashboard-ml-bookings-list .session-rn-card--trial-completed.session-management-card {
+  border-color: rgba(15, 23, 42, 0.1);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, transparent 42%),
+    linear-gradient(145deg, #eef2ff 0%, #e0e7ff 50%, #dbeafe 100%);
+  box-shadow:
+    0 8px 18px rgba(15, 23, 42, 0.08);
+}
+.dashboard-ml-bookings-list .session-rn-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+.dashboard-ml-bookings-list .session-rn-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #f3f4ff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+.dashboard-ml-bookings-list .session-rn-body {
+  flex: 1;
+  min-width: 0;
+}
+.dashboard-ml-bookings-list .session-rn-body-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.dashboard-ml-bookings-list .session-rn-body-main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  justify-items: start;
+}
+.dashboard-ml-bookings-list .session-rn-date-line {
+  font-size: 12px;
+  color: #6d6d72;
+  text-transform: capitalize;
+}
+.dashboard-ml-bookings-list .session-rn-name {
+  font-size: 15px;
+  font-weight: 650;
+  color: #1a1a1a;
+}
+.dashboard-ml-bookings-list .session-rn-status {
+  font-size: 12px;
+  color: #5f44eb;
+}
+.dashboard-ml-bookings-list .session-rn-status--trial {
+  color: #4c31d8;
+  font-weight: 650;
+}
+.dashboard-ml-bookings-list .session-rn-reschedule {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 999px;
+  background: #ede9fe;
+  color: #5f44eb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+.dashboard-ml-bookings-list .session-rn-reschedule:hover:not(:disabled) {
+  background: #ddd6fe;
+}
+.dashboard-ml-bookings-list .session-rn-reschedule:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.dashboard-ml-bookings-list .session-rn-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.dashboard-ml-bookings-list .session-rn-join-pending {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+  text-align: left;
+  line-height: 1.35;
+}
+.dashboard-ml-bookings-list .session-rn-detail-ghost {
+  align-self: center;
+  border: none;
+  background: none;
+  color: #5f44eb;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  padding: 4px 6px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.dashboard-ml-bookings-list .session-rn-card--trial .session-rn-detail-ghost {
+  color: #4c31d8;
+}
+@media (max-width: 900px) {
+  .dashboard-ml-bookings-list .sessions-confirmed-list--dashboard-desktop .session-management-card {
+    grid-template-columns: minmax(120px, 1.1fr) minmax(72px, 0.65fr) minmax(140px, 1.2fr) minmax(96px, 0.8fr) minmax(150px, 1fr);
+    padding: 9px 10px;
+    gap: 8px;
+  }
+}
+
+.dashboard-ml-trial-callout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(95, 68, 235, 0.28);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, transparent 40%),
+    linear-gradient(125deg, #ddd0ff 0%, #c9b5ff 52%, #b89dff 100%);
+  box-shadow:
+    0 10px 24px rgba(95, 68, 235, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+.dashboard-ml-trial-callout-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.dashboard-ml-trial-callout-kicker {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #4c31d8;
+}
+.dashboard-ml-trial-callout-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #1e1b4b;
+  line-height: 1.2;
+}
+.dashboard-ml-trial-callout-lead {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #3730a3;
+  font-weight: 500;
+}
+.dashboard-ml-trial-callout-action {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: #1e1b4b;
+  color: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 750;
+  box-shadow: 0 8px 18px rgba(30, 27, 75, 0.28);
+  transition: background 150ms ease, transform 150ms ease;
+}
+.dashboard-ml-trial-callout-action:hover {
+  background: #312e81;
+  transform: translateY(-1px);
+}
+@media (max-width: 560px) {
+  .dashboard-ml-trial-callout {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-ml-trial-callout-action {
+    width: 100%;
+  }
+}
+
+.dashboard-ml-diary {
+  display: grid;
+  gap: 0;
+  margin-top: 96px;
+}
+.dashboard-ml-diary-banner {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.14) 0%, transparent 42%),
+    linear-gradient(165deg, #7c6aef 0%, #5f44eb 48%, #4c31d8 100%);
+  box-shadow: none;
+}
+.dashboard-ml-diary-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 80% at 92% 18%, rgba(221, 214, 254, 0.4) 0%, transparent 62%),
+    radial-gradient(circle 220px at 12% 78%, rgba(167, 139, 250, 0.32) 0%, transparent 68%),
+    radial-gradient(circle 160px at 58% 100%, rgba(76, 49, 216, 0.28) 0%, transparent 70%);
+}
+.dashboard-ml-diary-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 28%),
+    linear-gradient(0deg, rgba(15, 23, 42, 0.12) 0%, transparent 34%);
+  mix-blend-mode: soft-light;
+  opacity: 0.9;
+}
+.dashboard-ml-diary-banner-frame {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 280px);
+  align-items: center;
+  gap: clamp(16px, 3vw, 28px);
+  width: 100%;
+  max-width: 100%;
+  padding: clamp(22px, 3vw, 32px) clamp(20px, 3vw, 28px);
+  box-sizing: border-box;
+}
+.dashboard-ml-diary-banner-copy {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  color: #fff;
+  min-width: 0;
+}
+.dashboard-ml-diary-banner-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+.dashboard-ml-diary-banner-kicker {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+}
+.dashboard-ml-diary-banner-title {
+  margin: 0;
+  font-size: clamp(1.55rem, 3vw, 2.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  color: #fff;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+.dashboard-ml-diary-banner-title-icon,
+.dashboard-ml-feature-banner-title-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.15em;
+  height: 1.15em;
+  flex: 0 0 1.15em;
+  color: currentColor;
+}
+.dashboard-ml-diary-banner-title-icon svg,
+.dashboard-ml-feature-banner-title-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.dashboard-ml-diary-banner-body {
+  margin: 0;
+  max-width: 34rem;
+  font-size: clamp(0.95rem, 1.2vw, 1.05rem);
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.92);
+}
+.dashboard-ml-diary-banner-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.dashboard-ml-diary-banner-cta {
+  appearance: none;
+  cursor: pointer;
+  padding: 0 0 2px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.95);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.3;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+}
+.dashboard-ml-diary-banner-cta:hover {
+  background: transparent;
+  color: #fff;
+  border-bottom-color: #fff;
+}
+.dashboard-ml-diary-banner-link {
+  appearance: none;
+  cursor: pointer;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.dashboard-ml-diary-banner-link:hover {
+  color: #fff;
+  background: transparent;
+}
+.dashboard-ml-diary-banner-media {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  max-width: 100%;
+}
+.dashboard-ml-diary-banner-photo,
+.dashboard-ml-feature-banner-photo {
+  display: block;
+  width: 220px;
+  height: 180px;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: center;
+  filter: drop-shadow(0 14px 28px rgba(15, 23, 42, 0.28));
+  pointer-events: none;
+  user-select: none;
+}
+.dashboard-ml-diary-pack {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  background: #fff;
+  border: none;
+  border-radius: 0 0 12px 12px;
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.04),
+    0 12px 28px rgba(95, 68, 235, 0.14);
+}
+
+.dashboard-ml-diary-actions-row {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+@media (min-width: 720px) {
+  .dashboard-ml-diary-actions-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .dashboard-ml-diary-banner-frame {
+    grid-template-columns: minmax(0, 1fr) minmax(120px, 168px);
+    padding: 20px 18px;
+    gap: 12px;
+  }
+  .dashboard-ml-diary-banner-photo,
+  .dashboard-ml-feature-banner-photo {
+    width: 148px;
+    height: 122px;
+  }
+  .dashboard-ml-diary-banner-title {
+    font-size: 1.35rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .dashboard-ml-diary-banner-frame {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-ml-diary-banner-media {
+    justify-self: end;
+    max-width: 140px;
+  }
+}
+
+.dashboard-ml-feature-section {
+  display: grid;
+  gap: 0;
+  margin-top: 96px;
+}
+.dashboard-ml-feature-banner {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+  background: #5f44eb;
+  box-shadow: none;
+}
+.dashboard-ml-feature-banner--purple {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.14) 0%, transparent 42%),
+    linear-gradient(165deg, #9b4de8 0%, #7e22ce 48%, #6b21a8 100%);
+  box-shadow: none;
+}
+.dashboard-ml-feature-banner--purple::before {
+  display: block;
+  background:
+    radial-gradient(ellipse 70% 80% at 92% 18%, rgba(233, 213, 255, 0.42) 0%, transparent 62%),
+    radial-gradient(circle 220px at 12% 78%, rgba(192, 132, 252, 0.36) 0%, transparent 68%),
+    radial-gradient(circle 160px at 58% 100%, rgba(126, 34, 206, 0.35) 0%, transparent 70%);
+}
+.dashboard-ml-feature-banner--pistachio {
+  background: linear-gradient(165deg, #22c55e 0%, #16a34a 48%, #15803d 100%);
+  box-shadow: none;
+}
+.dashboard-ml-feature-banner--pistachio::before {
+  display: block;
+  background:
+    radial-gradient(ellipse 68% 78% at 90% 16%, rgba(187, 247, 208, 0.42) 0%, transparent 60%),
+    radial-gradient(circle 150px at 55% 100%, rgba(21, 128, 61, 0.4) 0%, transparent 70%);
+}
+.dashboard-ml-feature-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 260px at 82% 45%, rgba(221, 214, 254, 0.32) 0%, transparent 70%),
+    radial-gradient(circle 180px at 18% 30%, rgba(196, 181, 253, 0.24) 0%, transparent 68%);
+}
+.dashboard-ml-feature-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 28%),
+    linear-gradient(0deg, rgba(15, 23, 42, 0.12) 0%, transparent 34%);
+  mix-blend-mode: soft-light;
+  opacity: 0.9;
+}
+.dashboard-ml-feature-banner-frame {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 280px);
+  align-items: center;
+  gap: clamp(16px, 3vw, 28px);
+  width: 100%;
+  padding: clamp(22px, 3vw, 32px) clamp(20px, 3vw, 28px);
+  box-sizing: border-box;
+}
+.dashboard-ml-feature-banner-copy {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  color: #fff;
+  min-width: 0;
+}
+.dashboard-ml-feature-banner-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+.dashboard-ml-feature-banner-title-stack {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.dashboard-ml-feature-banner-kicker {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+}
+.dashboard-ml-feature-banner-title {
+  margin: 0;
+  font-size: clamp(1.55rem, 3vw, 2.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  color: #fff;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+.dashboard-ml-feature-banner-body {
+  margin: 0;
+  max-width: 34rem;
+  font-size: clamp(0.95rem, 1.2vw, 1.05rem);
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.92);
+}
+.dashboard-ml-feature-banner-cta {
+  appearance: none;
+  cursor: pointer;
+  margin-top: 4px;
+  padding: 0 0 2px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.95);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.3;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+}
+.dashboard-ml-feature-banner-cta:hover {
+  background: transparent;
+  color: #fff;
+  border-bottom-color: #fff;
+}
+.dashboard-ml-feature-banner-media {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  max-width: 100%;
+}
+.dashboard-ml-feature-panel {
+  display: grid;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 0 0 12px 12px;
+  background: #fff;
+  border: none;
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.04),
+    0 12px 28px rgba(95, 68, 235, 0.14);
+}
+.dashboard-ml-feature-panel.is-collapsed {
+  gap: 0;
+}
+.dashboard-ml-feature-panel--open {
+  gap: 14px;
+}
+.dashboard-ml-feature-panel--empty {
+  display: grid;
+  place-items: center;
+  min-height: 112px;
+  padding: 28px 24px;
+}
+.dashboard-ml-feature-toggle {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+.dashboard-ml-feature-toggle:hover {
+  background: transparent;
+}
+.dashboard-ml-feature-toggle:focus-visible {
+  outline: 2px solid #5f44eb;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.dashboard-ml-feature-toggle--static {
+  cursor: default;
+}
+.dashboard-ml-feature-toggle-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+}
+.dashboard-ml-feature-empty {
+  margin: 0;
+  padding: 12px 4px;
+  color: #666;
+  font-size: 0.95rem;
+}
+.dashboard-ml-feature-empty--solo {
+  max-width: 28rem;
+  padding: 0;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 550;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: #64748b;
+}
+.dashboard-ml-feature-preview-row {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+@media (min-width: 720px) {
+  .dashboard-ml-feature-preview-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.dashboard-ml-feature-preview-card {
+  appearance: none;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 8px;
+  justify-items: start;
+  width: 100%;
+  min-height: 132px;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.04);
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.04),
+    0 10px 28px rgba(15, 23, 42, 0.1),
+    0 18px 36px rgba(95, 68, 235, 0.08);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card {
+  justify-items: center;
+  text-align: center;
+}
+.dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card strong,
+.dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card > span:nth-child(3) {
+  text-align: center;
+}
+.dashboard-ml-feature-preview-card:hover {
+  transform: translateY(-2px);
+  background: #fff;
+  box-shadow:
+    0 4px 8px rgba(15, 23, 42, 0.06),
+    0 14px 32px rgba(15, 23, 42, 0.12),
+    0 22px 40px rgba(95, 68, 235, 0.12);
+}
+.dashboard-ml-feature-preview-card:focus-visible {
+  outline: 2px solid #5f44eb;
+  outline-offset: 3px;
+}
+.dashboard-ml-feature-preview-card strong {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+}
+.dashboard-ml-feature-preview-card > span:last-child {
+  color: #666;
+  font-size: 0.86rem;
+}
+.dashboard-ml-feature-preview-emoji {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.dashboard-ml-feature-preview-chevron {
+  display: none;
+}
+.dashboard-ml-feature-preview-card--media {
+  grid-template-rows: auto auto auto;
+}
+.dashboard-ml-feature-preview-media {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: linear-gradient(145deg, #ede9fe 0%, #ddd6fe 100%);
+}
+.dashboard-ml-feature-media-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.dashboard-ml-feature-media-fallback {
+  font-size: 1.6rem;
+  color: #5f44eb;
+}
+.dashboard-ml-feature-more {
+  appearance: none;
+  justify-self: start;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #5f44eb;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.dashboard-ml-feature-more:hover {
+  background: transparent;
+  color: #4c31d8;
+}
+@media (max-width: 720px) {
+  .dashboard-ml-feature-banner-frame {
+    grid-template-columns: minmax(0, 1fr) minmax(120px, 168px);
+    padding: 20px 18px;
+    gap: 12px;
+  }
+  .dashboard-ml-feature-banner-title {
+    font-size: 1.35rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .dashboard-ml-feature-banner-frame {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-ml-feature-banner-media {
+    justify-self: end;
+    max-width: 140px;
+  }
+}
+
+/* --- patient-dashboard --- */
+
+/* --- dashboard-compact --- */
+
+/* --- dashboard-deal --- */
+
+/* --- dashboard-hero --- */
+
+/* --- dashboard --- */
+
+/* --- hero-card --- */
+
+/* --- active-professional --- */
+
+/* --- patient-tour --- */
+
+/* --- patient-join --- */
+
+/* --- patient --- */
+
+/* --- dashboard-ml-sessions restored to home --- */
+

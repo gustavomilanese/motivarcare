@@ -1,0 +1,1498 @@
+/* Home — patient-dashboard, hero, deals, active-pro (no dashboard-ml).
+ * Extraído de home.css.
+ */
+
+@media (max-width: 1080px) {
+  .patient-dashboard-home .dashboard-ml-promo-kicker {
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-frame--media .dashboard-ml-promo-title,
+  .patient-dashboard-home .dashboard-ml-promo-title {
+    font-size: clamp(1.55rem, 7.2vw, 2.05rem);
+    line-height: 1.05;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-body {
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-badge {
+    font-size: 0.95rem;
+  }
+}
+
+.patient-dashboard-home .dashboard-ml-history-preview--calendar .sessions-calendar-card {
+  box-shadow: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+@media (max-width: 1080px) {
+  .patient-dashboard-home .dashboard-ml-home {
+    /* El clear del tab bar lo aporta el site footer; sin padding blanco/gris extra */
+    padding-bottom: 0;
+    background: var(--mobile-canvas, #f4f4f5);
+    --dashboard-ml-page: var(--mobile-canvas, #f4f4f5);
+  }
+  .patient-dashboard-home .dashboard-ml-brand-band {
+    --dashboard-ml-band-fade: 168px;
+    padding-bottom: 112px;
+  }
+  .patient-dashboard-home .dashboard-ml-surface {
+    --mobile-home-section-gap: 20px;
+    padding-left: 16px;
+    padding-right: 16px;
+    /* Un solo ritmo entre Sesiones / Diario / Ejercicios / Música */
+    gap: var(--mobile-home-section-gap);
+  }
+  .patient-dashboard-home .dashboard-ml-surface:not(.dashboard-ml-surface--brand):not(.dashboard-ml-surface--bridge) {
+    padding-top: var(--mobile-home-section-gap);
+    padding-bottom: var(--mobile-home-section-gap);
+  }
+  .patient-dashboard-home .dashboard-ml-surface--bridge {
+    margin-top: -112px;
+    padding-left: 0;
+    padding-right: 0;
+    /* Aire Accesos → Sesiones (mitad del 30 previo) */
+    padding-bottom: 15px;
+    overflow: visible;
+  }
+  .patient-dashboard-home .dashboard-ml-surface--bridge + .dashboard-ml-surface {
+    padding-top: 0;
+  }
+  .patient-dashboard-home .dashboard-ml-benefit-row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 14px;
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 16px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    /* Padding vertical: sombra de cards no se corta */
+    padding: 4px 0 8px;
+    scrollbar-width: none;
+  }
+  .patient-dashboard-home .dashboard-ml-benefit-row::-webkit-scrollbar {
+    display: none;
+  }
+  .patient-dashboard-home .dashboard-ml-benefit-row > :first-child {
+    margin-left: 16px;
+  }
+  .patient-dashboard-home .dashboard-ml-benefit-row > :last-child {
+    margin-right: 16px;
+  }
+  .patient-dashboard-home .dashboard-ml-benefit-card {
+    flex: 0 0 min(42vw, 148px);
+    width: min(42vw, 148px);
+    max-width: 148px;
+    min-height: 0;
+    height: auto;
+    gap: 10px;
+    padding: 14px 12px 12px;
+    grid-template-rows: auto auto auto;
+    scroll-snap-align: start;
+  }
+  .patient-dashboard-home .dashboard-ml-benefit-body {
+    display: none;
+  }
+  .patient-dashboard-home .dashboard-ml-benefit-title {
+    padding-bottom: 6px;
+    font-size: 0.78rem;
+    font-weight: 650;
+    line-height: 1.2;
+  }
+  .patient-dashboard-home .dashboard-ml-benefit-icon {
+    min-height: 0;
+    padding: 6px 0;
+  }
+  .patient-dashboard-home .dashboard-ml-benefit-icon-svg {
+    width: 52px;
+    height: 52px;
+    filter: drop-shadow(0 4px 10px rgba(95, 68, 235, 0.16));
+  }
+  .patient-dashboard-home .dashboard-ml-benefit-icon-img {
+    width: min(60px, 72%);
+    max-height: 60px;
+    filter: drop-shadow(0 4px 10px rgba(95, 68, 235, 0.16));
+  }
+  .patient-dashboard-home .dashboard-ml-benefit-cta,
+  .patient-dashboard-home .dashboard-ml-benefit-card .dashboard-ml-benefit-cta {
+    font-size: var(--ml-type-subtitle, 0.88rem);
+    font-weight: 650;
+  }
+  .patient-dashboard-home .dashboard-ml-benefit-card--professional .dashboard-ml-benefit-cta {
+    pointer-events: auto;
+    cursor: pointer;
+    justify-self: center;
+    text-align: center;
+    width: 100%;
+    color: #5f44eb;
+  }
+  .patient-dashboard-home .dashboard-ml-benefit-card--professional .dashboard-ml-benefit-cta:hover,
+  .patient-dashboard-home .dashboard-ml-benefit-card--professional .dashboard-ml-benefit-cta:focus-visible {
+    text-decoration: underline;
+    outline: none;
+  }
+  .patient-dashboard-home .dashboard-ml-benefit-card--professional .dashboard-ml-benefit-icon-img--photo,
+  .patient-dashboard-home .dashboard-ml-pro-main .dashboard-ml-benefit-icon-img--photo {
+    width: 60px;
+    max-height: 60px;
+    border-radius: 999px;
+  }
+  .patient-dashboard-home .dashboard-ml-credits-bar {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 0;
+    padding: 8px 8px 8px 11px;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+  .patient-dashboard-home .dashboard-ml-credits-bar--mobile .dashboard-ml-credits-num {
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+  }
+  .patient-dashboard-home .dashboard-ml-credits-bar--mobile .dashboard-ml-credits-label,
+  .patient-dashboard-home .dashboard-ml-credits-bar--mobile .dashboard-ml-credits-label--empty {
+    font-size: 0.76rem;
+  }
+  .patient-dashboard-home .dashboard-ml-credits-bar--mobile .dashboard-ml-book-cta {
+    min-height: 32px;
+    padding: 0 11px;
+    font-size: 0.76rem;
+  }
+  .patient-dashboard-home .dashboard-ml-credits-bar--mobile .dashboard-ml-book-cta--plus {
+    width: 32px;
+    min-width: 32px;
+    font-size: 1.24rem;
+  }
+  .patient-dashboard-home .dashboard-ml-book-cta {
+    min-height: 40px;
+    padding: 0 14px;
+  }
+  .patient-dashboard-home .dashboard-ml-diary,
+.patient-dashboard-home .dashboard-ml-feature-section {
+    margin-top: 0;
+  }
+  .patient-dashboard-home .dashboard-ml-home {
+    --ml-type-title: 1.05rem;
+    --ml-type-title-weight: 600;
+    --ml-type-text: 0.95rem;
+    --ml-type-subtitle: 0.82rem;
+    --ml-btn-min-h: 40px;
+    --ml-type-banner-title: 1.25rem;
+    --ml-type-banner-text: 1rem;
+    --ml-type-banner-subtitle: 0.85rem;
+    --ml-btn-banner-min-h: 40px;
+    --ml-section-title: 1rem;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-banner-title,
+.patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title,
+.patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title {
+    font-size: var(--ml-section-title);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-kicker,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-kicker {
+    font-size: var(--ml-type-banner-subtitle);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    opacity: 0.92;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-action,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-action {
+    min-height: var(--ml-btn-banner-min-h);
+    padding: 0 12px;
+    font-size: var(--ml-type-banner-text);
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-action--icon {
+    width: var(--ml-btn-banner-min-h);
+    min-width: var(--ml-btn-banner-min-h);
+    padding: 0;
+    display: inline-grid;
+    place-items: center;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-action--icon svg {
+    width: 1.2rem;
+    height: 1.2rem;
+    display: block;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-action--icon {
+    width: var(--ml-btn-banner-min-h);
+    min-width: var(--ml-btn-banner-min-h);
+    padding: 0;
+    display: inline-grid;
+    place-items: center;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-action--icon svg {
+    width: 1.2rem;
+    height: 1.2rem;
+    display: block;
+  }
+  .patient-dashboard-home .dashboard-ml-book-cta {
+    min-height: var(--ml-btn-min-h);
+    padding: 0 12px;
+    font-size: var(--ml-type-text);
+  }
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card .dashboard-ml-panel-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: #334155;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-nav-cta {
+    font-size: var(--ml-type-subtitle);
+    font-weight: 600;
+    color: #64748b;
+    text-decoration: none;
+  }
+  .patient-dashboard-home .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-date-line {
+    font-size: 0.65rem;
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .patient-dashboard-home .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-name {
+    font-size: 0.76rem;
+    font-weight: 650;
+    line-height: 1.25;
+  }
+  .patient-dashboard-home .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-trial-badge {
+    font-size: 0.52rem;
+    padding: 0;
+    letter-spacing: 0.02em;
+    border: none;
+    background: transparent;
+  }
+  .patient-dashboard-home .dashboard-ml-diary,
+.patient-dashboard-home .dashboard-ml-feature-section {
+    margin-left: -10px;
+    margin-right: -10px;
+    width: calc(100% + 20px);
+    max-width: none;
+    box-sizing: border-box;
+  }
+
+  .patient-dashboard-home .dashboard-ml-bookings-list .session-rn-card--compact.session-management-card {
+    padding: 14px 12px;
+    gap: 12px;
+    border-radius: 6px;
+  }
+  
+  .patient-dashboard-home .dashboard-ml-bookings-list,
+  .patient-dashboard-home .dashboard-ml-bookings-list.session-rn-root {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .patient-dashboard-home .dashboard-ml-bookings-list--cards .sessions-confirmed-list--cards,
+  .patient-dashboard-home .dashboard-ml-bookings-list .sessions-confirmed-list--cards {
+    gap: 8px;
+    background: #fff;
+    width: 100%;
+  }
+  .patient-dashboard-home .dashboard-ml-bookings-list--cards .sessions-confirmed-list--cards > .session-rn-card + .session-rn-card,
+  .patient-dashboard-home .dashboard-ml-bookings-list .sessions-confirmed-list--cards > .session-rn-card + .session-rn-card {
+    margin-top: 0 !important;
+  }
+  .patient-dashboard-home .dashboard-ml-bookings-list .session-rn-card.session-management-card,
+  .patient-dashboard-home .dashboard-ml-bookings-list .session-rn-card--compact.session-management-card {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    padding: 14px 12px;
+    border-radius: 6px;
+    box-shadow:
+      0 2px 6px rgba(15, 23, 42, 0.06),
+      0 8px 18px rgba(15, 23, 42, 0.08) !important;
+    border: 1px solid rgba(15, 23, 42, 0.06) !important;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06) !important;
+  }
+  .patient-dashboard-home .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-avatar {
+    width: 48px;
+    height: 48px;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-toggle-label {
+    font-size: var(--ml-type-text);
+  }
+  .patient-dashboard-home .dashboard-ml-feature-preview-card strong {
+    font-size: var(--ml-type-text);
+  }
+  .patient-dashboard-home .dashboard-ml-feature-preview-card > span:last-child,
+  .patient-dashboard-home .dashboard-ml-feature-more,
+  .patient-dashboard-home .dashboard-ml-feature-empty {
+    font-size: var(--ml-type-subtitle);
+  }
+  .patient-dashboard-home .dashboard-ml-credits-label,
+  .patient-dashboard-home .dashboard-ml-credits-label--empty {
+    font-size: var(--ml-type-text);
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-frame,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-frame {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding: 15px 14px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner {
+    border-radius: 6px 6px 0 0;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-panel {
+    border-radius: 0 0 6px 6px;
+    padding: 12px 10px 14px;
+    gap: 10px;
+    box-shadow: none;
+    border-top: 1px solid rgba(15, 23, 42, 0.06);
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-toggle {
+    display: none;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    flex-direction: unset;
+    flex-wrap: unset;
+    gap: 10px;
+    overflow: visible;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card {
+    display: grid;
+    grid-template-rows: auto auto auto;
+    flex-direction: unset;
+    flex-wrap: unset;
+    align-items: unset;
+    justify-content: unset;
+    justify-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 0;
+    padding: 16px 14px;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: 10px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    background: #fff;
+    box-shadow:
+      0 2px 4px rgba(15, 23, 42, 0.04),
+      0 8px 20px rgba(95, 68, 235, 0.08);
+    text-align: center;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card:last-of-type {
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card:hover,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card:focus,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card:active {
+    transform: none;
+    background: #fff;
+    box-shadow:
+      0 2px 4px rgba(15, 23, 42, 0.04),
+      0 8px 20px rgba(95, 68, 235, 0.1);
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-emoji {
+    flex-shrink: 0;
+    width: auto;
+    height: auto;
+    display: block;
+    place-items: unset;
+    border-radius: 0;
+    background: transparent;
+    font-size: 1.55rem;
+    line-height: 1;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card strong {
+    flex: unset;
+    min-width: 0;
+    font-size: var(--ml-type-text, 0.95rem);
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1.25;
+    text-align: center;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card > span:nth-child(3) {
+    display: block;
+    color: #666;
+    font-size: var(--ml-type-subtitle, 0.82rem);
+    text-align: center;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-chevron {
+    display: none;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner {
+    border-radius: 6px 6px 0 0;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-panel {
+    border-radius: 0 0 6px 6px;
+    padding: 0;
+    gap: 0;
+    box-shadow: none;
+    border-top: 1px solid rgba(15, 23, 42, 0.06);
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-toggle {
+    display: none;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-row {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 0;
+    overflow: visible;
+    width: 100%;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-card--media {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 12px 0 14px;
+    border: none;
+    border-radius: 0;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    background: transparent;
+    box-shadow: none;
+    text-align: left;
+    box-sizing: border-box;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-card--media:last-of-type {
+    border-bottom: none;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-card--media:hover,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-card--media:focus,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-card--media:active {
+    transform: none;
+    background: transparent;
+    box-shadow: none;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-media {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    aspect-ratio: 16 / 9;
+    border-radius: 0;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-media-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-card--media strong {
+    padding: 0 14px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.25;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-card--media > span:last-child {
+    padding: 0 14px;
+    font-size: 0.78rem;
+    color: #64748b;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-more {
+    margin: 0;
+    padding: 12px 14px 14px;
+    color: #16a34a;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: left;
+    background: transparent;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-more:hover,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-more:active {
+    background: transparent;
+    color: #15803d;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-more {
+    width: 100%;
+    margin: 0;
+    padding: 14px 16px;
+    border: none;
+    border-radius: 0;
+    border-top: none;
+    background: transparent;
+    color: #5f44eb;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: left;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-copy,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-copy {
+    gap: 0;
+    justify-items: stretch;
+    width: 100%;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-head,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-head {
+    gap: 10px;
+    align-items: center;
+    min-width: 0;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title-stack,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title-stack {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title {
+    display: flex;
+    align-items: center;
+    gap: 0.35em;
+    letter-spacing: -0.01em;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title > span:last-child,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title > span:last-child {
+    flex: 1 1 0;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-action,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-action {
+    align-self: center;
+    flex-shrink: 0;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-banner,
+.patient-dashboard-home .dashboard-ml-feature-banner,
+.patient-dashboard-home .dashboard-ml-diary-pack,
+.patient-dashboard-home .dashboard-ml-feature-panel {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-banner-title-icon,
+.patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title-icon,
+.patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 1.15em;
+    height: 1.15em;
+    max-width: 1.15em;
+    max-height: 1.15em;
+    flex: 0 0 1.15em;
+    overflow: hidden;
+    color: inherit;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-banner-title-icon svg,
+.patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title-icon svg,
+.patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title-icon svg,
+.patient-dashboard-home .dashboard-ml-diary-banner-title-icon .dashboard-ml-benefit-icon-svg,
+.patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title-icon .dashboard-ml-benefit-icon-svg,
+.patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title-icon .dashboard-ml-benefit-icon-svg,
+.patient-dashboard-home .dashboard-ml-diary-banner-title-icon .dashboard-ml-benefit-icon-img,
+.patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title-icon .dashboard-ml-benefit-icon-img,
+.patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title-icon .dashboard-ml-benefit-icon-img {
+    width: 1.15em !important;
+    height: 1.15em !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    margin: 0 !important;
+    display: block;
+    object-fit: contain;
+    filter: none !important;
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-banner {
+    border-radius: 6px 6px 0 0;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-banner-media {
+    display: none;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-banner-frame {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding: 15px 14px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-banner-copy {
+    gap: 0;
+    justify-items: stretch;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-banner-head {
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-banner-title {
+    display: flex;
+    align-items: center;
+    gap: 0.35em;
+    flex: 1 1 0;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-banner-title-icon svg {
+    width: 1.15em !important;
+    height: 1.15em !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    display: block;
+    color: inherit;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-banner-title > span:last-child {
+    flex: 1 1 0;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .patient-dashboard-home .dashboard-ml-bookings-list.session-rn-root {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary {
+    border-radius: 6px;
+    overflow: hidden;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.14) 0%, transparent 42%),
+      linear-gradient(165deg, #7c6aef 0%, #5f44eb 48%, #4c31d8 100%);
+    box-shadow:
+      0 2px 4px rgba(15, 23, 42, 0.04),
+      0 12px 28px rgba(95, 68, 235, 0.22);
+  }
+  .patient-dashboard-home .dashboard-ml-diary-banner {
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-banner::before,
+  .patient-dashboard-home .dashboard-ml-diary-banner::after {
+    opacity: 0.55;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-pack {
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+    box-sizing: border-box;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-mood {
+    padding: 4px 12px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-scroll,
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-scroll-inner {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-row--scroll .diary-mood-btn {
+    flex: 0 0 3.6rem;
+    width: 3.6rem;
+    border-color: rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: none;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-row--scroll .diary-mood-btn:hover,
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-row--scroll .diary-mood-btn:focus,
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-row--scroll .diary-mood-btn--active {
+    border-color: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.28);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.22);
+  }
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-btn-emoji {
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: none;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-btn-label {
+    color: rgba(255, 255, 255, 0.92);
+  }
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-btn--active .diary-mood-btn-label {
+    color: #fff;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-mood-prompt {
+    margin: 0 0 4px;
+    padding: 0 4px;
+    font-size: 0.82rem;
+    font-weight: 650;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    color: rgba(255, 255, 255, 0.9);
+  }
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-scroll {
+    margin: 0;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-row--compact {
+    margin-top: 0;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-actions-row {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0;
+    overflow: visible;
+    padding: 0;
+    background: transparent;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  .patient-dashboard-home .dashboard-ml-diary-actions-row::-webkit-scrollbar {
+    display: none;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-actions-row > :first-child,
+  .patient-dashboard-home .dashboard-ml-diary-actions-row > :last-child {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav {
+    flex: none;
+    width: 100%;
+    max-width: none;
+    min-height: 56px;
+    height: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border: none;
+    border-radius: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    background: transparent;
+    box-shadow: none;
+    align-content: center;
+    transform: none;
+    scroll-snap-align: none;
+    color: #fff;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:last-child {
+    border-bottom: none;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:hover,
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:focus,
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:active {
+    transform: none;
+    border-color: transparent;
+    border-bottom-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: none;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:last-child:hover,
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:last-child:focus,
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:last-child:active {
+    border-bottom-color: transparent;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card .dashboard-ml-panel-title {
+    color: #fff;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-head {
+    flex: 1 1 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-icon,
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-icon--minimal {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-minimal-icon {
+    width: 18px;
+    height: 18px;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-nav-cta {
+    display: none;
+  }
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-nav-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.25rem;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 1.45rem;
+    font-weight: 400;
+    line-height: 1;
+  }
+  .patient-dashboard-home .dashboard-ml-promo {
+    height: clamp(210px, 30vw, 250px);
+    min-height: 210px;
+  }
+  
+  .patient-dashboard-home .dashboard-ml-brand-band {
+    overflow: visible;
+    max-width: 100%;
+  }
+  .patient-dashboard-home .dashboard-ml-benefit-row {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-slide {
+    padding: calc(52px + env(safe-area-inset-top, 0px)) 20px 28px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-frame--media {
+    width: 100%;
+    max-width: 100%;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-frame--media .dashboard-ml-promo-copy {
+    flex: 1 1 0;
+    flex-basis: 0;
+    min-width: 0;
+    max-width: none;
+    width: auto;
+    align-self: center;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-media {
+    align-self: flex-end;
+    /* Reserva esquina superior derecha para iconos del toolbar */
+    padding-top: 8px;
+    margin-right: 4px;
+    max-width: 42%;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-glyph .dashboard-ml-banner-glyph,
+  .patient-dashboard-home .dashboard-ml-promo-glyph .dashboard-ml-promo-banner-glyph {
+    width: 88px;
+    height: 88px;
+    border-radius: 24px;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-glyph .dashboard-ml-banner-glyph svg,
+  .patient-dashboard-home .dashboard-ml-promo-glyph .dashboard-ml-promo-banner-glyph svg {
+    width: 44px;
+    height: 44px;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-slide--match.dashboard-ml-promo-slide--media .dashboard-ml-promo-copy,
+  .patient-dashboard-home .dashboard-ml-promo-slide--match .dashboard-ml-promo-frame--media .dashboard-ml-promo-copy,
+  .patient-dashboard-home .dashboard-ml-promo-slide--care.dashboard-ml-promo-slide--media .dashboard-ml-promo-copy,
+  .patient-dashboard-home .dashboard-ml-promo-slide--care .dashboard-ml-promo-frame--media .dashboard-ml-promo-copy {
+    max-width: none;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-title {
+    font-size: clamp(1.45rem, 3.4vw, 1.9rem);
+  }
+  .patient-dashboard-home .dashboard-ml-promo-body {
+    display: block;
+    overflow: visible;
+    font-size: 0.9rem;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-badge {
+    display: none !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .patient-dashboard-home .dashboard-ml-promo {
+    height: auto;
+    min-height: clamp(220px, 52vw, 268px);
+    margin-bottom: 0;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-slide {
+    padding: calc(48px + env(safe-area-inset-top, 0px)) 16px 22px;
+    align-items: stretch;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-frame--media {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+    margin-inline: 0;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-frame--media .dashboard-ml-promo-copy {
+    flex: 1 1 0;
+    flex-basis: 0;
+    min-width: 0;
+    max-width: none;
+    width: auto;
+    justify-items: start;
+    align-content: center;
+    align-self: center;
+    text-align: left;
+    gap: 8px;
+    padding: 0;
+    /* Deja aire a la derecha para que el copy no empuje el arte bajo los iconos */
+    padding-right: 2px;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-copy {
+    padding: 0;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-kicker {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-title {
+    font-size: clamp(1.22rem, 5.4vw, 1.55rem);
+    line-height: 1.05;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-body {
+    display: block;
+    overflow: visible;
+    font-size: 0.8rem;
+    line-height: 1.3;
+    max-width: 100%;
+    color: rgba(255, 255, 255, 0.9);
+  }
+  .patient-dashboard-home .dashboard-ml-promo-body--lines {
+    display: block;
+    width: auto;
+    max-width: 100%;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-body-line {
+    display: inline;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-body-line + .dashboard-ml-promo-body-line::before {
+    content: " ";
+  }
+  .patient-dashboard-home .dashboard-ml-promo-media {
+    flex: 0 0 auto;
+    align-self: flex-end;
+    padding-top: 4px;
+    margin-right: 2px;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-glyph .dashboard-ml-banner-glyph,
+  .patient-dashboard-home .dashboard-ml-promo-glyph .dashboard-ml-promo-banner-glyph {
+    width: 80px;
+    height: 80px;
+    border-radius: 22px;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-glyph .dashboard-ml-banner-glyph svg,
+  .patient-dashboard-home .dashboard-ml-promo-glyph .dashboard-ml-promo-banner-glyph svg {
+    width: 40px;
+    height: 40px;
+  }
+  .patient-dashboard-home .dashboard-ml-promo-dots {
+    bottom: 10px;
+  }
+  .patient-dashboard-home .dashboard-ml-brand-band {
+    --dashboard-ml-band-fade: 152px;
+    padding-bottom: 100px;
+  }
+  .patient-dashboard-home .dashboard-ml-surface--bridge {
+    margin-top: -100px;
+  }
+  .patient-dashboard-home .dashboard-ml-credits-bar {
+    flex-wrap: nowrap;
+  }
+  .patient-dashboard-home .dashboard-ml-book-cta {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 1080px) {
+
+  .patient-dashboard-home .session-management-card {
+    grid-template-columns: 1fr;
+  }
+  .patient-dashboard-home .session-management-main {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .patient-dashboard-home .session-management-cell-label {
+    display: inline-flex;
+  }
+  .patient-dashboard-home .session-management-actions-wrap {
+    justify-items: start;
+  }
+}
+
+@media (max-width: 680px) {
+  .patient-dashboard-home .dashboard-upcoming-mobile-only {
+    display: grid;
+    gap: 0;
+  }
+  .patient-dashboard-home .dashboard-upcoming-desktop-only {
+    display: none;
+  }
+}
+
+.patient-dashboard-home .dashboard-legacy-home {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+.patient-dashboard-home .dashboard-legacy-home > section {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  box-sizing: border-box;
+}
+
+.patient-dashboard-upcoming-spotlight {
+  position: relative;
+  z-index: 1;
+  animation: patient-upcoming-spotlight-glow 2.4s ease-in-out 3;
+  border-radius: var(--portal-radius, 14px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .patient-dashboard-upcoming-spotlight {
+    animation: none;
+    box-shadow:
+      0 0 0 2px rgba(95, 68, 235, 0.28),
+      0 8px 22px rgba(95, 68, 235, 0.16);
+    outline: 1px solid rgba(95, 68, 235, 0.45);
+    outline-offset: 2px;
+  }
+}
+
+.patient-dashboard-home .dashboard-upcoming-mobile-only {
+  display: none;
+}
+.patient-dashboard-home .dashboard-upcoming-desktop-only {
+  display: block;
+}
+.patient-dashboard-home .dashboard-upcoming-lists-root {
+  min-width: 0;
+}
+
+.patient-dashboard-home .hero-inline-link {
+  margin-top: 2px;
+  font-size: 11px;
+}
+
+@media (min-width: 1081px) {
+  .patient-dashboard-home .dashboard-legacy-home {
+    display: grid;
+    gap: var(--portal-section-gap);
+    align-content: start;
+  }
+  
+  
+  
+}
+
+.patient-dashboard-home .dashboard-rn-home {
+  display: none;
+}
+@media (max-width: 680px) {
+
+  .patient-dashboard-home .dashboard-rn-home {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .patient-dashboard-home .dashboard-rn-scroll {
+    padding: 0 20px 12px;
+    padding-bottom: 16px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-toolbar {
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow:
+      0 4px 24px rgba(95, 68, 235, 0.08),
+      0 1px 0 rgba(255, 255, 255, 0.9) inset;
+    backdrop-filter: blur(18px) saturate(1.25);
+    -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  }
+  .patient-dashboard-home .dashboard-rn-google-cta-wrap {
+    margin: 0 2px 14px;
+  }
+  .patient-dashboard-home .dashboard-rn-google-calendar-button {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(95, 68, 235, 0.38);
+    background: rgba(255, 255, 255, 0.88);
+    color: #4f3cd2;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+  .patient-dashboard-home .dashboard-rn-google-calendar-button:hover {
+    background: rgba(245, 243, 255, 0.96);
+    border-color: rgba(95, 68, 235, 0.52);
+    box-shadow: 0 6px 18px rgba(95, 68, 235, 0.1);
+  }
+  .patient-dashboard-home .dashboard-rn-toolbar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+  }
+  .patient-dashboard-home .dashboard-rn-pill-block {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+  }
+  .patient-dashboard-home .dashboard-rn-sessions-pill {
+    align-self: flex-start;
+    max-width: 100%;
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #5f44eb;
+    border: 1px solid transparent;
+    min-width: 0;
+  }
+  .patient-dashboard-home .dashboard-rn-sessions-pill--muted {
+    background: rgba(15, 23, 42, 0.045);
+    border-color: rgba(15, 23, 42, 0.08);
+  }
+  .patient-dashboard-home .dashboard-rn-sessions-pill-inner {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35em;
+    min-width: 0;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .patient-dashboard-home .dashboard-rn-sessions-num {
+    font-size: 13px;
+    font-weight: 800;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .patient-dashboard-home .dashboard-rn-sessions-suffix {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .patient-dashboard-home .dashboard-rn-sessions-pill--muted .dashboard-rn-sessions-num,
+  .patient-dashboard-home .dashboard-rn-sessions-pill--muted .dashboard-rn-sessions-suffix {
+    color: #475569;
+  }
+  .patient-dashboard-home .dashboard-rn-sessions-empty {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    letter-spacing: -0.01em;
+  }
+  .patient-dashboard-home .dashboard-rn-fab {
+    flex-shrink: 0;
+    width: 50px;
+    height: 50px;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(145deg, var(--brand) 0%, var(--brand-2) 100%);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow:
+      0 8px 22px rgba(95, 68, 235, 0.38),
+      0 2px 6px rgba(15, 23, 42, 0.08);
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease,
+      opacity 0.18s ease;
+  }
+  .patient-dashboard-home .dashboard-rn-fab:active {
+    opacity: 0.92;
+    transform: scale(0.96);
+  }
+  .patient-dashboard-home .dashboard-rn-fab:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+  }
+  .patient-dashboard-home .dashboard-rn-section {
+    margin-top: 2px;
+    margin-bottom: 20px;
+  }
+  .patient-dashboard-home .dashboard-rn-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-right: 2px;
+  }
+  .patient-dashboard-home .dashboard-rn-section-head .dashboard-rn-section-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--brand);
+    letter-spacing: -0.02em;
+    flex: 1;
+    padding: 0 2px;
+  }
+  .patient-dashboard-home .dashboard-rn-link-all {
+    border: none;
+    background: none;
+    padding: 4px 2px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #5f44eb;
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .patient-dashboard-home .dashboard-rn-chevron {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .patient-dashboard-home .dashboard-rn-empty-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+  }
+  .patient-dashboard-home .dashboard-rn-empty-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1c1c1e;
+  }
+  .patient-dashboard-home .dashboard-rn-empty-meta {
+    margin: 4px 0 0;
+    font-size: 13px;
+    font-weight: 400;
+    color: #6d6d72;
+    line-height: 1.38;
+  }
+  .patient-dashboard-home .dashboard-rn-session-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+  }
+  .patient-dashboard-home .dashboard-rn-mcare-title {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 10px;
+    background: #5f44eb;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+  .patient-dashboard-home .dashboard-rn-mcare-credits-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #1c1c1e;
+    letter-spacing: -0.035em;
+    line-height: 1.1;
+  }
+}
+
+/* --- hero-card --- */
+
+/* --- active-professional --- */
+
+/* --- dashboard-deal --- */
+
+/* --- dashboard-hero --- */
+
+/* --- dashboard-compact --- */
+
+/* unmix from sessions */
+
+.patient-dashboard-home .sessions-collapse-icon {
+  border-radius: var(--sessions-ui-radius);
+}
+.patient-dashboard-home .sessions-collapsible-list li {
+  border-radius: var(--sessions-ui-radius) !important;
+}
+.patient-dashboard-home .sessions-collapsible-panel--calendar .sessions-calendar-card,
+.patient-dashboard-home .sessions-collapsible-panel--calendar .sessions-calendar-grid-wrap {
+  border-radius: var(--sessions-ui-radius);
+}
+.patient-dashboard-home .sessions-secondary-section {
+  border-radius: var(--sessions-ui-radius);
+}
+
+@media (max-width: 1080px) {
+  .patient-dashboard-home .sessions-reservations-table-head {
+    display: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .patient-dashboard-home .dashboard-upcoming-mobile-only .sessions-confirmed-list--dashboard-mobile.sessions-confirmed-list--cards,
+  .patient-dashboard-home .dashboard-rn-session-list .sessions-confirmed-list--cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+  }
+  .patient-dashboard-home .sessions-confirmed-panel.content-card {
+    padding: 0;
+    gap: 12px;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+  .patient-dashboard-home .sessions-confirmed-panel .sessions-panel-head h2 {
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+  }
+}
+
+.portal-main--home-ml .patient-dashboard-home.sessions-page-layout {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  box-sizing: border-box;
+}
+.portal-main--home-ml .patient-dashboard-home.sessions-page-layout {
+  gap: 0;
+  width: 100%;
+  max-width: none;
+  overflow-x: visible;
+}
+.patient-dashboard-home .dashboard-upcoming-desktop-only .sessions-confirmed-list--dashboard-desktop {
+  display: grid;
+  gap: 10px;
+}
+.patient-dashboard-home .sessions-combined-card {
+  min-height: 0;
+  height: 100%;
+}
+.patient-dashboard-home .sessions-combined-section {
+  padding: 11px 10px;
+  gap: 5px;
+  justify-items: center;
+  text-align: center;
+}
+.patient-dashboard-home .sessions-combined-card .sessions-combined-section .label {
+  padding-left: 0;
+  width: 100%;
+  justify-content: center;
+}
+.patient-dashboard-home .sessions-combined-card .sessions-combined-action {
+  text-align: center;
+  justify-items: center;
+}
+.patient-dashboard-home .sessions-combined-card .hero-inline-link {
+  justify-self: center;
+}
+.patient-dashboard-home .sessions-combined-section + .sessions-combined-section::before {
+  top: 14%;
+  bottom: 14%;
+}
+@media (min-width: 1081px) {
+  .patient-dashboard-home .sessions-confirmed-panel {
+    margin-top: 0;
+  }
+  .patient-dashboard-home .sessions-secondary-section {
+    margin: 0;
+    padding: 0;
+    border-top: 0;
+    border-radius: var(--sessions-ui-radius);
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+  }
+  .patient-dashboard-home .sessions-purchased-history .session-purchase-row-amount {
+    color: #3730a3;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .patient-dashboard-home .sessions-secondary-section.sessions-purchased-history {
+    background: linear-gradient(175deg, #fefeff 0%, #f7f4ff 45%, #f0ecfc 100%) !important;
+    border: 1px solid rgba(139, 92, 246, 0.14) !important;
+    box-shadow: 0 6px 22px rgba(95, 68, 235, 0.07) !important;
+    overflow: hidden !important;
+  }
+  .patient-dashboard-home .sessions-purchased-history .sessions-calendar-toggle:hover,
+  .patient-dashboard-home .sessions-purchased-history .sessions-calendar-toggle:focus-visible {
+    background: rgba(95, 68, 235, 0.07) !important;
+  }
+  .patient-dashboard-home .sessions-purchased-history .sessions-collapsible-list li,
+  .patient-dashboard-home .sessions-purchased-history .session-history-list li {
+    border: 1px solid rgba(139, 124, 248, 0.16) !important;
+    border-radius: var(--portal-radius-sm) !important;
+    padding: 12px 14px !important;
+    background: rgba(255, 255, 255, 0.72) !important;
+    box-shadow: none !important;
+    transition:
+      background 0.18s ease,
+      border-color 0.18s ease,
+      box-shadow 0.18s ease !important;
+  }
+  .patient-dashboard-home .sessions-purchased-history .sessions-collapsible-list li:hover,
+  .patient-dashboard-home .sessions-purchased-history .session-history-list li:hover {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-color: rgba(139, 124, 248, 0.28) !important;
+    box-shadow: 0 4px 14px rgba(95, 68, 235, 0.08) !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .patient-dashboard-home .dashboard-rn-session-list .sessions-confirmed-list--cards {
+    gap: 0;
+  }
+}
+
+/* --- dashboard-compact --- */
+
+/* --- dashboard-home --- */
+
+/* --- diary-home --- */
+
+/* --- dashboard-home --- */
+
+/* --- dashboard-package --- */
+
+/* --- dashboard-go --- */
+
+/* --- dashboard-ml-sessions --- */
+

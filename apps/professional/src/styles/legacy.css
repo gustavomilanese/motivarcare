@@ -13229,16 +13229,49 @@ button:disabled {
 
 .pro-web-diploma-card {
   border: 1px solid #dde6f6;
-  border-radius: 14px;
+  border-radius: 10px;
   background: #fff;
   padding: 12px;
   display: grid;
   gap: 10px;
 }
 
+.pro-web-diploma-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .pro-web-diploma-card h4 {
   font-size: 14px;
   color: #1f3255;
+  margin: 0;
+}
+
+.pro-web-diploma-card__remove {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 8px;
+  border: 1px solid #d7e1f2;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.pro-web-diploma-card__remove:hover {
+  border-color: #f1a8a8;
+  background: #fff5f5;
+  color: #b42318;
 }
 
 .pro-web-add-diploma {

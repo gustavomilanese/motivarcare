@@ -28,6 +28,7 @@
     "css:dup": "node scripts/css-duplication-report.mjs",
     "css:dead": "node scripts/css-dead-selectors.mjs --list",
     "css:family": "node scripts/css-extract-family.mjs",
+    "css:extract-family": "node scripts/css-extract-family-to-file.mjs",
     "dev:api:serve": "NODE_OPTIONS=--max-old-space-size=768 npm run dev -w @therapy/api",
     "dev:api": "npm run db:pre && npm run dev:api:serve",
     "dev:patient": "NODE_OPTIONS=--max-old-space-size=768 npm run dev -w @therapy/patient",

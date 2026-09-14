@@ -1,0 +1,413 @@
+/* Overrides mobile chat — sacado de mobile-portal-flat.css.
+ */
+
+@media (max-width: 1080px) {
+  .portal-mobile-nav .mobile-nav-link.active .chat-badge-pill {
+    background: #16a34a;
+    color: #fff;
+  }
+  .chat-hero-toolbar-mount .header-icon-link,
+  .chat-hero-toolbar-mount .menu-toggle,
+  .chat-portal-toolbar-shell .header-icon-link,
+  .chat-portal-toolbar-shell .menu-toggle {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    color: #1e293b !important;
+    filter: none !important;
+  }
+  .chat-hero-toolbar-mount .header-icon-link:hover,
+  .chat-hero-toolbar-mount .header-icon-link:focus-visible,
+  .chat-hero-toolbar-mount .header-icon-link.active,
+  .chat-hero-toolbar-mount .menu-toggle:hover,
+  .chat-hero-toolbar-mount .menu-toggle:focus-visible,
+  .chat-portal-toolbar-shell .header-icon-link:hover,
+  .chat-portal-toolbar-shell .header-icon-link:focus-visible,
+  .chat-portal-toolbar-shell .header-icon-link.active,
+  .chat-portal-toolbar-shell .menu-toggle:hover,
+  .chat-portal-toolbar-shell .menu-toggle:focus-visible {
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #5f44eb !important;
+  }
+  .chat-hero-toolbar-mount .header-bell-icon,
+  .chat-hero-toolbar-mount .header-heart-icon {
+    width: 26px;
+    height: 26px;
+  }
+  .chat-hero-toolbar-mount .menu-toggle-icon {
+    width: 28px;
+    height: 28px;
+  }
+  .chat-hero-toolbar-mount .header-icon-link small {
+    font-size: 0.7rem;
+    min-width: 1.15rem;
+    height: 1.15rem;
+  }
+  .portal-shell.portal-shell--site-footer:has(.chat-page-root:not(.chat-page-root--embedded)) > .portal-site-footer {
+    display: none !important;
+  }
+  .portal-main .chat-page-root:not(.chat-page-root--embedded) {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100%;
+    max-height: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+    background: #efeae2;
+    box-sizing: border-box !important;
+  }
+  .portal-main .chat-page-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+    box-sizing: border-box !important;
+  }
+  .portal-main .chat-portal-toolbar-shell {
+    flex-shrink: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    /* Edge-to-edge: solo safe-area (sin pad-x / pad-x-end) */
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+    padding-left: max(2px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(2px, env(safe-area-inset-right, 0px)) !important;
+    background: #f0f2f5;
+    border-bottom: 1px solid #d1d7db;
+    box-sizing: border-box !important;
+  }
+  .portal-main .chat-hero-toolbar-mount {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    justify-content: flex-end;
+    box-sizing: border-box !important;
+  }
+  .portal-main .chat-hero-toolbar-mount .header-actions,
+  .portal-main .chat-hero-toolbar-mount .header-actions-cluster,
+  .portal-main .chat-hero-toolbar-mount .menu-wrap {
+    gap: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .portal-main .chat-page-root .wa-shell {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: unset !important;
+    flex: 1 1 auto;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: #efeae2;
+    overflow: hidden;
+    box-sizing: border-box !important;
+  }
+  .portal-main--home-ml.portal-main--chat .chat-page-root:not(.chat-page-root--embedded),
+  .portal-main--home-ml:has(.chat-page-root) .chat-page-root:not(.chat-page-root--embedded) {
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    justify-items: stretch !important;
+    background: #efeae2 !important;
+  }
+  .portal-main--home-ml.portal-main--chat .chat-page-root:not(.chat-page-root--embedded) .chat-page-body,
+  .portal-main--home-ml:has(.chat-page-root) .chat-page-root:not(.chat-page-root--embedded) .chat-page-body {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+@media (max-width: 1080px) {
+  .portal-main .wa-shell {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: unset !important;
+    flex: 1 1 auto;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: #efeae2;
+    overflow: hidden;
+    box-sizing: border-box !important;
+  }
+  .portal-main .wa-sidebar {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    max-height: none !important;
+    background: #fff;
+    border-right: none;
+    border-bottom: none;
+    grid-template-rows: auto 1fr;
+  }
+  .portal-main .wa-shell.wa-shell--mobile-inbox .wa-sidebar {
+    display: grid;
+  }
+  .portal-main .wa-shell.wa-shell--mobile-inbox .wa-main {
+    display: none;
+  }
+  .portal-main .wa-main {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    background: #efeae2;
+    overflow: hidden;
+    box-sizing: border-box !important;
+  }
+  .portal-main .wa-main-header {
+    display: flex !important;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 56px;
+    margin: 0 !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+    padding-left: max(4px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(4px, env(safe-area-inset-right, 0px)) !important;
+    background: #f0f2f5;
+    border-bottom: 1px solid #d1d7db;
+    box-sizing: border-box !important;
+  }
+  .portal-main .wa-mobile-back {
+    display: inline-flex;
+  }
+  .portal-main .wa-main-profile img {
+    width: 40px;
+    height: 40px;
+  }
+  .portal-main .wa-main-profile h3 {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+  .portal-main .wa-main-profile span {
+    font-size: 13px;
+    color: #667781;
+  }
+  .portal-main .wa-sidebar-header {
+    background: #f0f2f5;
+    border-bottom: 1px solid #d1d7db;
+    padding: 14px max(8px, env(safe-area-inset-right, 0px)) 14px max(8px, env(safe-area-inset-left, 0px));
+  }
+  .portal-main .wa-sidebar-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #111b21;
+  }
+  .portal-main .wa-thread-list {
+    background: #fff;
+  }
+  .portal-main .wa-thread-item {
+    padding: 12px max(8px, env(safe-area-inset-right, 0px)) 12px max(8px, env(safe-area-inset-left, 0px));
+    border-bottom: 1px solid #e9edef;
+    grid-template-columns: 48px 1fr auto;
+    gap: 12px;
+  }
+  .portal-main .wa-thread-item img {
+    width: 48px;
+    height: 48px;
+  }
+  .portal-main .wa-thread-item.active {
+    background: #f0f2f5;
+  }
+  .portal-main .wa-messages {
+    min-height: 0;
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    padding-left: max(6px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(6px, env(safe-area-inset-right, 0px)) !important;
+    gap: 4px;
+    background: transparent;
+    box-sizing: border-box !important;
+  }
+  .portal-main .wa-messages::before {
+    opacity: 0.4;
+  }
+  .portal-main .wa-message {
+    max-width: 85%;
+    border-radius: 7.5px;
+    box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+  }
+  .portal-main .wa-message p {
+    font-size: 14.2px;
+    line-height: 1.35;
+  }
+  .portal-main .wa-message time {
+    font-size: 11px;
+    color: #667781;
+    margin-top: 1px;
+  }
+  .portal-main .wa-empty {
+    background: rgba(255, 255, 255, 0.92);
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+    padding: 8px 12px 10px;
+    font-size: 13px;
+    color: #54656f;
+    text-align: center;
+  }
+  .portal-main .wa-composer {
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    align-items: flex-end;
+    gap: 6px;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding-top: 6px !important;
+    padding-bottom: 8px !important;
+    padding-left: max(4px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(4px, env(safe-area-inset-right, 0px)) !important;
+    background: #f0f2f5;
+    border-top: 1px solid #d1d7db;
+    position: relative;
+    z-index: 5;
+    box-sizing: border-box !important;
+  }
+  .portal-main .wa-composer textarea {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 44px;
+    max-height: 120px;
+    border: none;
+    border-radius: 24px;
+    background: #fff;
+    padding: 12px 14px;
+    font-size: 16px;
+    line-height: 20px;
+    color: #111b21;
+    box-shadow: none;
+    resize: none;
+  }
+  .portal-main .wa-composer textarea:focus {
+    border: none;
+    box-shadow: none;
+    outline: none;
+  }
+  .portal-main .wa-send {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    border-radius: 999px;
+    background: #00a884;
+    color: #fff;
+    align-self: flex-end;
+    margin: 0 !important;
+    justify-self: end;
+  }
+  .portal-main .wa-send:hover {
+    background: #008f72;
+  }
+  .portal-main .wa-shell + .error-text {
+    margin: 8px var(--mobile-pad-x);
+  }
+  .portal-main--home-ml.portal-main--chat .wa-shell:not(.wa-shell--embedded),
+  .portal-main--home-ml:has(.chat-page-root) .wa-shell:not(.wa-shell--embedded) {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+@media (orientation: landscape), (max-height: 500px) {
+    .portal-main .wa-main-header {
+      min-height: 48px;
+      padding-top: 4px !important;
+      padding-bottom: 4px !important;
+      padding-left: max(4px, env(safe-area-inset-left, 0px)) !important;
+      padding-right: max(4px, env(safe-area-inset-right, 0px)) !important;
+    }
+    .portal-main .wa-sidebar-header {
+      padding: 10px max(4px, env(safe-area-inset-right, 0px)) 10px max(4px, env(safe-area-inset-left, 0px));
+    }
+    .portal-main .wa-sidebar-header h2 {
+      font-size: 17px;
+    }
+    .portal-main .wa-composer {
+      padding-top: 4px !important;
+      padding-bottom: 6px !important;
+      padding-left: max(4px, env(safe-area-inset-left, 0px)) !important;
+      padding-right: max(4px, env(safe-area-inset-right, 0px)) !important;
+    }
+    .portal-main .wa-composer textarea {
+      min-height: 40px;
+      padding: 10px 14px;
+      font-size: 16px;
+    }
+    .portal-main .wa-send {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+    }
+}
+
+}
+
