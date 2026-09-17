@@ -26,7 +26,8 @@ export interface AuthUser {
   role: "PROFESSIONAL";
   professionalProfileId: string;
   avatarUrl?: string | null;
-  registrationApproval?: "PENDING" | "APPROVED" | "REJECTED";
+  registrationApproval?: "INCOMPLETE" | "IN_REVIEW" | "NEEDS_CHANGES" | "APPROVED" | "REJECTED" | "PENDING";
+  registrationRejectionReason?: string | null;
   profileCreatedAt?: string | null;
 }
 
@@ -42,7 +43,8 @@ export interface AuthResponse {
     role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
     professionalProfileId: string | null;
     avatarUrl?: string | null;
-    registrationApproval?: "PENDING" | "APPROVED" | "REJECTED";
+    registrationApproval?: "INCOMPLETE" | "IN_REVIEW" | "NEEDS_CHANGES" | "APPROVED" | "REJECTED" | "PENDING";
+    registrationRejectionReason?: string | null;
     profileCreatedAt?: string | null;
   };
   emailVerificationRequired: boolean;
@@ -79,7 +81,7 @@ export interface DashboardResponse {
   };
   listing?: {
     visible: boolean;
-    registrationApproval: "PENDING" | "APPROVED" | "REJECTED";
+    registrationApproval: "INCOMPLETE" | "IN_REVIEW" | "NEEDS_CHANGES" | "APPROVED" | "REJECTED" | "PENDING";
     profileCreatedAt: string;
   };
   /** Sesiones COMPLETED con filas en finance: precios efectivos por paquete / lista. */
@@ -349,7 +351,7 @@ export interface ProfessionalProfile {
   lastName: string;
   email: string;
   visible: boolean;
-  registrationApproval?: "PENDING" | "APPROVED" | "REJECTED";
+  registrationApproval?: "INCOMPLETE" | "IN_REVIEW" | "NEEDS_CHANGES" | "APPROVED" | "REJECTED" | "PENDING";
   profileCreatedAt?: string | null;
   professionalTitle: string | null;
   specialization: string | null;

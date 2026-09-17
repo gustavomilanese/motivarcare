@@ -12,7 +12,7 @@ export function ProfessionalListingVisibilityControl(props: {
   token: string;
   professionalProfileId: string;
   visible: boolean;
-  registrationApproval: "PENDING" | "APPROVED" | "REJECTED";
+  registrationApproval: "INCOMPLETE" | "IN_REVIEW" | "NEEDS_CHANGES" | "APPROVED" | "REJECTED" | "PENDING";
   onVisibleChange: (visible: boolean) => void;
 }) {
   const [busy, setBusy] = useState(false);
@@ -28,7 +28,9 @@ export function ProfessionalListingVisibilityControl(props: {
   });
 
   const statusText =
-    props.registrationApproval === "PENDING"
+    props.registrationApproval === "IN_REVIEW"
+      || props.registrationApproval === "NEEDS_CHANGES"
+      || props.registrationApproval === "PENDING"
       ? t(props.language, {
           es: "Cuando el equipo apruebe tu perfil vas a poder activar la visibilidad en matching.",
           en: "Once the team approves your profile you'll be able to turn on matching visibility.",

@@ -36,11 +36,18 @@ export function professionalAuthSurfaceMessage(raw: string, language: AppLanguag
       pt: "Email ou senha nao confere. Verifique maiusculas ou cadastre-se se for novo."
     });
   }
+  if (n === "Security verification required" || n === "Security verification failed") {
+    return t(language, {
+      es: "Falta completar la verificación de seguridad. Actualizá la página, completá el recuadro anti-bot si aparece y volvé a tocar «Siguiente paso».",
+      en: "Security check is missing. Refresh the page, complete the anti-bot box if shown, then tap “Next step” again.",
+      pt: "Falta a verificacao de seguranca. Atualize a pagina, complete a caixa anti-bot se aparecer e toque em «Proximo passo» de novo."
+    });
+  }
   if (n === "Email already in use") {
     return t(language, {
-      es: "Ese email ya tiene cuenta. Iniciá sesión o recuperá la contraseña si no la recordás.",
-      en: "That email already has an account. Sign in or reset your password.",
-      pt: "Esse email ja tem conta. Entre ou redefina a senha."
+      es: "Ese email ya tiene una cuenta profesional. Volvé e iniciá sesión, o usá «Olvidé mi contraseña» si no la recordás.",
+      en: "That email already has a professional account. Go back and sign in, or use “Forgot password” if you don’t remember it.",
+      pt: "Esse email ja tem conta profissional. Volte e entre, ou use «Esqueci minha senha» se nao lembrar."
     });
   }
   if (n === "Unauthorized" || n === "Invalid or expired token") {
@@ -57,13 +64,20 @@ export function professionalAuthSurfaceMessage(raw: string, language: AppLanguag
       pt: "Sua conta esta desativada. Fale com o suporte."
     });
   }
+  if (n === "Invalid payload") {
+    return t(language, {
+      es: "Revisá que el email sea válido y la contraseña tenga al menos 8 caracteres, y volvé a intentar.",
+      en: "Check that the email is valid and the password is at least 8 characters, then try again.",
+      pt: "Confira se o email e valido e a senha tem pelo menos 8 caracteres, e tente de novo."
+    });
+  }
   if (/[^\x00-\x7F]/.test(n) || n.length >= 48) {
     return n;
   }
   return t(language, {
-    es: "No pudimos validar el acceso. Revisá tus datos o intentá de nuevo en un momento.",
-    en: "We couldn’t validate access. Check your details or try again shortly.",
-    pt: "Nao foi possivel validar o acesso. Confira os dados ou tente em instantes."
+    es: "No pudimos crear o validar tu cuenta ahora. Tocá «Siguiente paso» de nuevo; si sigue fallando, usá otro email o iniciá sesión si ya te registraste.",
+    en: "We couldn’t create or validate your account right now. Tap “Next step” again; if it keeps failing, try another email or sign in if you already registered.",
+    pt: "Nao foi possivel criar ou validar sua conta agora. Toque em «Proximo passo» de novo; se continuar falhando, use outro email ou entre se ja se cadastrou."
   });
 }
 

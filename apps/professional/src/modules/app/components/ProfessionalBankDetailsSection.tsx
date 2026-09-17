@@ -478,7 +478,7 @@ export function ProfessionalBankDetailsSection(props: {
                 >
                   <option value="cbu">CBU (22 dígitos)</option>
                   <option value="cvu">CVU (22 dígitos, Mercado Pago)</option>
-                  <option value="alias">Alias (ej. gus.fer.milan)</option>
+                  <option value="alias">Alias (ej. nombre.apellido)</option>
                   <option value="iban">IBAN</option>
                   <option value="ach">{t(props.language, { es: "Cuenta", en: "Account", pt: "Conta" })}</option>
                 </select>
@@ -497,7 +497,7 @@ export function ProfessionalBankDetailsSection(props: {
                   value={draftAccountValue}
                   aria-invalid={Boolean(fieldErrors.bankAccountValue)}
                   placeholder={
-                    (draftBank?.transferType ?? "cbu") === "alias" ? "gus.fer.milan" : undefined
+                    (draftBank?.transferType ?? "cbu") === "alias" ? "nombre.apellido" : undefined
                   }
                   onChange={(event) => {
                     setFieldErrors((current) => {

@@ -60,7 +60,9 @@ describe("buildProfessionalAuthUser", () => {
   });
 
   it("blocks pending and rejected registration from the portal", () => {
-    expect(isRegistrationPortalBlocked({ registrationApproval: "PENDING" })).toBe(true);
+    expect(isRegistrationPortalBlocked({ registrationApproval: "INCOMPLETE" })).toBe(true);
+    expect(isRegistrationPortalBlocked({ registrationApproval: "IN_REVIEW" })).toBe(true);
+    expect(isRegistrationPortalBlocked({ registrationApproval: "NEEDS_CHANGES" })).toBe(true);
     expect(isRegistrationPortalBlocked({ registrationApproval: "REJECTED" })).toBe(true);
     expect(isRegistrationPortalBlocked({ registrationApproval: "APPROVED" })).toBe(false);
     expect(isRegistrationPortalBlocked(null)).toBe(false);

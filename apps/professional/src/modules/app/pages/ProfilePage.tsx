@@ -30,7 +30,7 @@ import {
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { useProfessionalLocalSessionPriceDisplay } from "../hooks/useProfessionalLocalSessionPriceDisplay";
 import { API_BASE, apiRequest } from "../services/api";
-import { compressImageDataUrl, fileToDataUrl, prepareProfessionalProfilePhotoDataUrl, readVideoFileForUpload } from "../utils/mediaPreview";
+import { documentFileToDataUrl, isImageDocumentSrc, prepareProfessionalProfilePhotoDataUrl, readVideoFileForUpload } from "../utils/mediaPreview";
 import { avatarInitialsFromNameParts, resolvedFirstLastFromUserRecord } from "@therapy/types";
 import type { AuthUser, ProfessionalProfile } from "../types";
 
@@ -417,19 +417,10 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
     if (!file) {
       return;
     }
-    if (!file.type.startsWith("image/")) {
-      setError(professionalSurfaceMessage("profile-image-type", props.language));
-      return;
-    }
-    if (file.size > 6 * 1024 * 1024) {
-      setError(professionalSurfaceMessage("profile-image-size", props.language));
-      return;
-    }
     setReadingDiplomaIndex(index);
     setError("");
     try {
-      const raw = await fileToDataUrl(file);
-      const dataUrl = await compressImageDataUrl(raw, 1800, 0.85);
+      const dataUrl = await documentFileToDataUrl(file);
       setDraft((current) =>
         current
           ? {
@@ -442,7 +433,25 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
       );
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
-      setError(professionalSurfaceMessage("profile-image-read", props.language, raw));
+      if (raw === "INVALID_DOCUMENT_TYPE") {
+        setError(
+          t(props.language, {
+            es: "Subí una imagen (JPG/PNG) o un PDF del diploma.",
+            en: "Upload a JPG/PNG image or a PDF of the diploma.",
+            pt: "Envie uma imagem (JPG/PNG) ou um PDF do diploma."
+          })
+        );
+      } else if (raw === "DOCUMENT_TOO_LARGE") {
+        setError(
+          t(props.language, {
+            es: "El archivo supera 10 MB. Elegí uno más liviano.",
+            en: "That file is over 10 MB. Choose a smaller one.",
+            pt: "O arquivo passa de 10 MB. Escolha um menor."
+          })
+        );
+      } else {
+        setError(professionalSurfaceMessage("profile-image-read", props.language, raw));
+      }
     } finally {
       setReadingDiplomaIndex(null);
     }
@@ -834,7 +843,9 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                     <dd>{profile.cancellationHours}</dd>
                   </div>
                 </dl>
-                {profile.registrationApproval === "PENDING" ? (
+                {profile.registrationApproval === "IN_REVIEW"
+                || profile.registrationApproval === "NEEDS_CHANGES"
+                || profile.registrationApproval === "PENDING" ? (
                   <p className="pro-profile-studio__hint">
                     {t(props.language, {
                       es: "La visibilidad en matching se controla desde el header una vez que el equipo apruebe tu alta.",
@@ -1105,7 +1116,11 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                       <div className="pro-profile-diploma-upload">
                         {diploma.documentUrl ? (
                           <a className="pro-profile-diploma-thumb" href={diploma.documentUrl} target="_blank" rel="noopener noreferrer">
-                            <img src={diploma.documentUrl} alt="" />
+                            {isImageDocumentSrc(diploma.documentUrl) ? (
+                              <img src={diploma.documentUrl} alt="" />
+                            ) : (
+                              <span>PDF</span>
+                            )}
                           </a>
                         ) : (
                           <div className="pro-profile-diploma-thumb pro-profile-diploma-thumb--empty" aria-hidden="true">
@@ -1116,7 +1131,7 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                           <label className="pro-profile-upload-btn">
                             <input
                               type="file"
-                              accept="image/*"
+                              accept="image/*,application/pdf,.pdf"
                               onChange={(event) => void handleDiplomaDocumentSelected(index, event)}
                             />
                             <span>
@@ -1124,7 +1139,11 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                                 ? t(props.language, { es: "Cargando…", en: "Uploading…", pt: "Carregando…" })
                                 : diploma.documentUrl
                                   ? t(props.language, { es: "Cambiar documento", en: "Change document", pt: "Alterar documento" })
-                                  : t(props.language, { es: "Subir diploma", en: "Upload degree", pt: "Enviar diploma" })}
+                                  : t(props.language, {
+                                      es: "Subir foto o PDF",
+                                      en: "Upload photo or PDF",
+                                      pt: "Enviar foto ou PDF"
+                                    })}
                             </span>
                           </label>
                           {diploma.documentUrl ? (

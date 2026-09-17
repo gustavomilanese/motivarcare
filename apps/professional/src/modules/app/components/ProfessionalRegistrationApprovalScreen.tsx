@@ -1,23 +1,32 @@
 import { useState } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { formatBusinessDayDeadline } from "../lib/addBusinessDays";
+import type { RegistrationApprovalStatus } from "../lib/buildProfessionalAuthUser";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
+export type RegistrationGateStatus = Exclude<RegistrationApprovalStatus, "APPROVED" | "PENDING"> | "PENDING";
+
 export function ProfessionalRegistrationApprovalScreen(props: {
   language: AppLanguage;
-  status: "PENDING" | "REJECTED";
+  status: RegistrationGateStatus;
   profileCreatedAt: string | null | undefined;
   email: string;
+  rejectionReason?: string | null;
   onLogout: () => void;
   onRefreshStatus: () => Promise<void>;
+  onCompleteDocuments?: () => void;
+  onContinueRegistration?: () => void;
 }) {
   const [refreshing, setRefreshing] = useState(false);
 
+  const status =
+    props.status === "PENDING" ? "IN_REVIEW" : props.status;
+
   const deadline =
-    props.status === "PENDING"
+    status === "IN_REVIEW"
       ? formatBusinessDayDeadline(props.profileCreatedAt ?? new Date().toISOString(), 5)
       : null;
   const deadlineLabel =
@@ -38,7 +47,30 @@ export function ProfessionalRegistrationApprovalScreen(props: {
     }
   };
 
-  const isPending = props.status === "PENDING";
+  const title =
+    status === "INCOMPLETE"
+      ? t(props.language, {
+          es: "Tu registro está incompleto",
+          en: "Your registration is incomplete",
+          pt: "Seu cadastro esta incompleto"
+        })
+      : status === "NEEDS_CHANGES"
+        ? t(props.language, {
+            es: "Necesitamos cambios en tu alta",
+            en: "We need changes to your sign-up",
+            pt: "Precisamos de mudancas no seu cadastro"
+          })
+        : status === "REJECTED"
+          ? t(props.language, {
+              es: "Tu alta no fue aprobada",
+              en: "Your sign-up was not approved",
+              pt: "Seu cadastro nao foi aprovado"
+            })
+          : t(props.language, {
+              es: "Tu perfil está en revisión",
+              en: "Your profile is under review",
+              pt: "Seu perfil esta em revisao"
+            });
 
   return (
     <div className="pro-auth-shell pro-registration-approval-shell">
@@ -54,71 +86,144 @@ export function ProfessionalRegistrationApprovalScreen(props: {
           })}
         </p>
         <h1 id="pro-registration-approval-title" className="pro-registration-approval-title">
-          {isPending
-            ? t(props.language, {
-                es: "Tu perfil está en revisión",
-                en: "Your profile is under review",
-                pt: "Seu perfil esta em revisao"
-              })
-            : t(props.language, {
-                es: "Tu alta no fue aprobada",
-                en: "Your sign-up was not approved",
-                pt: "Seu cadastro nao foi aprovado"
-              })}
+          {title}
         </h1>
         <div className="pro-registration-approval-body">
-          {isPending ? (
+          {status === "INCOMPLETE" ? (
             <>
               <p>
                 {t(props.language, {
-                  es: "Recibimos tu registro correctamente. Nuestro equipo revisa cada alta de forma manual para cuidar la calidad del matching con pacientes.",
-                  en: "We received your registration. Our team reviews each sign-up manually to protect matching quality for patients.",
-                  pt: "Recebemos seu cadastro. Nossa equipe revisa cada alta manualmente para cuidar a qualidade do matching com pacientes."
+                  es: "Guardamos tu progreso. Iniciá sesión (ya lo hiciste) y continuá el registro donde lo dejaste.",
+                  en: "We saved your progress. You're signed in—continue registration where you left off.",
+                  pt: "Guardamos seu progresso. Continue o cadastro de onde parou."
+                })}
+              </p>
+              <p className="pro-registration-approval-note">
+                {t(props.language, {
+                  es: "Hasta que envíes el alta, no entra en revisión del equipo.",
+                  en: "Until you submit, your profile won't enter team review.",
+                  pt: "Ate enviar o cadastro, ele nao entra na revisao da equipe."
+                })}
+              </p>
+            </>
+          ) : null}
+
+          {status === "IN_REVIEW" ? (
+            <>
+              <p>
+                {t(props.language, {
+                  es: "Recibimos tu registro. Nuestro equipo revisa cada alta de forma manual para cuidar la calidad del matching con pacientes.",
+                  en: "We received your registration. Our team reviews each sign-up manually to protect matching quality.",
+                  pt: "Recebemos seu cadastro. Nossa equipe revisa cada alta manualmente."
                 })}
               </p>
               <p>
                 {deadlineLabel
                   ? t(props.language, {
-                      es: `El proceso suele tardar hasta 5 días hábiles (estimado hasta el ${deadlineLabel}). Te avisaremos por email a ${props.email} cuando tu perfil esté aprobado.`,
-                      en: `Review usually takes up to 5 business days (estimated by ${deadlineLabel}). We'll email ${props.email} once your profile is approved.`,
-                      pt: `O processo costuma levar ate 5 dias uteis (estimativa ate ${deadlineLabel}). Avisaremos por email em ${props.email} quando seu perfil for aprovado.`
+                      es: `El proceso suele tardar hasta 5 días hábiles (estimado hasta el ${deadlineLabel}). Te avisaremos por email a ${props.email}.`,
+                      en: `Review usually takes up to 5 business days (estimated by ${deadlineLabel}). We'll email ${props.email}.`,
+                      pt: `O processo costuma levar ate 5 dias uteis (estimativa ate ${deadlineLabel}). Avisaremos em ${props.email}.`
                     })
                   : t(props.language, {
                       es: `Te avisaremos por email a ${props.email} cuando tu perfil esté aprobado.`,
                       en: `We'll email ${props.email} once your profile is approved.`,
-                      pt: `Avisaremos por email em ${props.email} quando seu perfil for aprovado.`
+                      pt: `Avisaremos em ${props.email} quando seu perfil for aprovado.`
                     })}
               </p>
               <p className="pro-registration-approval-note">
                 {t(props.language, {
-                  es: "Hasta entonces no podés acceder al portal. Podés cerrar sesión y volver más tarde.",
-                  en: "Until then you cannot access the portal. You may sign out and return later.",
-                  pt: "Ate la voce nao pode acessar o portal. Pode sair e voltar mais tarde."
+                  es: "Si te pedimos un documento, usá Completar documentos abajo.",
+                  en: "If we asked for a document, use Complete documents below.",
+                  pt: "Se pedimos um documento, use Completar documentos abaixo."
                 })}
               </p>
             </>
-          ) : (
+          ) : null}
+
+          {status === "NEEDS_CHANGES" ? (
             <>
               <p>
                 {t(props.language, {
-                  es: "Gracias por completar tu registro en MotivarCare. Tras revisar tu solicitud, en esta oportunidad no pudimos aprobar tu alta.",
-                  en: "Thank you for signing up with MotivarCare. After reviewing your application, we were unable to approve your profile at this time.",
-                  pt: "Obrigado por se cadastrar na MotivarCare. Apos revisar sua solicitacao, desta vez nao pudemos aprovar seu cadastro."
+                  es: "Revisamos tu perfil y necesitamos que corrijas o completes algunos datos antes de aprobarlo.",
+                  en: "We reviewed your profile and need you to fix or complete a few items before approval.",
+                  pt: "Revisamos seu perfil e precisamos que corrija ou complete alguns dados."
                 })}
               </p>
+              {props.rejectionReason?.trim() ? (
+                <p className="pro-registration-approval-reason">
+                  <strong>
+                    {t(props.language, { es: "Qué necesitamos:", en: "What we need:", pt: "O que precisamos:" })}
+                  </strong>{" "}
+                  {props.rejectionReason.trim()}
+                </p>
+              ) : null}
+              <p className="pro-registration-approval-note">
+                {t(props.language, {
+                  es: "Cuando guardes los cambios, tu alta vuelve automáticamente a revisión.",
+                  en: "When you save the changes, your sign-up returns to review automatically.",
+                  pt: "Quando salvar as mudancas, seu cadastro volta automaticamente para revisao."
+                })}
+              </p>
+            </>
+          ) : null}
+
+          {status === "REJECTED" ? (
+            <>
+              <p>
+                {t(props.language, {
+                  es: "Tras revisar tu solicitud, en esta oportunidad no podemos aprobar tu alta.",
+                  en: "After reviewing your application, we cannot approve your sign-up at this time.",
+                  pt: "Apos revisar sua solicitacao, desta vez nao podemos aprovar seu cadastro."
+                })}
+              </p>
+              {props.rejectionReason?.trim() ? (
+                <p className="pro-registration-approval-reason">
+                  <strong>
+                    {t(props.language, { es: "Motivo:", en: "Reason:", pt: "Motivo:" })}
+                  </strong>{" "}
+                  {props.rejectionReason.trim()}
+                </p>
+              ) : null}
               <p>
                 {t(props.language, {
                   es: "Te enviamos un correo con más detalles. Si creés que hubo un error, escribinos a soporte@motivarcare.com.",
-                  en: "We sent you an email with more details. If you believe this was a mistake, contact soporte@motivarcare.com.",
+                  en: "We sent an email with more details. If you believe this was a mistake, contact soporte@motivarcare.com.",
                   pt: "Enviamos um email com mais detalhes. Se acredita que houve um erro, escreva para soporte@motivarcare.com."
                 })}
               </p>
             </>
-          )}
+          ) : null}
         </div>
+
         <div className="pro-registration-approval-actions">
-          {isPending ? (
-            <button type="button" className="primary" onClick={() => void handleRefresh()} disabled={refreshing}>
+          {status === "INCOMPLETE" && props.onContinueRegistration ? (
+            <button type="button" className="primary" onClick={props.onContinueRegistration}>
+              {t(props.language, {
+                es: "Continuar registro",
+                en: "Continue registration",
+                pt: "Continuar cadastro"
+              })}
+            </button>
+          ) : null}
+
+          {(status === "IN_REVIEW" || status === "NEEDS_CHANGES") && props.onCompleteDocuments ? (
+            <button type="button" className="primary" onClick={props.onCompleteDocuments}>
+              {status === "NEEDS_CHANGES"
+                ? t(props.language, {
+                    es: "Corregir y reenviar",
+                    en: "Fix and resubmit",
+                    pt: "Corrigir e reenviar"
+                  })
+                : t(props.language, {
+                    es: "Completar documentos",
+                    en: "Complete documents",
+                    pt: "Completar documentos"
+                  })}
+            </button>
+          ) : null}
+
+          {status === "IN_REVIEW" || status === "NEEDS_CHANGES" ? (
+            <button type="button" onClick={() => void handleRefresh()} disabled={refreshing}>
               {refreshing
                 ? t(props.language, { es: "Actualizando...", en: "Refreshing...", pt: "Atualizando..." })
                 : t(props.language, {
@@ -128,7 +233,8 @@ export function ProfessionalRegistrationApprovalScreen(props: {
                   })}
             </button>
           ) : null}
-          <button type="button" onClick={props.onLogout}>
+
+          <button type="button" className="ghost" onClick={props.onLogout}>
             {t(props.language, { es: "Cerrar sesión", en: "Sign out", pt: "Sair" })}
           </button>
         </div>

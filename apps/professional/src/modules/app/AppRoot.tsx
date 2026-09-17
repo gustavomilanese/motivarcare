@@ -25,7 +25,10 @@ import {
   savePendingOnboardingDisplayFullName,
   WEB_ONBOARDING_STEP_AFTER_EMAIL_VERIFY
 } from "../onboarding/webOnboardingResumeStorage.js";
-import { useResumeOnboardingFromDraft } from "../onboarding/hooks/useResumeOnboardingFromDraft";
+import {
+  resumeOnboardingFromDraft,
+  RESUME_WEB_ONBOARDING_ROUTE
+} from "../onboarding/hooks/useResumeOnboardingFromDraft";
 import { ProfessionalAuthFlow } from "./pages/ProfessionalAuthFlow";
 import { ForgotPasswordScreen } from "./pages/ForgotPasswordScreen";
 import { ProfessionalPortal } from "./pages/ProfessionalPortal";
@@ -36,6 +39,7 @@ import { professionalSurfaceMessage, friendlyCalendarOAuthReturnMessage } from "
 import { buildProfessionalAuthUser, isRegistrationPortalBlocked, type AuthMeUserPayload } from "./lib/buildProfessionalAuthUser";
 import { ProPageLoader } from "./components/ProPageLoader";
 import { ProfessionalRegistrationApprovalScreen } from "./components/ProfessionalRegistrationApprovalScreen";
+import { ProfessionalPendingDocumentsScreen } from "./components/ProfessionalPendingDocumentsScreen";
 import {
   API_BASE,
   CALENDAR_ONBOARDING_PENDING_USER_ID_KEY,
@@ -206,6 +210,7 @@ export function App() {
   const [calendarPromptDismissedUserIds, setCalendarPromptDismissedUserIds] = useState<string[]>(
     () => readDismissedProfessionalCalendarPromptUsers()
   );
+  const [showPendingDocuments, setShowPendingDocuments] = useState(false);
   const sessionTimezone = useMemo(() => detectBrowserTimezone(), []);
   const isVerifyEmailRoute = useMemo(() => location.pathname === "/verify-email", [location.pathname]);
   const resumeWebOnboarding = useMemo(
@@ -760,14 +765,6 @@ export function App() {
     stripCalendarQuery();
   }, [location.pathname, location.search, navigate, language, user?.id]);
 
-  useResumeOnboardingFromDraft({
-    token,
-    user,
-    ready: authSyncReady,
-    alreadyResuming: resumeWebOnboarding,
-    navigate
-  });
-
   /**
    * Post-login: si el profesional entra al portal con cuenta activa pero sin
    * Google Calendar conectado, abrimos el modal automáticamente. Pensado para
@@ -873,6 +870,11 @@ export function App() {
           handleLogout();
           navigate("/", { replace: true });
         }}
+        onContinueLaterWebOnboardingResume={() => {
+          clearPendingWebOnboardingAuth();
+          clearResumeWebOnboardingStep();
+          navigate("/", { replace: true });
+        }}
       />
     );
   }
@@ -922,14 +924,60 @@ export function App() {
   }
 
   if (isRegistrationPortalBlocked(user)) {
+    if (
+      showPendingDocuments
+      && (user.registrationApproval === "IN_REVIEW"
+        || user.registrationApproval === "NEEDS_CHANGES"
+        || user.registrationApproval === "PENDING")
+    ) {
+      return (
+        <ProfessionalPendingDocumentsScreen
+          language={language}
+          token={token}
+          professionalProfileId={user.professionalProfileId}
+          email={user.email}
+          onDone={() => {
+            setShowPendingDocuments(false);
+            void refreshRegistrationApproval();
+          }}
+          onBack={() => setShowPendingDocuments(false)}
+        />
+      );
+    }
+
+    const gateStatus =
+      user.registrationApproval === "INCOMPLETE"
+        ? "INCOMPLETE"
+        : user.registrationApproval === "NEEDS_CHANGES"
+          ? "NEEDS_CHANGES"
+          : user.registrationApproval === "REJECTED"
+            ? "REJECTED"
+            : "IN_REVIEW";
+
     return (
       <ProfessionalRegistrationApprovalScreen
         language={language}
-        status={user.registrationApproval === "REJECTED" ? "REJECTED" : "PENDING"}
+        status={gateStatus}
         profileCreatedAt={user.profileCreatedAt}
         email={user.email}
+        rejectionReason={user.registrationRejectionReason}
         onLogout={handleLogout}
         onRefreshStatus={refreshRegistrationApproval}
+        onCompleteDocuments={
+          gateStatus === "IN_REVIEW" || gateStatus === "NEEDS_CHANGES"
+            ? () => setShowPendingDocuments(true)
+            : undefined
+        }
+        onContinueRegistration={
+          gateStatus === "INCOMPLETE"
+            ? () => {
+                void (async () => {
+                  await resumeOnboardingFromDraft({ token, user });
+                  navigate(RESUME_WEB_ONBOARDING_ROUTE, { replace: true });
+                })();
+              }
+            : undefined
+        }
       />
     );
   }

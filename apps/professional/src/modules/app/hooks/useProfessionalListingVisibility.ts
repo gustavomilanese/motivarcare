@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiRequest } from "../services/api";
 
-type RegistrationApproval = "PENDING" | "APPROVED" | "REJECTED";
+type RegistrationApproval = "INCOMPLETE" | "IN_REVIEW" | "NEEDS_CHANGES" | "APPROVED" | "REJECTED" | "PENDING";
 
 export function useProfessionalListingVisibility(token: string) {
   const [visible, setVisible] = useState<boolean | null>(null);

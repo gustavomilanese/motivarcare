@@ -75,6 +75,7 @@ import { professionalAuthSurfaceMessage } from "../lib/friendlyProfessionalSurfa
 import { apiRequest } from "../services/api";
 import { checkProfessionalEmailAvailable } from "../services/checkProfessionalEmail";
 import { PROFESSIONAL_AUTH_HERO_IMAGE, professionalAuthHeroFallback } from "../data/authHero";
+import { ExistingAccountLoginModal } from "../components/ExistingAccountLoginModal";
 import { AuthScreen } from "./AuthScreen";
 import type { AuthResponse, AuthUser } from "../types";
 
@@ -152,6 +153,8 @@ export function ProfessionalAuthFlow(props: {
     onResumeConsumed: () => void;
   } | null;
   onAbandonWebOnboardingResume?: () => void;
+  /** Sale del resume sin logout: vuelve a la pantalla de registro incompleto. */
+  onContinueLaterWebOnboardingResume?: () => void;
 }) {
   const [authEntryMode, setAuthEntryMode] = useState<AuthEntryMode>(() =>
     props.webOnboardingResume ? "register-web" : "welcome"
@@ -162,6 +165,7 @@ export function ProfessionalAuthFlow(props: {
   const [selectedPracticeHours, setSelectedPracticeHours] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
+  const [existingAccountPrompt, setExistingAccountPrompt] = useState(false);
   const [profileSpecializations, setProfileSpecializations] = useState<string[]>([]);
   const [workAreas, setWorkAreas] = useState<string[]>([]);
   const [workLanguages, setWorkLanguages] = useState<string[]>([]);
@@ -296,24 +300,13 @@ export function ProfessionalAuthFlow(props: {
     try {
       const available = await checkProfessionalEmailAvailable(email);
       if (!available) {
-        setMobileRegisterError(
-          t(props.language, {
-            es: "Este correo ya está registrado. Iniciá sesión o usá otro email.",
-            en: "This email is already registered. Sign in or use another email.",
-            pt: "Este e-mail ja esta cadastrado. Faca login ou use outro endereco."
-          })
-        );
+        setRegisterEmail(email);
+        setMobileRegisterError("");
+        setExistingAccountPrompt(true);
         return;
       }
     } catch {
-      setMobileRegisterError(
-        t(props.language, {
-          es: "No pudimos verificar el correo. Revisá tu conexión e intentá de nuevo.",
-          en: "We couldn't verify the email. Check your connection and try again.",
-          pt: "Nao foi possivel verificar o e-mail. Verifique a conexao e tente de novo."
-        })
-      );
-      return;
+      // Best-effort: si el pre-check falla, el register es la fuente de verdad.
     }
 
     try {
@@ -458,12 +451,39 @@ export function ProfessionalAuthFlow(props: {
         initialWebSession={initialWebSession}
         credentialsSeed={credentialsSeed}
         onAfterRegisterPendingAuth={resume ? undefined : savePendingWebOnboardingAuth}
+        onGoToLogin={(email) => {
+          setRegisterEmail(email);
+          setAuthEntryMode("login");
+        }}
         onBack={() => {
           if (resume) {
             props.onAbandonWebOnboardingResume?.();
             return;
           }
           setAuthEntryMode("welcome");
+        }}
+        onContinueLater={(session) => {
+          if (resume) {
+            props.onContinueLaterWebOnboardingResume?.();
+            return;
+          }
+          clearResumeWebOnboardingStep();
+          clearPendingWebOnboardingAuth();
+          props.onAuthSuccess({
+            token: session.token,
+            user: {
+              id: session.user.id,
+              fullName: session.user.fullName,
+              email: session.user.email,
+              emailVerified: session.user.emailVerified,
+              role: "PROFESSIONAL",
+              professionalProfileId: session.user.professionalProfileId,
+              avatarUrl: session.user.avatarUrl ?? null,
+              registrationApproval: "INCOMPLETE"
+            },
+            emailVerificationRequired: session.emailVerificationRequired,
+            googleCalendarConnected: session.googleCalendarConnected
+          });
         }}
         onFinish={(payload, meta) => {
           const payoutAdmin = buildPayoutAdminFromWebPayload(payload);
@@ -494,7 +514,8 @@ export function ProfessionalAuthFlow(props: {
               emailVerified: meta.user.emailVerified,
               role: "PROFESSIONAL",
               professionalProfileId: meta.user.professionalProfileId,
-              avatarUrl: meta.user.avatarUrl ?? null
+              avatarUrl: meta.user.avatarUrl ?? null,
+              registrationApproval: "IN_REVIEW"
             },
             emailVerificationRequired: meta.emailVerificationRequired,
             googleCalendarConnected: meta.googleCalendarConnected
@@ -521,26 +542,38 @@ export function ProfessionalAuthFlow(props: {
 
   if (authEntryMode === "register-email") {
     return (
-      <ProfessionalEmailPasswordStep
-        language={props.language}
-        email={registerEmail}
-        password={registerPassword}
-        onEmailChange={(value) => {
-          setRegisterEmail(value);
-          setMobileRegisterError("");
-        }}
-        onPasswordChange={(value) => {
-          setRegisterPassword(value);
-          setMobileRegisterError("");
-        }}
-        onBack={() => {
-          setMobilePreAuthSession(null);
-          setMobileRegisterError("");
-          setAuthEntryMode("register-intro");
-        }}
-        submitError={mobileRegisterError}
-        onContinue={handleMobileEmailPasswordContinue}
-      />
+      <>
+        <ProfessionalEmailPasswordStep
+          language={props.language}
+          email={registerEmail}
+          password={registerPassword}
+          onEmailChange={(value) => {
+            setRegisterEmail(value);
+            setMobileRegisterError("");
+          }}
+          onPasswordChange={(value) => {
+            setRegisterPassword(value);
+            setMobileRegisterError("");
+          }}
+          onBack={() => {
+            setMobilePreAuthSession(null);
+            setMobileRegisterError("");
+            setAuthEntryMode("register-intro");
+          }}
+          submitError={mobileRegisterError}
+          onContinue={handleMobileEmailPasswordContinue}
+        />
+        <ExistingAccountLoginModal
+          language={props.language}
+          email={registerEmail}
+          open={existingAccountPrompt}
+          onClose={() => setExistingAccountPrompt(false)}
+          onGoToLogin={() => {
+            setExistingAccountPrompt(false);
+            setAuthEntryMode("login");
+          }}
+        />
+      </>
     );
   }
 
@@ -981,25 +1014,37 @@ export function ProfessionalAuthFlow(props: {
   }
 
   return (
-    <AuthScreen
-      key={authEntryMode === "register" ? "auth-register" : "auth-login"}
-      language={props.language}
-      heroImage={PROFESSIONAL_AUTH_HERO_IMAGE}
-      onHeroFallback={professionalAuthHeroFallback}
-      onCreateAccount={() => {
-        startProfessionalWebRegistration();
-      }}
-      onAuthSuccess={(params) => {
-        props.onAuthSuccess(params);
-        if (authEntryMode === "register") {
-          props.onRegistrationAuthSuccess?.(params.user.id);
-        }
-      }}
-      initialMode={authEntryMode === "register" ? "register" : "login"}
-      initialEmail={registerEmail}
-      initialPassword={registerPassword}
-      initialFullName={joinFirstLastToFullName(personalData.firstName, personalData.lastName)}
-      onBack={() => setAuthEntryMode((mode) => (mode === "register" ? registerBackMode : "welcome"))}
-    />
+    <>
+      <AuthScreen
+        key={authEntryMode === "register" ? "auth-register" : "auth-login"}
+        language={props.language}
+        heroImage={PROFESSIONAL_AUTH_HERO_IMAGE}
+        onHeroFallback={professionalAuthHeroFallback}
+        onCreateAccount={() => {
+          startProfessionalWebRegistration();
+        }}
+        onAuthSuccess={(params) => {
+          props.onAuthSuccess(params);
+          if (authEntryMode === "register") {
+            props.onRegistrationAuthSuccess?.(params.user.id);
+          }
+        }}
+        initialMode={authEntryMode === "register" ? "register" : "login"}
+        initialEmail={registerEmail}
+        initialPassword={registerPassword}
+        initialFullName={joinFirstLastToFullName(personalData.firstName, personalData.lastName)}
+        onBack={() => setAuthEntryMode((mode) => (mode === "register" ? registerBackMode : "welcome"))}
+      />
+      <ExistingAccountLoginModal
+        language={props.language}
+        email={registerEmail}
+        open={existingAccountPrompt}
+        onClose={() => setExistingAccountPrompt(false)}
+        onGoToLogin={() => {
+          setExistingAccountPrompt(false);
+          setAuthEntryMode("login");
+        }}
+      />
+    </>
   );
 }

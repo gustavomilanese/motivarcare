@@ -480,18 +480,28 @@ ul {
   font-size: 14px !important;
 }
 
+.pro-registration-approval-reason {
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #0f172a !important;
+  text-align: left;
+}
+
 .pro-registration-approval-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
   gap: 10px;
-  justify-content: center;
   margin-top: 24px;
 }
 
 .pro-registration-approval-actions button {
-  min-width: 148px;
+  width: 100%;
+  min-width: 0;
   padding: 12px 20px;
-  border-radius: 14px;
+  border-radius: 8px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -504,21 +514,117 @@ ul {
   box-shadow: 0 8px 24px rgba(95, 68, 235, 0.28);
 }
 
-.pro-registration-approval-actions button:not(.primary) {
+.pro-registration-approval-actions button.primary:hover:not(:disabled),
+.pro-registration-approval-actions button.primary:active:not(:disabled) {
+  background: #5038d8;
+  color: #ffffff;
+  border: none;
+}
+
+.pro-registration-approval-actions button:not(.primary):not(.ghost) {
   background: #f8fafc;
   color: #334155;
   border: 1px solid #e2e8f0;
 }
 
+.pro-registration-approval-actions button:not(.primary):not(.ghost):hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.pro-registration-approval-actions button.ghost {
+  background: transparent;
+  color: #64748b;
+  border: 1px solid transparent;
+  box-shadow: none;
+  font-weight: 600;
+}
+
+.pro-registration-approval-actions button.ghost:hover:not(:disabled) {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #e2e8f0;
+}
+
+.pro-pending-docs-card {
+  width: min(100%, 560px);
+  text-align: left;
+}
+
+.pro-pending-docs-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.pro-pending-docs-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  text-align: left;
+}
+
+.pro-pending-docs-item > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pro-pending-docs-item strong {
+  font-size: 14px;
+  color: #0f1731;
+}
+
+.pro-pending-docs-item span {
+  font-size: 13px;
+  color: #62708a;
+}
+
+.pro-pending-docs-item .is-missing {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.pro-pending-docs-item .is-ok {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.pro-pending-docs-item button {
+  flex-shrink: 0;
+  min-width: 110px;
+  border-radius: 8px;
+}
+
+.pro-pending-docs-status {
+  margin: 14px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #3d4a63;
+}
+
+.pro-pending-docs-status.is-missing {
+  color: #b45309;
+}
+
+.pro-pending-docs-status.is-ok {
+  color: #15803d;
+}
+
 @media (max-width: 560px) {
-  .pro-registration-approval-actions {
+  .pro-pending-docs-item {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .pro-registration-approval-actions button {
+  .pro-pending-docs-item button {
     width: 100%;
-    min-width: 0;
   }
 }
 
@@ -11935,7 +12041,8 @@ button {
   cursor: pointer;
 }
 
-button:hover {
+/* No aplicar el hover “blanco” a botones del design system ni a `.primary` (texto blanco). */
+button:hover:not(:disabled):not(.mc-btn):not(.primary):not(.pro-primary):not(.pro-danger):not(.pro-success) {
   background: #f7fbff;
 }
 
@@ -11945,8 +12052,10 @@ button:hover {
   color: #fff;
 }
 
-.pro-primary:hover {
-  background: linear-gradient(135deg, #0a4ab5 0%, #1748c2 100%);
+.pro-primary:hover:not(:disabled),
+.pro-primary:active:not(:disabled) {
+  background: linear-gradient(135deg, #5038d8 0%, #6b4ef2 100%);
+  color: #fff;
 }
 
 button:disabled {

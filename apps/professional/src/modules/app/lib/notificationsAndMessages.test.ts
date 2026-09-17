@@ -60,6 +60,8 @@ describe("portalPatientNotifications", () => {
 describe("friendlyProfessionalSurfaceMessages", () => {
   it("translates auth and network errors", () => {
     expect(professionalAuthSurfaceMessage("Invalid credentials", "es")).toContain("contraseña");
+    expect(professionalAuthSurfaceMessage("Security verification required", "es")).toContain("seguridad");
+    expect(professionalAuthSurfaceMessage("Email already in use", "es")).toContain("sesión");
     expect(professionalAuthSurfaceMessage("Cannot reach API at http://localhost:4000", "es")).toContain(
       "conectar"
     );
