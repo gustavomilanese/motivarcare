@@ -10,7 +10,7 @@
     "packages/*"
   ],
   "scripts": {
-    "db:pre": "npm run db:up && npm run db:wait && node scripts/db-ensure-schema.mjs",
+    "db:pre": "node scripts/ensure-local-env.mjs && npm run db:up && npm run db:wait && node scripts/db-ensure-schema.mjs",
     "dev:apps": "concurrently -n API,PATIENT,PRO,ADMIN -c cyan,magenta,green,yellow \"npm run dev:api:serve\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:professional\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:admin\"",
     "dev:lite:apps": "concurrently -n API,PATIENT -c cyan,magenta \"npm run dev:api:serve\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient\"",
     "dev:all:apps": "concurrently -n API,LAND_FINAL,LAND_ALT1,LAND_ALT2,PAT_MOB,PATIENT,PRO,ADMIN -c cyan,green,blue,magenta,white,gray,red,yellow \"npm run dev:api:serve\" \"npm run dev:patient-landing\" \"npm run dev:patient-landing-v2\" \"npm run dev:landing\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient-mobile\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:professional\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:admin\"",
