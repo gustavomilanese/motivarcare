@@ -54,11 +54,20 @@ enum TherapyModality {
   COUPLES
 }
 
-/// Alta de profesional: hasta que un admin apruebe, no aparece en el directorio. REJECTED = alta rechazada por admin.
+/// Alta profesional:
+/// - INCOMPLETE: empezó el wizard y aún no envió a revisión (puede retomar).
+/// - IN_REVIEW: envió el alta; admin revisa.
+/// - NEEDS_CHANGES: admin pidió correcciones (puede corregir y reenviar).
+/// - APPROVED: visible en matching según `visible`.
+/// - REJECTED: cierre definitivo (no continúa el alta).
+/// - PENDING: legacy; tratar como IN_REVIEW (migrar con scripts/migrate-registration-approval-states.mjs).
 enum ProfessionalRegistrationApproval {
-  PENDING
+  INCOMPLETE
+  IN_REVIEW
+  NEEDS_CHANGES
   APPROVED
   REJECTED
+  PENDING
 }
 
 model User {
@@ -204,6 +213,8 @@ model ProfessionalProfile {
   /// Año de egreso del título (onboarding); si existe, el matching puede derivar años de práctica.
   graduationYear        Int?                     @map("graduation_year")
   registrationApproval  ProfessionalRegistrationApproval @default(APPROVED) @map("registration_approval")
+  /// Motivo opcional al rechazar el alta (email + pantalla del profesional).
+  registrationRejectionReason String?            @map("registration_rejection_reason") @db.Text
   /// Precio de lista por sesión en ARS (pesos enteros); oferta mercado AR.
   sessionPriceArs       Int?                     @map("session_price_ars")
   /// Precio de lista por sesión en USD (enteros); oferta mercado US (y referencia para BR/ES en catálogo).

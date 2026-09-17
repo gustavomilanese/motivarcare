@@ -239,6 +239,7 @@ const changePasswordSchema = z
 const professionalAuthSelect = {
   id: true,
   registrationApproval: true,
+  registrationRejectionReason: true,
   createdAt: true
 } as const;
 
@@ -255,6 +256,7 @@ function shapeUserResponse(user: {
   professional: {
     id: string;
     registrationApproval: ProfessionalRegistrationApproval;
+    registrationRejectionReason: string | null;
     createdAt: Date;
   } | null;
 }) {
@@ -272,6 +274,7 @@ function shapeUserResponse(user: {
     ...(user.role === "PROFESSIONAL" && user.professional
       ? {
           registrationApproval: user.professional.registrationApproval,
+          registrationRejectionReason: user.professional.registrationRejectionReason ?? null,
           profileCreatedAt: user.professional.createdAt.toISOString()
         }
       : {})
@@ -533,7 +536,8 @@ authRouter.post("/register", async (req, res) => {
     return res.status(409).json({ error: "Email already in use" });
   }
 
-  const turnstileSecret = env.TURNSTILE_SECRET_KEY?.trim();
+  // En local/dev no exigir captcha aunque haya secret en el entorno (evita bloquear el alta).
+  const turnstileSecret = env.NODE_ENV === "production" ? env.TURNSTILE_SECRET_KEY?.trim() : "";
   if (turnstileSecret) {
     const cfConnecting = req.headers["cf-connecting-ip"];
     const remoteip =
@@ -603,7 +607,7 @@ authRouter.post("/register", async (req, res) => {
                 lastSeenTimezone: parsed.data.timezone ?? "America/New_York",
                 market: marketFromResidencyCountry(undefined),
                 visible: false,
-                registrationApproval: ProfessionalRegistrationApproval.PENDING,
+                registrationApproval: ProfessionalRegistrationApproval.INCOMPLETE,
                 cancellationHours: 24
               }
             }
@@ -1221,7 +1225,7 @@ authRouter.post("/login", async (req, res) => {
       return res.status(403).json({ error: "User account is disabled" });
     }
 
-    const turnstileSecret = env.TURNSTILE_SECRET_KEY?.trim();
+    const turnstileSecret = env.NODE_ENV === "production" ? env.TURNSTILE_SECRET_KEY?.trim() : "";
     if (turnstileSecret && user.role === "PROFESSIONAL") {
       const turnstileToken = (parsed.data.turnstileToken ?? "").trim();
       if (!turnstileToken) {

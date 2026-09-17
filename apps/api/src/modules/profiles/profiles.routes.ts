@@ -129,6 +129,20 @@ const mediaSourceSchema = z
   .refine((value) => value.startsWith("http://") || value.startsWith("https://") || value.startsWith("data:"), {
     message: "Invalid media source"
   });
+/** Diploma / certificado: imagen o PDF (data URL o URL http). */
+const documentSourceSchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) =>
+      value.startsWith("http://")
+      || value.startsWith("https://")
+      || value.startsWith("data:image/")
+      || value.startsWith("data:application/pdf"),
+    {
+      message: "Invalid document source"
+    }
+  );
 
 const updatePublicProfileSchema = z.object({
   visible: z.boolean().optional(),
@@ -175,9 +189,11 @@ const updatePublicProfileSchema = z.object({
       degree: z.string().trim().min(1).max(200),
       startYear: z.number().int().min(1900).max(2100),
       graduationYear: z.number().int().min(1900).max(2100),
-      documentUrl: imageSourceSchema.nullable().optional()
+      documentUrl: documentSourceSchema.nullable().optional()
     })
-  ).max(20).optional()
+  ).max(20).optional(),
+  /** Al terminar el wizard o reenviar correcciones: pasa a IN_REVIEW si el estado lo permite. */
+  submitForReview: z.boolean().optional()
 });
 
 const syncTimezoneSchema = z.object({
@@ -350,9 +366,9 @@ const DIRECTORY_AVAILABILITY_SLOT_FETCH = 24;
 
 /**
  * Fotos `data:` enormes no van en el listado: rompen el matching (JSON multi-MB).
- * El detalle / modal puede seguir usando la URL completa cuando haga falta.
+ * Se exponen vía GET /professionals/:id/photo (y video vía /video).
  */
-function directorySafePhotoUrl(photoUrl: string | null | undefined): string | null {
+function directorySafePhotoUrl(professionalId: string, photoUrl: string | null | undefined): string | null {
   if (!photoUrl) {
     return null;
   }
@@ -360,10 +376,67 @@ function directorySafePhotoUrl(photoUrl: string | null | undefined): string | nu
   if (trimmed.length === 0) {
     return null;
   }
-  if (trimmed.startsWith("data:") && trimmed.length > 2048) {
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  // data: o path relativo → proxy liviano en el listado
+  return `/api/profiles/professionals/${professionalId}/photo`;
+}
+
+function directorySafeVideoUrl(professionalId: string, videoUrl: string | null | undefined): string | null {
+  if (!videoUrl) {
     return null;
   }
-  return trimmed;
+  const trimmed = videoUrl.trim();
+  if (trimmed.length === 0) {
+    return null;
+  }
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  return `/api/profiles/professionals/${professionalId}/video`;
+}
+
+function parseStoredDataUrl(dataUrl: string): { contentType: string; buffer: Buffer } | null {
+  const match = /^data:([^;,]+)?((?:;[^,]*)*);base64,([\s\S]+)$/i.exec(dataUrl.trim());
+  if (!match) {
+    return null;
+  }
+  const contentType = (match[1] || "application/octet-stream").trim();
+  try {
+    return { contentType, buffer: Buffer.from(match[3], "base64") };
+  } catch {
+    return null;
+  }
+}
+
+async function sendProfessionalStoredMedia(
+  res: Response,
+  rawUrl: string | null | undefined,
+  kind: "photo" | "video"
+): Promise<Response> {
+  const trimmed = typeof rawUrl === "string" ? rawUrl.trim() : "";
+  if (!trimmed) {
+    return res.status(404).json({ error: kind === "photo" ? "Photo not found" : "Video not found" });
+  }
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return res.redirect(302, trimmed);
+  }
+  if (trimmed.startsWith("data:")) {
+    const parsed = parseStoredDataUrl(trimmed);
+    if (!parsed) {
+      return res.status(415).json({ error: "Unsupported media encoding" });
+    }
+    res.setHeader("Content-Type", parsed.contentType);
+    res.setHeader("Cache-Control", "private, max-age=300");
+    res.setHeader("Content-Length", String(parsed.buffer.length));
+    return res.status(200).send(parsed.buffer);
+  }
+  // Path relativo bajo el API (p. ej. /api/public/...)
+  if (trimmed.startsWith("/")) {
+    return res.redirect(302, trimmed);
+  }
+  return res.status(404).json({ error: kind === "photo" ? "Photo not found" : "Video not found" });
 }
 
 /**
@@ -652,8 +725,8 @@ async function materializeDirectoryProfessionals(professionals: ProfessionalProf
     ),
     sessionPriceUsd: professional.sessionPriceUsd,
     couplesSessionPriceUsd: professional.couplesSessionPriceUsd,
-    photoUrl: directorySafePhotoUrl(professional.photoUrl),
-    videoUrl: professional.videoUrl && !professional.videoUrl.startsWith("data:") ? professional.videoUrl : null,
+    photoUrl: directorySafePhotoUrl(professional.id, professional.photoUrl),
+    videoUrl: directorySafeVideoUrl(professional.id, professional.videoUrl),
     stripeVerified: isPublicListingVerified({ registrationApproval: professional.registrationApproval }),
     cancellationHours: professional.cancellationHours,
     compatibility: compatibilityScore(professional.id),
@@ -707,6 +780,48 @@ async function directoryProfessionalsForIds(ids: string[]): Promise<DirectoryPro
 }
 
 export const profilesRouter = Router();
+
+profilesRouter.get("/professionals/:professionalId/photo", async (req, res) => {
+  const professionalId = String(req.params.professionalId ?? "").trim();
+  if (!professionalId) {
+    return res.status(400).json({ error: "professionalId is required" });
+  }
+  try {
+    const professional = await prisma.professionalProfile.findFirst({
+      where: {
+        id: professionalId,
+        visible: true,
+        registrationApproval: ProfessionalRegistrationApproval.APPROVED
+      },
+      select: { photoUrl: true }
+    });
+    return sendProfessionalStoredMedia(res, professional?.photoUrl, "photo");
+  } catch (error) {
+    console.error("GET /profiles/professionals/:id/photo failed", error);
+    return res.status(500).json({ error: prismaErrorUserMessage(error) });
+  }
+});
+
+profilesRouter.get("/professionals/:professionalId/video", async (req, res) => {
+  const professionalId = String(req.params.professionalId ?? "").trim();
+  if (!professionalId) {
+    return res.status(400).json({ error: "professionalId is required" });
+  }
+  try {
+    const professional = await prisma.professionalProfile.findFirst({
+      where: {
+        id: professionalId,
+        visible: true,
+        registrationApproval: ProfessionalRegistrationApproval.APPROVED
+      },
+      select: { videoUrl: true }
+    });
+    return sendProfessionalStoredMedia(res, professional?.videoUrl, "video");
+  } catch (error) {
+    console.error("GET /profiles/professionals/:id/video failed", error);
+    return res.status(500).json({ error: prismaErrorUserMessage(error) });
+  }
+});
 
 profilesRouter.get("/professionals", async (_req, res) => {
   try {
@@ -2045,6 +2160,7 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
     graduationYear,
     visible,
     sessionPriceArs: _incomingSessionPriceArsIgnored,
+    submitForReview,
     ...restProfile
   } = parsed.data;
 
@@ -2101,6 +2217,21 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
       }
     }
 
+    const reopenForReview =
+      Boolean(submitForReview)
+      && (
+        before?.registrationApproval === ProfessionalRegistrationApproval.INCOMPLETE
+        || before?.registrationApproval === ProfessionalRegistrationApproval.NEEDS_CHANGES
+      );
+
+    // Compat: docs subidos desde NEEDS_CHANGES sin flag explícito también reabren revisión.
+    const reopenAfterNeedsChangesDocs =
+      !submitForReview
+      && before?.registrationApproval === ProfessionalRegistrationApproval.NEEDS_CHANGES
+      && (parsed.data.stripeDocUrl !== undefined || diplomas !== undefined);
+
+    const shouldEnterReview = reopenForReview || reopenAfterNeedsChangesDocs;
+
     const profile = await tx.professionalProfile.update({
       where: { id: professionalId },
       data: {
@@ -2112,7 +2243,14 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
         ...visibleUpdate,
         ...focusUpdates,
         ...(languagesUpdate !== undefined ? { languages: languagesUpdate } : {}),
-        ...(timezoneUpdate !== undefined ? { timezone: timezoneUpdate } : {})
+        ...(timezoneUpdate !== undefined ? { timezone: timezoneUpdate } : {}),
+        ...(shouldEnterReview
+          ? {
+              registrationApproval: ProfessionalRegistrationApproval.IN_REVIEW,
+              registrationRejectionReason: null,
+              stripeVerified: false
+            }
+          : {})
       }
     });
 
@@ -2148,7 +2286,7 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
 
   if (
     updated
-    && updated.registrationApproval === ProfessionalRegistrationApproval.PENDING
+    && updated.registrationApproval === ProfessionalRegistrationApproval.IN_REVIEW
     && req.auth?.userId
   ) {
     const actorUser = await prisma.user.findUnique({

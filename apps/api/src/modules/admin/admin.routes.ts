@@ -2,7 +2,10 @@ import { Router, type Response } from "express";
 import { ProfessionalRegistrationApproval, type Market } from "@prisma/client";
 import { z } from "zod";
 import { env } from "../../config/env.js";
-import { sendProfessionalRegistrationApprovalEmail } from "../notifications/professionalRegistrationApprovalEmail.js";
+import {
+  sendProfessionalRegistrationApprovalEmail,
+  sendProfessionalRegistrationDocsRequestEmail
+} from "../notifications/professionalRegistrationApprovalEmail.js";
 import { hashPassword, requireAuth, requireRole, type AuthenticatedRequest } from "../../lib/auth.js";
 import { prismaErrorUserMessage } from "../../lib/prismaUserError.js";
 import { ADMIN_USER_DELETE_TX_OPTIONS, hardDeleteUserInTransaction } from "../../lib/hardDeleteUserInTransaction.js";
@@ -357,9 +360,13 @@ const updateBookingSchema = z
 
 const listProfessionalsQuerySchema = z.object({
   visible: z.enum(["true", "false"]).optional(),
-  registrationApproval: z.enum(["PENDING", "APPROVED", "REJECTED"]).optional(),
+  registrationApproval: z
+    .enum(["INCOMPLETE", "IN_REVIEW", "NEEDS_CHANGES", "APPROVED", "REJECTED", "PENDING"])
+    .optional(),
+  /** Cola de revisión: IN_REVIEW + NEEDS_CHANGES (+ PENDING legacy). */
+  reviewQueue: z.enum(["true", "1"]).optional(),
   search: z.string().trim().min(1).max(120).optional(),
-  /** Listado rápido: sin diplomas, slots ni media pesada. */
+  /** Listado rápido: sin diplomas, slots ni media pesada. Se ignora en cola de revisión. */
   lite: z.enum(["true", "1"]).optional()
 });
 
@@ -367,6 +374,7 @@ const updateProfessionalSchema = z
   .object({
     visible: z.boolean().optional(),
     registrationApproval: z.nativeEnum(ProfessionalRegistrationApproval).optional(),
+    registrationRejectionReason: z.string().trim().max(800).nullable().optional(),
     professionalTitle: z.string().trim().max(120).nullable().optional(),
     specialization: z.string().trim().max(120).nullable().optional(),
     focusPrimary: z.string().trim().max(500).nullable().optional(),
@@ -392,11 +400,21 @@ const updateProfessionalSchema = z
     sessionsCount: z.number().int().min(0).max(1000000).nullable().optional(),
     completedSessionsCount: z.number().int().min(0).max(1000000).nullable().optional(),
     photoUrl: imageSourceSchema.nullable().optional(),
-    videoUrl: z.string().url().nullable().optional()
+    videoUrl: z.string().url().nullable().optional(),
+    stripeDocUrl: mediaSourceSchema.nullable().optional()
   })
   .refine((payload) => Object.keys(payload).length > 0, {
     message: "At least one field is required"
   });
+
+const updateProfessionalDiplomaSchema = z.object({
+  documentUrl: mediaSourceSchema
+});
+
+const requestProfessionalDocumentsSchema = z.object({
+  missingItems: z.array(z.string().trim().min(2).max(160)).min(1).max(12),
+  note: z.string().trim().max(800).nullable().optional()
+});
 
 const createAvailabilitySlotSchema = z.object({
   startsAt: z.string().datetime(),
@@ -1853,12 +1871,34 @@ adminRouter.get("/professionals", async (req, res) => {
   }
 
   const search = parsed.data.search?.toLowerCase();
-  const lite = Boolean(parsed.data.lite);
+  const reviewQueue = parsed.data.reviewQueue === "true" || parsed.data.reviewQueue === "1";
+  const approvalFilter = parsed.data.registrationApproval;
+  /**
+   * Pending registration review needs photo, video, bio, approach and diplomas.
+   * Ignore `lite` for that filter so approval UIs always receive full profile payload.
+   */
+  const lite =
+    Boolean(parsed.data.lite)
+    && !reviewQueue
+    && approvalFilter !== "IN_REVIEW"
+    && approvalFilter !== "NEEDS_CHANGES"
+    && approvalFilter !== "PENDING";
   const where = {
     ...(parsed.data.visible ? { visible: parsed.data.visible === "true" } : {}),
-    ...(parsed.data.registrationApproval
-      ? { registrationApproval: parsed.data.registrationApproval }
-      : {}),
+    ...(reviewQueue
+      ? {
+          registrationApproval: {
+            in: [
+              ProfessionalRegistrationApproval.IN_REVIEW,
+              ProfessionalRegistrationApproval.NEEDS_CHANGES
+            ]
+          }
+        }
+      : approvalFilter === "PENDING"
+        ? { registrationApproval: ProfessionalRegistrationApproval.IN_REVIEW }
+        : approvalFilter
+          ? { registrationApproval: approvalFilter as ProfessionalRegistrationApproval }
+          : {}),
     ...(search
       ? {
           user: {
@@ -1891,6 +1931,7 @@ adminRouter.get("/professionals", async (req, res) => {
           market: true,
           sessionPriceArs: true,
           sessionPriceUsd: true,
+          photoUrl: true,
           user: { select: { id: true, fullName: true, email: true } },
           _count: {
             select: {
@@ -1953,7 +1994,7 @@ adminRouter.get("/professionals", async (req, res) => {
           activePatientsCount: displayOverrides[item.id]?.activePatientsCount ?? null,
           sessionsCount: displayOverrides[item.id]?.sessionsCount ?? null,
           completedSessionsCount: displayOverrides[item.id]?.completedSessionsCount ?? null,
-          photoUrl: null,
+          photoUrl: item.photoUrl ?? null,
           videoUrl: null,
           diplomas: [],
           bookingsCount: item._count.bookings,
@@ -2018,6 +2059,8 @@ adminRouter.get("/professionals", async (req, res) => {
       completedSessionsCount: displayOverrides[item.id]?.completedSessionsCount ?? null,
       photoUrl: item.photoUrl,
       videoUrl: item.videoUrl,
+      stripeDocUrl: item.stripeDocUrl ?? null,
+      registrationRejectionReason: item.registrationRejectionReason ?? null,
       diplomas: item.diplomas.map((diploma) => ({
         id: diploma.id,
         institution: diploma.institution,
@@ -2098,8 +2141,21 @@ adminRouter.patch("/professionals/:professionalId", async (req, res) => {
         ...(parsed.data.registrationApproval !== undefined
           ? {
               registrationApproval: parsed.data.registrationApproval,
-              stripeVerified: stripeVerifiedForRegistrationApproval(parsed.data.registrationApproval)
+              stripeVerified: stripeVerifiedForRegistrationApproval(parsed.data.registrationApproval),
+              ...(parsed.data.registrationApproval === ProfessionalRegistrationApproval.APPROVED
+                ? { registrationRejectionReason: null }
+                : (parsed.data.registrationApproval === ProfessionalRegistrationApproval.REJECTED
+                    || parsed.data.registrationApproval === ProfessionalRegistrationApproval.NEEDS_CHANGES)
+                  && parsed.data.registrationRejectionReason !== undefined
+                  ? {
+                      registrationRejectionReason: parsed.data.registrationRejectionReason
+                    }
+                  : {})
             }
+          : {}),
+        ...(parsed.data.registrationRejectionReason !== undefined
+          && parsed.data.registrationApproval === undefined
+          ? { registrationRejectionReason: parsed.data.registrationRejectionReason }
           : {}),
         ...(parsed.data.professionalTitle !== undefined ? { professionalTitle: parsed.data.professionalTitle } : {}),
         ...(parsed.data.specialization !== undefined ? { specialization: parsed.data.specialization } : {}),
@@ -2118,7 +2174,8 @@ adminRouter.patch("/professionals/:professionalId", async (req, res) => {
         ...(parsed.data.sessionPriceArs !== undefined ? { sessionPriceArs: parsed.data.sessionPriceArs } : {}),
         ...(parsed.data.sessionPriceUsd !== undefined ? { sessionPriceUsd: parsed.data.sessionPriceUsd } : {}),
         ...(parsed.data.photoUrl !== undefined ? { photoUrl: parsed.data.photoUrl } : {}),
-        ...(parsed.data.videoUrl !== undefined ? { videoUrl: parsed.data.videoUrl } : {})
+        ...(parsed.data.videoUrl !== undefined ? { videoUrl: parsed.data.videoUrl } : {}),
+        ...(parsed.data.stripeDocUrl !== undefined ? { stripeDocUrl: parsed.data.stripeDocUrl } : {})
       }
     });
   } catch (error) {
@@ -2151,13 +2208,34 @@ adminRouter.patch("/professionals/:professionalId", async (req, res) => {
     nextRegistrationApproval
     && nextRegistrationApproval !== previousRegistrationApproval
     && (nextRegistrationApproval === ProfessionalRegistrationApproval.APPROVED
-      || nextRegistrationApproval === ProfessionalRegistrationApproval.REJECTED)
+      || nextRegistrationApproval === ProfessionalRegistrationApproval.REJECTED
+      || nextRegistrationApproval === ProfessionalRegistrationApproval.NEEDS_CHANGES)
   ) {
-    void sendProfessionalRegistrationApprovalEmail({
-      fullName: existing.user.fullName,
-      email: existing.user.email,
-      status: nextRegistrationApproval
-    }).catch((emailError) => {
+    const reason =
+      parsed.data.registrationRejectionReason
+      ?? existing.registrationRejectionReason
+      ?? null;
+    const emailPayload =
+      nextRegistrationApproval === ProfessionalRegistrationApproval.REJECTED
+        ? {
+            fullName: existing.user.fullName,
+            email: existing.user.email,
+            status: "REJECTED" as const,
+            reason
+          }
+        : nextRegistrationApproval === ProfessionalRegistrationApproval.NEEDS_CHANGES
+          ? {
+              fullName: existing.user.fullName,
+              email: existing.user.email,
+              status: "NEEDS_CHANGES" as const,
+              reason
+            }
+          : {
+              fullName: existing.user.fullName,
+              email: existing.user.email,
+              status: "APPROVED" as const
+            };
+    void sendProfessionalRegistrationApprovalEmail(emailPayload).catch((emailError) => {
       console.error("[admin/professionals/PATCH] registration approval email failed", {
         professionalId: existing.id,
         status: nextRegistrationApproval,
@@ -2167,6 +2245,82 @@ adminRouter.patch("/professionals/:professionalId", async (req, res) => {
   }
 
   return res.json({ professional: updated });
+});
+
+adminRouter.patch("/professionals/:professionalId/diplomas/:diplomaId", async (req, res) => {
+  const parsed = updateProfessionalDiplomaSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const diploma = await prisma.professionalDiploma.findUnique({
+    where: { id: req.params.diplomaId }
+  });
+  if (!diploma || diploma.professionalId !== req.params.professionalId) {
+    return res.status(404).json({ error: "Diploma not found" });
+  }
+
+  const updated = await prisma.professionalDiploma.update({
+    where: { id: diploma.id },
+    data: { documentUrl: parsed.data.documentUrl }
+  });
+
+  return res.json({
+    diploma: {
+      id: updated.id,
+      institution: updated.institution,
+      degree: updated.degree,
+      startYear: updated.startYear,
+      graduationYear: updated.graduationYear,
+      documentUrl: updated.documentUrl
+    }
+  });
+});
+
+adminRouter.post("/professionals/:professionalId/request-documents", async (req, res) => {
+  const parsed = requestProfessionalDocumentsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const professional = await prisma.professionalProfile.findUnique({
+    where: { id: req.params.professionalId },
+    include: { user: { select: { email: true, fullName: true } } }
+  });
+  if (!professional) {
+    return res.status(404).json({ error: "Professional not found" });
+  }
+
+  try {
+    if (
+      professional.registrationApproval === ProfessionalRegistrationApproval.IN_REVIEW
+      || professional.registrationApproval === ProfessionalRegistrationApproval.APPROVED
+    ) {
+      await prisma.professionalProfile.update({
+        where: { id: professional.id },
+        data: {
+          registrationApproval: ProfessionalRegistrationApproval.NEEDS_CHANGES,
+          ...(parsed.data.note?.trim()
+            ? { registrationRejectionReason: parsed.data.note.trim() }
+            : {})
+        }
+      });
+    }
+
+    const delivery = await sendProfessionalRegistrationDocsRequestEmail({
+      fullName: professional.user.fullName,
+      email: professional.user.email,
+      missingItems: parsed.data.missingItems,
+      note: parsed.data.note ?? null
+    });
+    return res.json({ ok: true, delivery, registrationApproval: ProfessionalRegistrationApproval.NEEDS_CHANGES });
+  } catch (error) {
+    console.error("[admin/professionals/request-documents] email failed", {
+      professionalId: professional.id,
+      error
+    });
+    return res.status(500).json({ error: "Could not send documents request email" });
+  }
 });
 
 adminRouter.post("/professionals/:professionalId/slots", async (req, res) => {

@@ -10,7 +10,7 @@ export type AuthUser = {
   role: AppRole;
   emailVerified: boolean;
   professionalProfileId: string | null;
-  registrationApproval?: "PENDING" | "APPROVED" | "REJECTED";
+  registrationApproval?: "INCOMPLETE" | "IN_REVIEW" | "NEEDS_CHANGES" | "APPROVED" | "REJECTED" | "PENDING";
 };
 
 export type LoginResponse = {

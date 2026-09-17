@@ -8,7 +8,9 @@ describe("publicListingVerified", () => {
   });
 
   it("pendiente o rechazado no", () => {
-    expect(isPublicListingVerified({ registrationApproval: "PENDING" })).toBe(false);
+    expect(isPublicListingVerified({ registrationApproval: "IN_REVIEW" })).toBe(false);
+    expect(isPublicListingVerified({ registrationApproval: "INCOMPLETE" })).toBe(false);
+    expect(isPublicListingVerified({ registrationApproval: "NEEDS_CHANGES" })).toBe(false);
     expect(isPublicListingVerified({ registrationApproval: "REJECTED" })).toBe(false);
   });
 });
