@@ -7,11 +7,13 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
-import { majorCurrencyCodeForMarket } from "@therapy/types";
 import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { formatAdminFinanceUsd } from "../../finance/lib/formatAdminFinanceUsd";
 import { AdminUnpaidPayoutPreview } from "../../finance/components/AdminUnpaidPayoutPreview";
-import { PendingProfessionalCredentialsPanel } from "../components/professionals/PendingProfessionalCredentialsPanel";
+import { PendingProfessionalReviewDetail } from "../components/professionals/PendingProfessionalReviewDetail";
+import { PendingProfessionalApproveModal } from "../components/professionals/PendingProfessionalApproveModal";
+import { PendingProfessionalNeedsChangesModal } from "../components/professionals/PendingProfessionalNeedsChangesModal";
+import { PendingProfessionalRejectModal } from "../components/professionals/PendingProfessionalRejectModal";
 import { apiRequest } from "../services/api";
 import type { AdminProfessionalOps, KpisResponse, ProfessionalsResponse } from "../types";
 
@@ -62,32 +64,32 @@ function StatCard(props: {
   );
 }
 
-function truncatePlain(text: string, maxLen: number): string {
-  const s = text.replace(/\s+/g, " ").trim();
-  if (s.length <= maxLen) {
-    return s;
-  }
-  return `${s.slice(0, maxLen - 1)}…`;
-}
-
 function DashboardPendingProfessionalApprovals(props: { token: string; language: AppLanguage }) {
   const [rows, setRows] = useState<AdminProfessionalOps[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
-  const [actionKind, setActionKind] = useState<"approve" | "reject" | null>(null);
+  const [actionKind, setActionKind] = useState<"approve" | "reject" | "needs_changes" | null>(null);
   const [actionError, setActionError] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<AdminProfessionalOps | null>(null);
+  const [needsChangesTarget, setNeedsChangesTarget] = useState<AdminProfessionalOps | null>(null);
+  const [approveTarget, setApproveTarget] = useState<AdminProfessionalOps | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setActionError("");
     try {
       const data = await apiRequest<ProfessionalsResponse>(
-        "/api/admin/professionals?registrationApproval=PENDING",
+        "/api/admin/professionals?reviewQueue=true",
         {},
         props.token
       );
-      const pending = (data.professionals ?? []).filter((p) => p.registrationApproval === "PENDING");
+      const pending = (data.professionals ?? []).filter(
+        (p) =>
+          p.registrationApproval === "IN_REVIEW"
+          || p.registrationApproval === "NEEDS_CHANGES"
+          || p.registrationApproval === "PENDING"
+      );
       setRows(pending);
       setExpandedId((current) => (current && pending.some((p) => p.id === current) ? current : null));
     } catch {
@@ -109,6 +111,21 @@ function DashboardPendingProfessionalApprovals(props: { token: string; language:
     }
   };
 
+  const patchProfessionalLocal = (professionalId: string, patch: Partial<AdminProfessionalOps>) => {
+    setRows((current) =>
+      current.map((item) => (item.id === professionalId ? { ...item, ...patch } : item))
+    );
+    setApproveTarget((current) =>
+      current && current.id === professionalId ? { ...current, ...patch } : current
+    );
+    setRejectTarget((current) =>
+      current && current.id === professionalId ? { ...current, ...patch } : current
+    );
+    setNeedsChangesTarget((current) =>
+      current && current.id === professionalId ? { ...current, ...patch } : current
+    );
+  };
+
   const approveOne = async (professional: AdminProfessionalOps) => {
     setActionError("");
     setActionId(professional.id);
@@ -122,6 +139,7 @@ function DashboardPendingProfessionalApprovals(props: { token: string; language:
         },
         props.token
       );
+      setApproveTarget(null);
       setExpandedId((id) => (id === professional.id ? null : id));
       await load();
       bumpSidebar();
@@ -134,17 +152,37 @@ function DashboardPendingProfessionalApprovals(props: { token: string; language:
     }
   };
 
-  const rejectOne = async (professional: AdminProfessionalOps) => {
-    const ok = window.confirm(
-      t(props.language, {
-        es: "¿Rechazar esta alta? No aparecerá en el directorio ni en matching.",
-        en: "Reject this sign-up? They will not appear in the directory or matching.",
-        pt: "Rejeitar este cadastro? Nao aparecera no diretorio nem no matching."
-      })
-    );
-    if (!ok) {
-      return;
+  const needsChangesOne = async (professional: AdminProfessionalOps, reason: string) => {
+    setActionError("");
+    setActionId(professional.id);
+    setActionKind("needs_changes");
+    try {
+      await apiRequest<{ professional: AdminProfessionalOps }>(
+        `/api/admin/professionals/${professional.id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            registrationApproval: "NEEDS_CHANGES",
+            visible: false,
+            registrationRejectionReason: reason
+          })
+        },
+        props.token
+      );
+      setNeedsChangesTarget(null);
+      setExpandedId((id) => (id === professional.id ? null : id));
+      await load();
+      bumpSidebar();
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setActionError(adminSurfaceMessage("prof-ops-update", props.language, raw));
+    } finally {
+      setActionId(null);
+      setActionKind(null);
     }
+  };
+
+  const rejectOne = async (professional: AdminProfessionalOps, reason: string) => {
     setActionError("");
     setActionId(professional.id);
     setActionKind("reject");
@@ -153,10 +191,15 @@ function DashboardPendingProfessionalApprovals(props: { token: string; language:
         `/api/admin/professionals/${professional.id}`,
         {
           method: "PATCH",
-          body: JSON.stringify({ registrationApproval: "REJECTED", visible: false })
+          body: JSON.stringify({
+            registrationApproval: "REJECTED",
+            visible: false,
+            registrationRejectionReason: reason
+          })
         },
         props.token
       );
+      setRejectTarget(null);
       setExpandedId((id) => (id === professional.id ? null : id));
       await load();
       bumpSidebar();
@@ -229,7 +272,7 @@ function DashboardPendingProfessionalApprovals(props: { token: string; language:
                     type="button"
                     className="dashboard-pending-approvals__approve"
                     disabled={busy}
-                    onClick={() => void approveOne(professional)}
+                    onClick={() => setApproveTarget(professional)}
                   >
                     {busy && actionKind === "approve"
                       ? t(props.language, { es: "Aprobando…", en: "Approving…", pt: "Aprovando…" })
@@ -239,7 +282,17 @@ function DashboardPendingProfessionalApprovals(props: { token: string; language:
                     type="button"
                     className="dashboard-pending-approvals__reject"
                     disabled={busy}
-                    onClick={() => void rejectOne(professional)}
+                    onClick={() => setNeedsChangesTarget(professional)}
+                  >
+                    {busy && actionKind === "needs_changes"
+                      ? t(props.language, { es: "Enviando…", en: "Sending…", pt: "Enviando…" })
+                      : t(props.language, { es: "Pedir cambios", en: "Request changes", pt: "Pedir mudancas" })}
+                  </button>
+                  <button
+                    type="button"
+                    className="dashboard-pending-approvals__reject"
+                    disabled={busy}
+                    onClick={() => setRejectTarget(professional)}
                   >
                     {busy && actionKind === "reject"
                       ? t(props.language, { es: "Rechazando…", en: "Rejecting…", pt: "Rejeitando…" })
@@ -253,51 +306,12 @@ function DashboardPendingProfessionalApprovals(props: { token: string; language:
                   className="dashboard-pending-approvals__detail"
                   role="region"
                 >
-                  <PendingProfessionalCredentialsPanel language={props.language} professional={professional} />
-                  <dl className="dashboard-pending-approvals__dl dashboard-pending-approvals__dl--secondary">
-                    <div>
-                      <dt>{t(props.language, { es: "Especialidad", en: "Specialization", pt: "Especialidade" })}</dt>
-                      <dd>{professional.specialization?.trim() || "—"}</dd>
-                    </div>
-                    <div>
-                      <dt>
-                        {t(props.language, {
-                          es: "Precio lista / sesión",
-                          en: "List price / session",
-                          pt: "Preco lista / sessao"
-                        })}
-                      </dt>
-                      <dd>
-                        {professional.sessionPriceUsd != null
-                          ? `${majorCurrencyCodeForMarket(professional.market)} ${professional.sessionPriceUsd}`
-                          : "—"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>{t(props.language, { es: "Experiencia (años)", en: "Experience (yrs)", pt: "Experiencia (anos)" })}</dt>
-                      <dd>{professional.yearsExperience != null ? String(professional.yearsExperience) : "—"}</dd>
-                    </div>
-                    <div>
-                      <dt>{t(props.language, { es: "País", en: "Country", pt: "Pais" })}</dt>
-                      <dd>{professional.birthCountry?.trim() || "—"}</dd>
-                    </div>
-                  </dl>
-                  <div className="dashboard-pending-approvals__long">
-                    <span className="dashboard-pending-approvals__long-label">
-                      {t(props.language, { es: "Bio", en: "Bio", pt: "Bio" })}
-                    </span>
-                    <p>{professional.bio?.trim() ? truncatePlain(professional.bio, 560) : "—"}</p>
-                  </div>
-                  <div className="dashboard-pending-approvals__long">
-                    <span className="dashboard-pending-approvals__long-label">
-                      {t(props.language, { es: "Enfoque", en: "Approach", pt: "Abordagem" })}
-                    </span>
-                    <p>
-                      {professional.therapeuticApproach?.trim()
-                        ? truncatePlain(professional.therapeuticApproach, 320)
-                        : "—"}
-                    </p>
-                  </div>
+                  <PendingProfessionalReviewDetail
+                    language={props.language}
+                    professional={professional}
+                    token={props.token}
+                    onProfessionalPatch={patchProfessionalLocal}
+                  />
                 </div>
               ) : null}
             </li>
@@ -305,6 +319,48 @@ function DashboardPendingProfessionalApprovals(props: { token: string; language:
         })}
       </ul>
       {actionError ? <p className="dashboard-pending-approvals__error">{actionError}</p> : null}
+      {approveTarget ? (
+        <PendingProfessionalApproveModal
+          language={props.language}
+          professional={approveTarget}
+          loading={actionId === approveTarget.id && actionKind === "approve"}
+          onClose={() => {
+            if (actionId === approveTarget.id && actionKind === "approve") {
+              return;
+            }
+            setApproveTarget(null);
+          }}
+          onConfirm={() => void approveOne(approveTarget)}
+        />
+      ) : null}
+      {needsChangesTarget ? (
+        <PendingProfessionalNeedsChangesModal
+          language={props.language}
+          professional={needsChangesTarget}
+          loading={actionId === needsChangesTarget.id && actionKind === "needs_changes"}
+          onClose={() => {
+            if (actionId === needsChangesTarget.id && actionKind === "needs_changes") {
+              return;
+            }
+            setNeedsChangesTarget(null);
+          }}
+          onConfirm={(reason) => void needsChangesOne(needsChangesTarget, reason)}
+        />
+      ) : null}
+      {rejectTarget ? (
+        <PendingProfessionalRejectModal
+          language={props.language}
+          professional={rejectTarget}
+          loading={actionId === rejectTarget.id && actionKind === "reject"}
+          onClose={() => {
+            if (actionId === rejectTarget.id && actionKind === "reject") {
+              return;
+            }
+            setRejectTarget(null);
+          }}
+          onConfirm={(reason) => void rejectOne(rejectTarget, reason)}
+        />
+      ) : null}
     </section>
   );
 }

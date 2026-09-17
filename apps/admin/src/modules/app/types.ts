@@ -401,7 +401,7 @@ export interface AdminProfessionalOps {
   fullName: string;
   email: string;
   visible: boolean;
-  registrationApproval: "PENDING" | "APPROVED" | "REJECTED";
+  registrationApproval: "INCOMPLETE" | "IN_REVIEW" | "NEEDS_CHANGES" | "APPROVED" | "REJECTED" | "PENDING";
   professionalTitle?: string | null;
   specialization?: string | null;
   experienceBand?: string | null;
@@ -425,6 +425,10 @@ export interface AdminProfessionalOps {
   completedSessionsCount: number | null;
   photoUrl: string | null;
   videoUrl: string | null;
+  /** Documento de identidad / fiscal subido en el alta. */
+  stripeDocUrl?: string | null;
+  /** Motivo si el alta fue rechazada. */
+  registrationRejectionReason?: string | null;
   diplomas?: AdminProfessionalDiploma[];
   bookingsCount: number;
   /** Presente en listados `lite`; si falta, usar `slots.length`. */

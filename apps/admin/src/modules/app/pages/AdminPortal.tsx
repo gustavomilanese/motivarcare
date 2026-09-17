@@ -49,10 +49,15 @@ export function AdminPortal(props: {
     try {
       const [triageResponse, profResponse] = await Promise.all([
         apiRequest<{ pending: number }>("/api/admin/patients/risk-triage", {}, props.token),
-        apiRequest<ProfessionalsResponse>("/api/admin/professionals?registrationApproval=PENDING", {}, props.token)
+        apiRequest<ProfessionalsResponse>("/api/admin/professionals?reviewQueue=true", {}, props.token)
       ]);
       const triage = Number(triageResponse.pending) || 0;
-      const profPending = (profResponse.professionals ?? []).filter((p) => p.registrationApproval === "PENDING").length;
+      const profPending = (profResponse.professionals ?? []).filter(
+        (p) =>
+          p.registrationApproval === "IN_REVIEW"
+          || p.registrationApproval === "NEEDS_CHANGES"
+          || p.registrationApproval === "PENDING"
+      ).length;
       setPendingRiskTriageCount(triage);
       setPendingProfRegistrationCount(profPending);
 

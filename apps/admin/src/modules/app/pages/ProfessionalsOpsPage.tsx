@@ -8,6 +8,7 @@ import {
   type ProfessionalSlotDraft,
   ProfessionalEditModal
 } from "../components/professionals/ProfessionalEditModal";
+import { PatientOpsAvatar } from "../components/patients/PatientsOpsSections";
 import { ProfessionalPhotoUrlField } from "../components/shared/ProfessionalPhotoUrlField";
 import { PortalHeroSettingsSection } from "../components/PortalHeroSettingsSection";
 import { adminStoredMediaDisplayLabel } from "../lib/adminUserMedia";
@@ -173,6 +174,9 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
       return null;
     }
     const params = new URLSearchParams();
+    // Esta pantalla es el directorio operativo: solo altas ya aprobadas.
+    // Pendientes / rechazadas se gestionan en el dashboard de altas.
+    params.set("registrationApproval", "APPROVED");
     if (visibleValue) {
       params.set("visible", visibleValue);
     }
@@ -312,7 +316,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
     }
     try {
       const data = await apiRequest<ProfessionalsResponse>(
-        `/api/admin/professionals?search=${encodeURIComponent(professional.email)}`,
+        `/api/admin/professionals?search=${encodeURIComponent(professional.email)}&registrationApproval=APPROVED`,
         {},
         props.token
       );
@@ -989,7 +993,9 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
           <div className="patient-results-list">
             {professionals.map((professional) => {
               const approvalLabel =
-                professional.registrationApproval === "PENDING"
+                professional.registrationApproval === "IN_REVIEW"
+                || professional.registrationApproval === "NEEDS_CHANGES"
+                || professional.registrationApproval === "PENDING"
                   ? t(props.language, { es: "alta pendiente", en: "approval pending", pt: "cadastro pendente" })
                   : professional.registrationApproval === "REJECTED"
                     ? t(props.language, { es: "alta rechazada", en: "rejected", pt: "rejeitado" })
@@ -1008,6 +1014,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                   }}
                 >
                   <div className="patient-result-row-body">
+                    <PatientOpsAvatar url={professional.photoUrl} label={professional.fullName} />
                     <div className="patient-result-main">
                       <strong>{professional.fullName}</strong>
                       <span>{professional.email}</span>
