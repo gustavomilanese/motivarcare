@@ -1,0 +1,47 @@
+---
+description: Preferir componentes existentes + CSS modular; no archivos TSX/CSS gigantes
+alwaysApply: true
+---
+
+# Componer UI: componentes chicos, no monolitos
+
+Gustavo no quiere pantallas ni archivos gigantes. Preferí **reutilizar y extraer** antes de hinchar un TSX.
+
+## Antes de agregar UI
+
+1. **Reutilizá** controles de `@therapy/ui` (`McButton`, `McModal`, `McInput`, `McNotice`, etc.) y componentes del app (`apps/professional`, `admin`, `patient`).
+2. **No dumps** de markup/estilos inline en una pantalla grande: si el bloque no es trivial, **extraelo** a su propio archivo de componente.
+3. **CSS** en el stylesheet correcto (`onboarding-web.css`, CSS de feature, o `styles/<nombre>.css` + `@import` en `index.css`). Ver también `web-css-architecture.mdc`. No pegues cientos de líneas en el TSX ni en `legacy.css`.
+
+## Tamaño y estructura
+
+- Evitá crecer archivos hacia **1500+ líneas**. Si una pantalla ya es grande, **spliteá por concern** (sección UI, hook, helpers) en vez de seguir metiendo código ahí.
+- Un componente = una responsabilidad clara. Hooks/lógica en `hooks/` o `lib/` cuando el archivo de UI se pone denso.
+- Seguí los patrones existentes de esa app (carpetas `components/`, nombres, prefijos CSS `.pro-` / etc.).
+
+```tsx
+// ❌ BAD — más JSX + estilos en la pantalla monolito
+export function HugeScreen() {
+  return (
+    <div className="huge-screen">
+      {/* 400 líneas de markup nuevo */}
+    </div>
+  );
+}
+
+// ✅ GOOD — componer con UI kit + componente propio
+export function HugeScreen() {
+  return (
+    <section>
+      <McButton variant="primary">Guardar</McButton>
+      <PendingDocumentsPanel ... />
+    </section>
+  );
+}
+```
+
+## Prohibido
+
+- Generar archivos monolíticos “porque es más rápido”.
+- Copiar markup de `Mc*` en lugar de importar el componente.
+- Meter UI no trivial nueva dentro de un TSX que ya es enorme sin extraer.
