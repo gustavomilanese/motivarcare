@@ -420,7 +420,9 @@ async function sendProfessionalStoredMedia(
     return res.status(404).json({ error: kind === "photo" ? "Photo not found" : "Video not found" });
   }
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-    return res.redirect(302, trimmed);
+    // Express tipa `redirect` como void; devolvemos `res` para el contrato Promise<Response>.
+    res.redirect(302, trimmed);
+    return res;
   }
   if (trimmed.startsWith("data:")) {
     const parsed = parseStoredDataUrl(trimmed);
@@ -434,7 +436,8 @@ async function sendProfessionalStoredMedia(
   }
   // Path relativo bajo el API (p. ej. /api/public/...)
   if (trimmed.startsWith("/")) {
-    return res.redirect(302, trimmed);
+    res.redirect(302, trimmed);
+    return res;
   }
   return res.status(404).json({ error: kind === "photo" ? "Photo not found" : "Video not found" });
 }
