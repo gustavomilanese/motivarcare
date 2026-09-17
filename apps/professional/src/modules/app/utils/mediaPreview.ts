@@ -130,6 +130,181 @@ export async function mediaPreviewFromFile(file: File): Promise<string | null> {
   return null;
 }
 
+/**
+ * Límite para diplomas / docs de verificación (imagen o PDF).
+ * 5 MB en base64 hincha ~6.7 MB en memoria: arriba de eso el wizard se traba.
+ * Escaneos en PDF suelen pasar de 5 MB; 10 MB sigue siendo manejable con File en memoria.
+ */
+export const PROFESSIONAL_DOCUMENT_MAX_BYTES = 10 * 1024 * 1024;
+
+/**
+ * Marcador liviano en el form mientras el PDF real vive en un `File` ref.
+ * Evita meter multi-MB en React state / `<a href="data:...">` (congela el UI).
+ */
+export const PROFESSIONAL_PDF_DOC_MARKER = "data:application/pdf;marker=1";
+
+const PDF_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/x-pdf",
+  "application/acrobat",
+  "applications/vnd.pdf",
+  "text/pdf",
+  "application/vnd.adobe.pdf"
+]);
+
+export function isPdfFile(file: File): boolean {
+  const type = file.type.toLowerCase().trim();
+  // `application/pdf;charset=...` y variantes raras del MIME.
+  if (PDF_MIME_TYPES.has(type) || type.startsWith("application/pdf")) {
+    return true;
+  }
+  // Algunos navegadores mandan octet-stream / vacío; confiar en la extensión.
+  const name = file.name.toLowerCase().trim();
+  if (name.endsWith(".pdf")) {
+    return true;
+  }
+  return false;
+}
+
+/** %PDF al inicio del archivo (por si el MIME/nombre vienen mal). */
+export async function fileLooksLikePdf(file: File): Promise<boolean> {
+  if (isPdfFile(file)) {
+    return true;
+  }
+  try {
+    const header = new Uint8Array(await file.slice(0, 5).arrayBuffer());
+    return (
+      header.length >= 4
+      && header[0] === 0x25
+      && header[1] === 0x50
+      && header[2] === 0x44
+      && header[3] === 0x46
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isDiplomaImageFile(file: File): boolean {
+  const type = file.type.toLowerCase().trim();
+  if (type === "image/jpeg" || type === "image/png" || type === "image/jpg") {
+    return true;
+  }
+  const name = file.name.toLowerCase().trim();
+  return name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png");
+}
+
+/** JPG, PNG o PDF: documentos de identidad / diploma. */
+export function isDiplomaDocumentFile(file: File): boolean {
+  return isDiplomaImageFile(file) || isPdfFile(file);
+}
+
+export function isPdfDocumentSrc(src: string): boolean {
+  const value = src.trim().toLowerCase();
+  return value === PROFESSIONAL_PDF_DOC_MARKER || value.startsWith("data:application/pdf");
+}
+
+export function isImageDocumentSrc(src: string): boolean {
+  const value = src.trim().toLowerCase();
+  if (!value) {
+    return false;
+  }
+  if (value.startsWith("data:image/")) {
+    return true;
+  }
+  if (value.startsWith("data:")) {
+    return false;
+  }
+  return /\.(png|jpe?g|gif|webp|bmp|heic|heif)(\?|#|$)/i.test(value);
+}
+
+/** Abre un data URL sin meterlo en un `<a href>` (los PDF grandes cuelgan el navegador). */
+export function openDocumentDataUrl(dataUrl: string): void {
+  const trimmed = dataUrl.trim();
+  if (!trimmed || trimmed === PROFESSIONAL_PDF_DOC_MARKER) {
+    return;
+  }
+  const comma = trimmed.indexOf(",");
+  if (comma < 0 || !trimmed.startsWith("data:")) {
+    window.open(trimmed, "_blank", "noopener,noreferrer");
+    return;
+  }
+  const header = trimmed.slice(0, comma);
+  const payload = trimmed.slice(comma + 1);
+  const mime = header.match(/^data:([^;,]+)/i)?.[1] ?? "application/octet-stream";
+  const binary = atob(payload);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  const blobUrl = URL.createObjectURL(new Blob([bytes], { type: mime }));
+  window.open(blobUrl, "_blank", "noopener,noreferrer");
+  window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+}
+
+export function openDocumentFile(file: File): void {
+  const blobUrl = URL.createObjectURL(file);
+  window.open(blobUrl, "_blank", "noopener,noreferrer");
+  window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+}
+
+/**
+ * Prepara el doc para el form: imagen comprimida en data URL, PDF solo como marcador.
+ * El `File` del PDF debe guardarse aparte (ref) y convertirse al enviar el perfil.
+ */
+export async function documentFileForFormState(file: File): Promise<{
+  preview: string;
+  keepFileInMemory: boolean;
+}> {
+  if (file.size <= 0) {
+    throw new Error("EMPTY_DOCUMENT");
+  }
+  if (file.size > PROFESSIONAL_DOCUMENT_MAX_BYTES) {
+    throw new Error("DOCUMENT_TOO_LARGE");
+  }
+  // Detectar PDF antes que imagen: MIME vacío/raro + intentar decodificar como imagen falla.
+  if (await fileLooksLikePdf(file)) {
+    return { preview: PROFESSIONAL_PDF_DOC_MARKER, keepFileInMemory: true };
+  }
+  if (!isDiplomaImageFile(file)) {
+    throw new Error("INVALID_DOCUMENT_TYPE");
+  }
+  try {
+    const raw = await fileToDataUrl(file);
+    return {
+      preview: await compressImageDataUrl(raw, 1800, 0.85),
+      keepFileInMemory: false
+    };
+  } catch {
+    throw new Error("IMAGE_READ_FAILED");
+  }
+}
+
+/**
+ * Lee un diploma (foto o PDF) a data URL para persistirlo en el perfil.
+ * Los PDF no pasan por canvas: se guardan tal cual.
+ */
+export async function documentFileToDataUrl(file: File): Promise<string> {
+  if (file.size <= 0) {
+    throw new Error("EMPTY_DOCUMENT");
+  }
+  if (file.size > PROFESSIONAL_DOCUMENT_MAX_BYTES) {
+    throw new Error("DOCUMENT_TOO_LARGE");
+  }
+  if (await fileLooksLikePdf(file)) {
+    return fileToDataUrl(file);
+  }
+  if (!isDiplomaImageFile(file)) {
+    throw new Error("INVALID_DOCUMENT_TYPE");
+  }
+  try {
+    const raw = await fileToDataUrl(file);
+    return compressImageDataUrl(raw, 1800, 0.85);
+  } catch {
+    throw new Error("IMAGE_READ_FAILED");
+  }
+}
+
 export function readVideoDurationSeconds(file: File): Promise<number> {
   return new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);

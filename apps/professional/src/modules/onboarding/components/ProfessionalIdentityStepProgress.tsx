@@ -25,16 +25,12 @@ export function ProfessionalIdentityStepProgress(props: {
 }) {
   const activeIdx = identitySegmentIndex(props.active);
   const reachedIdx = identitySegmentIndex(props.reached);
-  const progressPct = SEGMENTS.length > 1 ? (activeIdx / (SEGMENTS.length - 1)) * 100 : 0;
 
   return (
     <nav
       className="pro-web-identity-progress"
       aria-label={t(props.language, { es: "Progreso del formulario", en: "Form progress", pt: "Progresso do formulario" })}
     >
-      <div className="pro-web-identity-progress-bar" aria-hidden="true">
-        <span className="pro-web-identity-progress-bar-fill" style={{ width: `${progressPct}%` }} />
-      </div>
       <ol className="pro-web-identity-progress-track">
         {SEGMENTS.map((segment, index) => {
           const isActive = segment.id === props.active;

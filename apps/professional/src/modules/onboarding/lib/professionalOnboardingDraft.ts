@@ -29,6 +29,8 @@ export interface ProfessionalDraftDiploma {
   graduationYear: string;
   diplomaUploaded: boolean;
   diplomaPreview: string;
+  /** Nombre original del archivo (p. ej. `titulo-uba.pdf`). */
+  diplomaFileName: string;
 }
 
 export interface ProfessionalDraftFormShape {
@@ -81,7 +83,8 @@ export function buildProfessionalOnboardingDraftData<T extends ProfessionalDraft
     startYear: diploma.startYear,
     graduationYear: diploma.graduationYear,
     diplomaUploaded: false,
-    diplomaPreview: ""
+    diplomaPreview: "",
+    diplomaFileName: ""
   }));
 
   return data;

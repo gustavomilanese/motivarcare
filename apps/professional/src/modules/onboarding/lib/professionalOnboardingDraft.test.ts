@@ -29,7 +29,8 @@ function makeForm(overrides: Partial<ProfessionalDraftFormShape> = {}): Professi
         startYear: "2010",
         graduationYear: "2015",
         diplomaUploaded: false,
-        diplomaPreview: ""
+        diplomaPreview: "",
+        diplomaFileName: ""
       }
     ],
     password: "SuperSecreta123",
@@ -95,7 +96,8 @@ describe("borrador del onboarding profesional", () => {
               startYear: "2010",
               graduationYear: "2015",
               diplomaUploaded: true,
-              diplomaPreview: "data:application/pdf;base64,AAAA"
+              diplomaPreview: "data:application/pdf;base64,AAAA",
+              diplomaFileName: "titulo-uba.pdf"
             }
           ]
         })
@@ -105,6 +107,7 @@ describe("borrador del onboarding profesional", () => {
       expect(diploma.graduationYear).toBe("2015");
       expect(diploma.diplomaPreview).toBe("");
       expect(diploma.diplomaUploaded).toBe(false);
+      expect(diploma.diplomaFileName).toBe("");
     });
   });
 
@@ -130,7 +133,8 @@ describe("borrador del onboarding profesional", () => {
             startYear: "2010",
             graduationYear: "2015",
             diplomaUploaded: true,
-            diplomaPreview: "data:application/pdf;base64,BBBB"
+            diplomaPreview: "data:application/pdf;base64,BBBB",
+            diplomaFileName: "titulo.pdf"
           }
         ]
       });

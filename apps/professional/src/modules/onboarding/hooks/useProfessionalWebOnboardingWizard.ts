@@ -28,6 +28,10 @@ import {
   type SessionPriceBoundsDual
 } from "../../app/services/sessionPriceBounds";
 import {
+  documentFileToDataUrl,
+  PROFESSIONAL_PDF_DOC_MARKER
+} from "../../app/utils/mediaPreview";
+import {
   fetchPublicDisplayFxRates,
   fetchPublicUsdArsRate,
   roundSessionPriceArsFromUsd
@@ -55,6 +59,27 @@ import {
   WEB_ONBOARDING_PENDING_AUTH_STORAGE_KEY,
   WEB_ONBOARDING_STEP_AFTER_EMAIL_VERIFY
 } from "../webOnboardingResumeStorage.js";
+
+function dataUrlToFile(dataUrl: string, fileName: string): File | null {
+  const trimmed = dataUrl.trim();
+  const comma = trimmed.indexOf(",");
+  if (comma < 0 || !trimmed.startsWith("data:")) {
+    return null;
+  }
+  const header = trimmed.slice(0, comma);
+  const payload = trimmed.slice(comma + 1);
+  const mime = header.match(/^data:([^;,]+)/i)?.[1] ?? "application/octet-stream";
+  try {
+    const binary = atob(payload);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new File([bytes], fileName || "documento.pdf", { type: mime });
+  } catch {
+    return null;
+  }
+}
 
 /** Aproximación de años de práctica para matching cuando no hay año de egreso en onboarding web. */
 function yearsExperienceApproxFromExperienceBand(band: string): number | null {
@@ -146,6 +171,8 @@ export function useProfessionalWebOnboardingWizard(input: {
   const [displayFxRates, setDisplayFxRates] = useState<DisplayFxRates>({});
   const [pricingStepError, setPricingStepError] = useState("");
   const [credentialsStepError, setCredentialsStepError] = useState("");
+  const [existingAccountEmail, setExistingAccountEmail] = useState<string | null>(null);
+  const [diplomaStepError, setDiplomaStepError] = useState("");
   const [credentialsChecking, setCredentialsChecking] = useState(false);
   const [registerInFlight, setRegisterInFlight] = useState(false);
   const [webOnboardingSession, setWebOnboardingSession] = useState<WebOnboardingSessionState | null>(
@@ -167,8 +194,17 @@ export function useProfessionalWebOnboardingWizard(input: {
   const webVideoInputRef = useRef<HTMLInputElement | null>(null);
   const webDiplomaInputRef = useRef<HTMLInputElement | null>(null);
   const webStripeDocInputRef = useRef<HTMLInputElement | null>(null);
+  /** PDF de diplomas: el File vive acá; en el form sólo un marcador liviano (evita freeze). */
+  const diplomaFilesRef = useRef<Map<number, File>>(new Map());
+  const identityDocFileRef = useRef<File | null>(null);
 
+  const activeDiplomaUploadIndexRef = useRef<number | null>(null);
   const [activeDiplomaUploadIndex, setActiveDiplomaUploadIndex] = useState<number | null>(null);
+
+  const setActiveDiplomaUploadIndexSafe = (index: number | null) => {
+    activeDiplomaUploadIndexRef.current = index;
+    setActiveDiplomaUploadIndex(index);
+  };
 
   const [form, setForm] = useState({
     firstName: "",
@@ -220,7 +256,8 @@ export function useProfessionalWebOnboardingWizard(input: {
         startYear: "",
         graduationYear: "",
         diplomaUploaded: false,
-        diplomaPreview: ""
+        diplomaPreview: "",
+        diplomaFileName: ""
       }
     ],
     stripeVerified: false,
@@ -323,15 +360,31 @@ export function useProfessionalWebOnboardingWizard(input: {
     null,
     null,
     null,
-    null,
     t(input.language, {
-      es: "Precio por sesión y descuentos por paquetes de 4, 8 y 12 sesiones.",
-      en: "Per-session price and discounts for 4, 8, and 12 session bundles.",
-      pt: "Preco por sessao e descontos para pacotes de 4, 8 e 12 sessoes."
+      es: "Textos que ven los pacientes al elegirte: quién sos, cómo trabajás y un resumen corto.",
+      en: "Copy patients see when choosing you: who you are, how you work, and a short summary.",
+      pt: "Textos que os pacientes veem ao te escolher: quem voce e, como trabalha e um resumo curto."
     }),
-    null,
-    null,
-    null
+    t(input.language, {
+      es: "Precio por sesión en USD y descuentos por paquetes de 4, 8 y 12 sesiones.",
+      en: "Per-session price in USD and discounts for 4, 8, and 12 session bundles.",
+      pt: "Preco por sessao em USD e descontos para pacotes de 4, 8 e 12 sessoes."
+    }),
+    t(input.language, {
+      es: "Foto y video de presentación para que los pacientes te conozcan antes de reservar.",
+      en: "Photo and intro video so patients can get to know you before booking.",
+      pt: "Foto e video de apresentacao para os pacientes te conhecerem antes de reservar."
+    }),
+    t(input.language, {
+      es: "Tu formación académica y títulos: los pacientes suelen revisarlos antes de la primera sesión.",
+      en: "Your education and credentials—patients often check these before the first session.",
+      pt: "Sua formacao e titulos: os pacientes costumam revisar antes da primeira sessao."
+    }),
+    t(input.language, {
+      es: "Cómo vas a cobrar: datos bancarios para recibir tus pagos.",
+      en: "How you’ll get paid: bank details to receive payouts.",
+      pt: "Como voce vai receber: dados bancarios para seus pagamentos."
+    })
   ] as const;
 
   const interstitialByStep: Partial<Record<number, WebInterstitialContent>> = {
@@ -531,6 +584,7 @@ export function useProfessionalWebOnboardingWizard(input: {
       graduationYear: string;
       diplomaUploaded: boolean;
       diplomaPreview: string;
+      diplomaFileName: string;
     }>
   ) => {
     setForm((current) => ({
@@ -552,13 +606,40 @@ export function useProfessionalWebOnboardingWizard(input: {
           startYear: "",
           graduationYear: "",
           diplomaUploaded: false,
-          diplomaPreview: ""
+          diplomaPreview: "",
+          diplomaFileName: ""
         }
       ]
     }));
   };
 
+  const setDiplomaFile = (index: number, file: File | null) => {
+    if (file) {
+      diplomaFilesRef.current.set(index, file);
+      return;
+    }
+    diplomaFilesRef.current.delete(index);
+  };
+
+  const getDiplomaFile = (index: number) => diplomaFilesRef.current.get(index) ?? null;
+
+  const setIdentityDocFile = (file: File | null) => {
+    identityDocFileRef.current = file;
+  };
+
+  const getIdentityDocFile = () => identityDocFileRef.current;
+
   const removeDiploma = (index: number) => {
+    const nextFiles = new Map<number, File>();
+    diplomaFilesRef.current.forEach((file, key) => {
+      if (key < index) {
+        nextFiles.set(key, file);
+      } else if (key > index) {
+        nextFiles.set(key - 1, file);
+      }
+    });
+    diplomaFilesRef.current = nextFiles;
+
     setForm((current) => {
       if (current.diplomas.length <= 1) {
         return current;
@@ -570,14 +651,63 @@ export function useProfessionalWebOnboardingWizard(input: {
     });
     setActiveDiplomaUploadIndex((current) => {
       if (current === null) {
+        activeDiplomaUploadIndexRef.current = null;
         return null;
       }
       if (current === index) {
+        activeDiplomaUploadIndexRef.current = null;
         return null;
       }
-      return current > index ? current - 1 : current;
+      const next = current > index ? current - 1 : current;
+      activeDiplomaUploadIndexRef.current = next;
+      return next;
     });
   };
+
+  // Si quedó un PDF multi-MB en el form (versión anterior), pásalo a File ref + marcador liviano.
+  useEffect(() => {
+    setForm((current) => {
+      let changed = false;
+      const diplomas = current.diplomas.map((diploma, index) => {
+        const preview = diploma.diplomaPreview.trim();
+        if (
+          preview.startsWith("data:application/pdf")
+          && preview !== PROFESSIONAL_PDF_DOC_MARKER
+          && preview.length > 64
+        ) {
+          const file = dataUrlToFile(preview, diploma.diplomaFileName || "documento.pdf");
+          if (file) {
+            diplomaFilesRef.current.set(index, file);
+          }
+          changed = true;
+          return {
+            ...diploma,
+            diplomaUploaded: true,
+            diplomaPreview: PROFESSIONAL_PDF_DOC_MARKER,
+            diplomaFileName: diploma.diplomaFileName || file?.name || "documento.pdf"
+          };
+        }
+        return diploma;
+      });
+
+      let stripeDocPreview = current.stripeDocPreview;
+      const stripePreview = stripeDocPreview.trim();
+      if (
+        stripePreview.startsWith("data:application/pdf")
+        && stripePreview !== PROFESSIONAL_PDF_DOC_MARKER
+        && stripePreview.length > 64
+      ) {
+        const file = dataUrlToFile(stripePreview, "documento-identidad.pdf");
+        if (file) {
+          identityDocFileRef.current = file;
+        }
+        stripeDocPreview = PROFESSIONAL_PDF_DOC_MARKER;
+        changed = true;
+      }
+
+      return changed ? { ...current, diplomas, stripeDocPreview } : current;
+    });
+  }, []);
 
   const isDiplomaEntryBlank = (diploma: {
     institution: string;
@@ -774,51 +904,53 @@ export function useProfessionalWebOnboardingWizard(input: {
       setResendVerificationMessage("");
       setResendVerificationError("");
 
-      let resolvedTurnstileToken = "";
-      if (requiresTurnstileWidget) {
-        resolvedTurnstileToken =
-          turnstileRef.current?.getResponse()?.trim() ?? form.turnstileToken.trim();
-        if (!resolvedTurnstileToken && turnstileRef.current) {
-          try {
-            resolvedTurnstileToken = (await turnstileRef.current.getResponsePromise(8000)).trim();
-          } catch {
-            resolvedTurnstileToken = "";
-          }
-        }
-        if (!resolvedTurnstileToken) {
-          setCredentialsStepError(
-            t(input.language, {
-              es: "No pudimos leer la verificación de seguridad. Actualizá la página o intentá de nuevo.",
-              en: "We could not read the security check. Refresh the page or try again.",
-              pt: "Nao foi possivel ler a verificacao de seguranca. Atualize a pagina ou tente de novo."
-            })
-          );
-          return;
-        }
-      }
+      const emailNormalized = form.email.trim().toLowerCase();
+      const sessionEmail = (webOnboardingSession?.user.email ?? "").trim().toLowerCase();
+      const canReuseExistingSession =
+        Boolean(webOnboardingSession)
+        && sessionEmail.length > 0
+        && sessionEmail === emailNormalized;
 
-      setCredentialsChecking(true);
-        try {
-          const available = await checkProfessionalEmailAvailable(form.email);
-          if (!available) {
+      // Ida/vuelta desde "Revisá tu correo": misma cuenta → no re-registrar.
+      if (!canReuseExistingSession) {
+        if (webOnboardingSession && sessionEmail !== emailNormalized) {
+          resetWebOnboardingSession();
+        }
+
+        let resolvedTurnstileToken = "";
+        if (requiresTurnstileWidget) {
+          resolvedTurnstileToken =
+            turnstileRef.current?.getResponse()?.trim() ?? form.turnstileToken.trim();
+          if (!resolvedTurnstileToken && turnstileRef.current) {
+            try {
+              resolvedTurnstileToken = (await turnstileRef.current.getResponsePromise(8000)).trim();
+            } catch {
+              resolvedTurnstileToken = "";
+            }
+          }
+          if (!resolvedTurnstileToken) {
             setCredentialsStepError(
               t(input.language, {
-                es: "Este correo ya está registrado. Iniciá sesión o usá otro email.",
-                en: "This email is already registered. Sign in or use another email.",
-                pt: "Este e-mail ja esta cadastrado. Faca login ou use outro endereco."
+                es: "No pudimos leer la verificación de seguridad. Actualizá la página o intentá de nuevo.",
+                en: "We could not read the security check. Refresh the page or try again.",
+                pt: "Nao foi possivel ler a verificacao de seguranca. Atualize a pagina ou tente de novo."
               })
             );
             return;
           }
+        }
+
+        setCredentialsChecking(true);
+        try {
+          const available = await checkProfessionalEmailAvailable(form.email);
+          if (!available) {
+            setExistingAccountEmail(form.email.trim().toLowerCase());
+            setCredentialsStepError("");
+            return;
+          }
         } catch {
-          setCredentialsStepError(
-            t(input.language, {
-              es: "No pudimos verificar el correo. Revisá tu conexión e intentá de nuevo.",
-              en: "We couldn't verify the email. Check your connection and try again.",
-              pt: "Nao foi possivel verificar o e-mail. Verifique a conexao e tente de novo."
-            })
-          );
-          return;
+          // El pre-check es best-effort: si el proxy/API no responde, seguimos al register
+          // (fuente de verdad: 409 Email already in use / errores de red con mensaje accionable).
         } finally {
           setCredentialsChecking(false);
         }
@@ -886,11 +1018,17 @@ export function useProfessionalWebOnboardingWizard(input: {
           }
         } catch (requestError) {
           const raw = requestError instanceof Error ? requestError.message : "";
+          if (/already in use|409|Email already/i.test(raw)) {
+            setExistingAccountEmail(form.email.trim().toLowerCase());
+            setCredentialsStepError("");
+            return;
+          }
           setCredentialsStepError(professionalAuthSurfaceMessage(raw || " ", input.language));
           return;
         } finally {
           setRegisterInFlight(false);
         }
+      }
     }
     if (step === 1) {
       setCredentialsStepError("");
@@ -1122,7 +1260,7 @@ export function useProfessionalWebOnboardingWizard(input: {
     }
   }, [step, seenInterstitials, activeInterstitialStep, interstitialByStep]);
 
-  const finishWebOnboarding = () => {
+  const finishWebOnboarding = async () => {
     if (!webOnboardingSession) {
       console.error("finishWebOnboarding: missing webOnboardingSession");
       return;
@@ -1156,6 +1294,94 @@ export function useProfessionalWebOnboardingWizard(input: {
     const resolvedFullName =
       joinWebOnboardingFullName(form.firstName, form.lastName) || webOnboardingSession.user.fullName;
 
+    const resolveStoredDocumentUrl = async (
+      preview: string,
+      file: File | null | undefined
+    ): Promise<string | null> => {
+      if (file) {
+        return documentFileToDataUrl(file);
+      }
+      const trimmed = preview.trim();
+      if (!trimmed || trimmed === PROFESSIONAL_PDF_DOC_MARKER) {
+        return null;
+      }
+      return trimmed;
+    };
+
+    let stripeDocUrl: string | null = null;
+    try {
+      stripeDocUrl = await resolveStoredDocumentUrl(form.stripeDocPreview, identityDocFileRef.current);
+    } catch (error) {
+      console.error("finishWebOnboarding: identity document read failed", error);
+      setShowCompletionCelebration(false);
+      setStep(labels.length - 1);
+      return;
+    }
+    if (!stripeDocUrl) {
+      setShowCompletionCelebration(false);
+      setStep(labels.length - 1);
+      setDiplomaStepError(
+        t(input.language, {
+          es: "Falta el documento de identidad (JPG, PNG o PDF). Volvé a subirlo.",
+          en: "Identity document is missing (JPG, PNG, or PDF). Please upload it again.",
+          pt: "Falta o documento de identidade (JPG, PNG ou PDF). Envie de novo."
+        })
+      );
+      return;
+    }
+
+    let diplomas: ProfessionalWebOnboardingPayload["diplomas"];
+    try {
+      const resolved = await Promise.all(
+        form.diplomas.map(async (diploma, index) => {
+          if (
+            !(
+              diploma.institution.trim()
+              && diploma.degree.trim()
+              && diploma.startYear
+              && diploma.graduationYear
+            )
+          ) {
+            return null;
+          }
+          const documentUrl = await resolveStoredDocumentUrl(
+            diploma.diplomaPreview,
+            diplomaFilesRef.current.get(index)
+          );
+          if (!documentUrl) {
+            throw new Error("DIPLOMA_DOCUMENT_MISSING");
+          }
+          return {
+            institution: diploma.institution.trim(),
+            degree: diploma.degree.trim(),
+            startYear: Number(diploma.startYear),
+            graduationYear: Number(diploma.graduationYear),
+            documentUrl
+          };
+        })
+      );
+      diplomas = resolved.filter((item): item is NonNullable<typeof item> => item !== null);
+    } catch (error) {
+      console.error("finishWebOnboarding: diploma document read failed", error);
+      setShowCompletionCelebration(false);
+      setStep(6);
+      setDiplomaStepError(
+        error instanceof Error && error.message === "DIPLOMA_DOCUMENT_MISSING"
+          ? t(input.language, {
+              es: "Cada diploma necesita un archivo adjunto (JPG, PNG o PDF). Volvé a subirlo.",
+              en: "Each diploma needs an attached file (JPG, PNG, or PDF). Please upload it again.",
+              pt: "Cada diploma precisa de um arquivo anexo (JPG, PNG ou PDF). Envie de novo."
+            })
+          : t(input.language, {
+              es: "No pudimos leer un diploma. Probá de nuevo con JPG, PNG o PDF.",
+              en: "We couldn’t read a diploma file. Try again with JPG, PNG, or PDF.",
+              pt: "Nao foi possivel ler um diploma. Tente de novo com JPG, PNG ou PDF."
+            })
+      );
+      return;
+    }
+    setDiplomaStepError("");
+
     const payload: ProfessionalWebOnboardingPayload = {
       fullName: resolvedFullName,
       email: form.email.trim().toLowerCase(),
@@ -1187,18 +1413,10 @@ export function useProfessionalWebOnboardingWizard(input: {
       photoUrl: form.profilePhotoPreview || null,
       videoUrl: form.videoFileUrl || null,
       videoCoverUrl: form.videoPreview || null,
-      stripeDocUrl: form.stripeDocPreview || null,
+      stripeDocUrl,
       stripeVerified: false,
       stripeVerificationStarted: true,
-      diplomas: form.diplomas
-        .filter((diploma) => diploma.institution.trim() && diploma.degree.trim() && diploma.startYear && diploma.graduationYear)
-        .map((diploma) => ({
-          institution: diploma.institution.trim(),
-          degree: diploma.degree.trim(),
-          startYear: Number(diploma.startYear),
-          graduationYear: Number(diploma.graduationYear),
-          documentUrl: diploma.diplomaPreview || null
-        })),
+      diplomas,
       taxId: normalizeTaxId(form.taxId) || undefined,
       payoutMethod: form.payoutProvider,
       payoutProfile: (() => {
@@ -1310,11 +1528,16 @@ export function useProfessionalWebOnboardingWizard(input: {
     webDiplomaInputRef,
     webStripeDocInputRef,
     activeDiplomaUploadIndex,
-    setActiveDiplomaUploadIndex,
+    setActiveDiplomaUploadIndex: setActiveDiplomaUploadIndexSafe,
+    getActiveDiplomaUploadIndex: () => activeDiplomaUploadIndexRef.current,
     update,
     updateDiploma,
     addDiploma,
     removeDiploma,
+    setDiplomaFile,
+    getDiplomaFile,
+    setIdentityDocFile,
+    getIdentityDocFile,
     toggleLanguage,
     toggleFocusArea,
     toggleTherapyModality,
@@ -1332,7 +1555,11 @@ export function useProfessionalWebOnboardingWizard(input: {
     handleContinue,
     sessionPriceBounds,
     pricingStepError,
+    diplomaStepError,
+    setDiplomaStepError,
     credentialsStepError,
+    existingAccountEmail,
+    clearExistingAccountEmail: () => setExistingAccountEmail(null),
     credentialsChecking,
     registerInFlight,
     onTurnstileSuccess,

@@ -40,10 +40,21 @@
   box-shadow: 0 12px 28px rgba(95, 68, 235, 0.32);
 }
 
-.mc-btn--primary:hover:not(:disabled) {
+.mc-btn--primary:hover:not(:disabled),
+.mc-btn--primary:active:not(:disabled),
+.mc-btn--primary:disabled {
   background: linear-gradient(135deg, #5038d8 0%, #6b4ef2 100%);
   border-color: transparent;
   color: #fff;
+}
+
+.mc-btn--primary:active:not(:disabled) {
+  background: linear-gradient(135deg, #4630c4 0%, #5f44eb 100%);
+}
+
+.mc-btn--primary:disabled {
+  background: linear-gradient(135deg, #8b7cf0 0%, #a78bfa 100%);
+  box-shadow: none;
 }
 
 .mc-btn--secondary {

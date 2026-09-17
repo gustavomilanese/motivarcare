@@ -328,9 +328,9 @@ export function DlocalPayoutCountryFields(props: {
                 placeholder={
                   fields.payoutCountry === "AR"
                     ? t(language, {
-                        es: "22 dígitos o alias (gus.fer.milan)",
-                        en: "22 digits or alias (gus.fer.milan)",
-                        pt: "22 dígitos ou alias (gus.fer.milan)"
+                        es: "22 dígitos o alias (ej. nombre.apellido)",
+                        en: "22 digits or alias (e.g. name.lastname)",
+                        pt: "22 dígitos ou alias (ex. nome.sobrenome)"
                       })
                     : undefined
                 }

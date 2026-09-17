@@ -57,7 +57,8 @@ export function createDefaultOnboardingPatchDraft(): OnboardingPatchDraft {
     stripeVerified: false,
     stripeVerificationStarted: false,
     visible: false,
-    diplomas: []
+    diplomas: [],
+    submitForReview: false
   };
 }
 
@@ -100,7 +101,8 @@ export function buildPatchDraftFromWebPayload(payload: ProfessionalWebOnboarding
     stripeVerified: payload.stripeVerified,
     stripeVerificationStarted: payload.stripeVerificationStarted || Boolean(payload.payoutProfile),
     visible: false,
-    diplomas: payload.diplomas
+    diplomas: payload.diplomas,
+    submitForReview: true
   };
 }
 
@@ -170,6 +172,7 @@ export function buildPatchDraftFromMobileInputs(
         graduationYear: Number(inputs.educationData.graduationYear),
         documentUrl: null
       }
-    ]
+    ],
+    submitForReview: true
   };
 }

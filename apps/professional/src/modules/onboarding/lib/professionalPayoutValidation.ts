@@ -169,7 +169,8 @@ export function isPayoutFormComplete(
 export function payoutValidationMessage(
   provider: ProfessionalPayoutProvider,
   fields: PayoutFormFields,
-  language: "es" | "en" | "pt"
+  language: "es" | "en" | "pt",
+  hasIdentityDocument = true
 ): string | null {
   if (provider === "dlocal") {
     if (!isDlocalPayoutCountry(fields.payoutCountry)) {
@@ -195,6 +196,13 @@ export function payoutValidationMessage(
         : language === "pt"
           ? "Confirme que os dados estao corretos para receber pagamentos."
           : "Confirm that your details are correct to receive payouts.";
+    }
+    if (!hasIdentityDocument) {
+      return language === "es"
+        ? "Subí el documento de identidad (DNI o fiscal) para continuar."
+        : language === "pt"
+          ? "Envie o documento de identidade para continuar."
+          : "Upload your identity document to continue.";
     }
     return null;
   }
@@ -240,6 +248,13 @@ export function payoutValidationMessage(
         ? "Confirme que os dados estao corretos para receber pagamentos."
         : "Confirm that your details are correct to receive payouts.";
   }
+  if (!hasIdentityDocument) {
+    return language === "es"
+      ? "Subí el documento de identidad (DNI o fiscal) para continuar."
+      : language === "pt"
+        ? "Envie o documento de identidade para continuar."
+        : "Upload your identity document to continue.";
+  }
   return null;
 }
 
@@ -277,9 +292,9 @@ function arAccountFieldError(value: string, language: "es" | "en" | "pt"): strin
   const digits = value.replace(/\D/g, "");
   if (hasLetters) {
     return copy(language, {
-      es: "Si es un alias, usá 6 a 20 caracteres (letras, números y puntos), como gus.fer.milan.",
-      en: "If this is an alias, use 6 to 20 characters (letters, numbers, and dots), like gus.fer.milan.",
-      pt: "Se for um alias, use 6 a 20 caracteres (letras, números e pontos), como gus.fer.milan."
+      es: "Si es un alias, usá 6 a 20 caracteres (letras, números y puntos), como nombre.apellido.",
+      en: "If this is an alias, use 6 to 20 characters (letters, numbers, and dots), like name.lastname.",
+      pt: "Se for um alias, use 6 a 20 caracteres (letras, números e pontos), como nome.sobrenome."
     });
   }
   if (digits.length > 0 && digits.length !== 22) {

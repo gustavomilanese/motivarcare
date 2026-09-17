@@ -37,7 +37,10 @@ export function ProfessionalPayoutSetupPanel(props: {
   residencyCountry?: string | null;
   form: PayoutFormFields;
   onFormChange: (patch: Partial<PayoutFormFields>) => void;
-  docPreview: string;
+  /** True cuando ya hay un documento cargado (preview o archivo en memoria). */
+  docUploaded: boolean;
+  /** Nombre del archivo adjunto (sin miniatura). */
+  docFileName?: string;
   docInputRef: RefObject<HTMLInputElement | null>;
   onDocSelected: (file: File) => void | Promise<void>;
   payoutStatus?: ProfessionalPayoutStatus;
@@ -185,11 +188,23 @@ export function ProfessionalPayoutSetupPanel(props: {
             pt: "Envie uma imagem clara do seu documento de identidade ou fiscal para que possamos validar sua identidade."
           })}
         </p>
+        <p className="pro-payout-card__formats-label">
+          {t(props.language, {
+            es: "Formatos permitidos:",
+            en: "Allowed formats:",
+            pt: "Formatos permitidos:"
+          })}
+        </p>
+        <ul className="pro-payout-card__formats">
+          <li>JPG</li>
+          <li>PNG</li>
+          <li>PDF</li>
+        </ul>
 
         <input
           ref={props.docInputRef}
           type="file"
-          accept="image/*,.pdf"
+          accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf"
           style={{ display: "none" }}
           onChange={async (event) => {
             const file = event.target.files?.[0];
@@ -200,22 +215,38 @@ export function ProfessionalPayoutSetupPanel(props: {
           }}
         />
 
-        <div className="pro-payout-doc-upload">
-          {props.docPreview ? (
-            <span className="pro-payout-doc-preview" aria-hidden="true">
-              <img src={props.docPreview} alt="" />
-            </span>
+        <ul className="pro-payout-doc-list">
+          {props.docUploaded ? (
+            <li className="pro-payout-doc-list__item">
+              <div className="pro-payout-doc-list__meta">
+                <span className="pro-payout-doc-list__name" title={props.docFileName || undefined}>
+                  {props.docFileName?.trim()
+                    || t(props.language, {
+                      es: "Documento cargado",
+                      en: "Document uploaded",
+                      pt: "Documento enviado"
+                    })}
+                </span>
+                <span className="pro-payout-doc-list__hint">
+                  {t(props.language, {
+                    es: "Adjunto listo",
+                    en: "Attached",
+                    pt: "Anexo pronto"
+                  })}
+                </span>
+              </div>
+              <button type="button" className="pro-payout-doc-button" onClick={() => props.docInputRef.current?.click()}>
+                {t(props.language, { es: "Cambiar", en: "Change", pt: "Alterar" })}
+              </button>
+            </li>
           ) : (
-            <span className="pro-payout-doc-placeholder" aria-hidden="true">
-              {t(props.language, { es: "Sin documento", en: "No document", pt: "Sem documento" })}
-            </span>
+            <li className="pro-payout-doc-list__item pro-payout-doc-list__item--empty">
+              <button type="button" className="pro-payout-doc-button" onClick={() => props.docInputRef.current?.click()}>
+                {t(props.language, { es: "Subir documento", en: "Upload document", pt: "Enviar documento" })}
+              </button>
+            </li>
           )}
-          <button type="button" className="pro-payout-doc-button" onClick={() => props.docInputRef.current?.click()}>
-            {props.docPreview
-              ? t(props.language, { es: "Cambiar documento", en: "Change document", pt: "Alterar documento" })
-              : t(props.language, { es: "Subir documento", en: "Upload document", pt: "Enviar documento" })}
-          </button>
-        </div>
+        </ul>
       </section>
 
       <McCheckbox

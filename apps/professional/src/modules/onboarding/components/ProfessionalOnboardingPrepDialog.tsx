@@ -17,9 +17,9 @@ const PREP_ITEMS: LocalizedText[] = [
     pt: "Um vídeo curto de apresentação (o celular serve)"
   },
   {
-    es: "Títulos y diplomas: institución, años y foto del certificado",
-    en: "Degrees and diplomas: school, years, and a photo of the certificate",
-    pt: "Títulos e diplomas: instituição, anos e foto do certificado"
+    es: "Títulos y diplomas: institución, años y foto o PDF del certificado",
+    en: "Degrees and diplomas: school, years, and a photo or PDF of the certificate",
+    pt: "Títulos e diplomas: instituição, anos e foto ou PDF do certificado"
   },
   {
     es: "El precio de sesión que querés cobrar (en USD)",
@@ -33,7 +33,7 @@ const PREP_ITEMS: LocalizedText[] = [
   }
 ];
 
-const PREP_SEEN_KEY = "pro-web-onboarding-prep-seen";
+const PREP_SEEN_KEY = "pro-web-onboarding-prep-seen-v2";
 
 export function shouldShowProfessionalOnboardingPrep(params: {
   initialWizardStep?: number;
@@ -64,15 +64,29 @@ export function ProfessionalOnboardingPrepDialog(props: {
   return (
     <McModal
       open
-      title={t(props.language, {
-        es: "Antes de empezar, tené a mano",
-        en: "Before you start, have ready",
-        pt: "Antes de começar, tenha em mãos"
-      })}
+      className="pro-web-onboarding-prep-modal"
+      title={
+        <span className="pro-web-onboarding-prep-title-stack">
+          <span className="pro-web-onboarding-prep-kicker">
+            {t(props.language, {
+              es: "Checklist breve",
+              en: "Quick checklist",
+              pt: "Checklist rápido"
+            })}
+          </span>
+          <span className="pro-web-onboarding-prep-title">
+            {t(props.language, {
+              es: "Antes de empezar, tené a mano",
+              en: "Before you start, have ready",
+              pt: "Antes de começar, tenha em mãos"
+            })}
+          </span>
+        </span>
+      }
       onClose={props.onContinue}
       closeLabel={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
       footer={
-        <McButton onClick={props.onContinue}>
+        <McButton className="pro-web-onboarding-prep-cta" onClick={props.onContinue}>
           {t(props.language, {
             es: "Entendido, empezar",
             en: "Got it, start",
@@ -81,18 +95,30 @@ export function ProfessionalOnboardingPrepDialog(props: {
         </McButton>
       }
     >
-      <p>
+      <p className="pro-web-onboarding-prep-lead">
         {t(props.language, {
           es: "El alta es más rápido si preparás esto. Podés avanzar y completar después lo que falte.",
           en: "Setup goes faster if you prepare these. You can continue and finish anything later.",
           pt: "O cadastro fica mais rápido se você preparar isto. Pode seguir e completar o que faltar depois."
         })}
       </p>
-      <ul className="pro-web-identity-confirm-points">
-        {PREP_ITEMS.map((item) => (
-          <li key={item.es}>{t(props.language, item)}</li>
+      <ol className="pro-web-onboarding-prep-list">
+        {PREP_ITEMS.map((item, index) => (
+          <li key={item.es} className="pro-web-onboarding-prep-item">
+            <span className="pro-web-onboarding-prep-index" aria-hidden="true">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <span className="pro-web-onboarding-prep-item-text">{t(props.language, item)}</span>
+          </li>
         ))}
-      </ul>
+      </ol>
+      <p className="pro-web-onboarding-prep-note">
+        {t(props.language, {
+          es: "Nada de esto es obligatorio de una sola vez: el flujo te guía paso a paso.",
+          en: "None of this has to be done at once — the flow guides you step by step.",
+          pt: "Nada disso precisa ser feito de uma vez: o fluxo te guia passo a passo."
+        })}
+      </p>
     </McModal>
   );
 }

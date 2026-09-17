@@ -71,6 +71,7 @@ describe("professionalPayoutValidation", () => {
     expect(isPayoutFormComplete("stripe", stripeFields({ legalName: "A" }), true)).toBe(false);
     expect(payoutValidationMessage("stripe", stripeFields({ legalName: "A" }), "es")).toContain("nombre legal");
     expect(isPayoutFormComplete("stripe", stripeFields(), false)).toBe(false);
+    expect(payoutValidationMessage("stripe", stripeFields(), "es", false)).toContain("documento");
   });
 
   it("requires a dLocal payout country before completeness", () => {
@@ -94,7 +95,7 @@ describe("buildPayoutAdminFromFormFields", () => {
       payoutMethod: "dlocal",
       payoutBankAccount: {
         transferType: "alias",
-        accountValue: "gus.fer.milan",
+        accountValue: "nombre.apellido",
         accountHolderName: "",
         payoutCountry: "AR"
       }
@@ -120,7 +121,7 @@ describe("buildPayoutAdminFromFormFields", () => {
         payoutMethod: "dlocal",
         payoutBankAccount: {
           transferType: "alias",
-          accountValue: "gus.fer.milan",
+          accountValue: "nombre.apellido",
           accountHolderName: "",
           payoutCountry: "AR"
         }
@@ -144,7 +145,7 @@ describe("collectPayoutFieldErrors", () => {
         documentType: "CUIT",
         taxId: "20232619687",
         bankCode: "000",
-        bankAccountValue: "gus.fer.milan",
+        bankAccountValue: "nombre.apellido",
         bankTransferType: "alias"
       }),
       "es"
@@ -165,7 +166,7 @@ describe("collectPayoutFieldErrors", () => {
         documentType: "CUIT",
         taxId: "20232619687",
         bankCode: "000",
-        bankAccountValue: "gus.fer.milan",
+        bankAccountValue: "nombre.apellido",
         bankTransferType: "cbu"
       }),
       "es"
@@ -204,7 +205,7 @@ describe("preparePayoutBankEditorDraft", () => {
         payoutStatus: "draft",
         payoutBankAccount: {
           transferType: "cbu",
-          accountValue: "gus.fer.milan",
+          accountValue: "nombre.apellido",
           accountHolderName: "Gustavo Milanese",
           bankName: "Mercado Pago."
         }

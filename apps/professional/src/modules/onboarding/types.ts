@@ -41,6 +41,8 @@ export interface OnboardingPatchDraft {
   stripeVerificationStarted: boolean;
   visible: boolean;
   diplomas: OnboardingDiplomaDraft[];
+  /** Al terminar el wizard: pide al API pasar a IN_REVIEW. */
+  submitForReview?: boolean;
 }
 
 /** Sesión creada al registrar al inicio del onboarding web (validación de correo antes de seguir). */

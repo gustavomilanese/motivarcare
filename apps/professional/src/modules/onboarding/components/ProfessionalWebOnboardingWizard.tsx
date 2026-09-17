@@ -1,5 +1,5 @@
 import { Turnstile } from "@marsidev/react-turnstile";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import {
   McButton,
@@ -11,7 +11,8 @@ import {
   OnboardingDraftNotice
 } from "@therapy/ui";
 import { droppedMediaMessage } from "../lib/professionalOnboardingDraft";
-import { compressImageDataUrl, fileToDataUrl, mediaPreviewFromFile, readVideoFileForUpload } from "../../app/utils/mediaPreview";
+import { compressImageDataUrl, documentFileForFormState, fileToDataUrl, isImageDocumentSrc, isPdfDocumentSrc, openDocumentDataUrl, openDocumentFile, readVideoFileForUpload } from "../../app/utils/mediaPreview";
+import { payoutValidationMessage, type PayoutFormFields } from "../lib/professionalPayoutValidation";
 import { RESIDENCY_COUNTRY_OPTIONS } from "@therapy/types";
 import { LATIN_AMERICA_COUNTRY_OPTIONS } from "../constants/latinAmericaCountries";
 import { ProfessionalFocusAreasPicker } from "./ProfessionalFocusAreasPicker";
@@ -36,6 +37,7 @@ import {
   type WebOnboardingSessionState,
   useProfessionalWebOnboardingWizard
 } from "../hooks/useProfessionalWebOnboardingWizard";
+import { ExistingAccountLoginModal } from "../../app/components/ExistingAccountLoginModal";
 import type { PendingWebOnboardingAuth } from "../webOnboardingResumeStorage.js";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -45,11 +47,14 @@ function t(language: AppLanguage, values: LocalizedText): string {
 export function ProfessionalWebOnboardingWizard(props: {
   language: AppLanguage;
   onBack: () => void;
+  /** Sale del wizard guardando progreso (cuenta ya creada). */
+  onContinueLater?: (session: WebOnboardingSessionState) => void;
   onFinish: (payload: ProfessionalWebOnboardingPayload, meta: ProfessionalWebOnboardingFinishMeta) => void;
   initialWizardStep?: number;
   initialWebSession?: WebOnboardingSessionState | null;
   credentialsSeed?: { email: string; password: string; fullName: string } | null;
   onAfterRegisterPendingAuth?: (data: PendingWebOnboardingAuth) => void;
+  onGoToLogin?: (email: string) => void;
 }) {
   const wizard = useProfessionalWebOnboardingWizard({
     language: props.language,
@@ -62,6 +67,8 @@ export function ProfessionalWebOnboardingWizard(props: {
 
   const interstitialByStep = wizard.interstitialByStep;
   const [mediaStepError, setMediaStepError] = useState("");
+  const [diplomaUploadError, setDiplomaUploadError] = useState("");
+  const [identityDocFileName, setIdentityDocFileName] = useState("");
   const [identityTherapyUnlocked, setIdentityTherapyUnlocked] = useState(false);
   const [showPrepDialog, setShowPrepDialog] = useState(() =>
     shouldShowProfessionalOnboardingPrep({
@@ -69,10 +76,12 @@ export function ProfessionalWebOnboardingWizard(props: {
       hasExistingSession: Boolean(props.initialWebSession)
     })
   );
+  const [continueLaterBusy, setContinueLaterBusy] = useState(false);
   const therapySectionRef = useRef<HTMLDivElement | null>(null);
   const focusAreasSectionRef = useRef<HTMLDivElement | null>(null);
   const languagesSectionRef = useRef<HTMLDivElement | null>(null);
-  const focusAreasWereVisibleRef = useRef(false);
+  /** Al elegir idioma la lista de ámbitos se monta abajo; congelamos el scroll para no mover la vista. */
+  const lockedScrollYRef = useRef<number | null>(null);
 
   const {
     step,
@@ -91,10 +100,14 @@ export function ProfessionalWebOnboardingWizard(props: {
     webStripeDocInputRef,
     activeDiplomaUploadIndex,
     setActiveDiplomaUploadIndex,
+    getActiveDiplomaUploadIndex,
     update,
     updateDiploma,
     addDiploma,
     removeDiploma,
+    setDiplomaFile,
+    getDiplomaFile,
+    setIdentityDocFile,
     toggleLanguage,
     toggleFocusArea,
     toggleTherapyModality,
@@ -107,7 +120,11 @@ export function ProfessionalWebOnboardingWizard(props: {
     canContinue,
     handleContinue,
     pricingStepError,
+    diplomaStepError,
+    setDiplomaStepError,
     credentialsStepError,
+    existingAccountEmail,
+    clearExistingAccountEmail,
     credentialsChecking,
     registerInFlight,
     onTurnstileSuccess,
@@ -129,10 +146,117 @@ export function ProfessionalWebOnboardingWizard(props: {
     onboardingDraft
   } = wizard;
 
+  const handleContinueLater = async () => {
+    if (!props.onContinueLater || continueLaterBusy || !webOnboardingSession) {
+      return;
+    }
+    setContinueLaterBusy(true);
+    try {
+      await onboardingDraft.flush();
+    } catch {
+      // El progreso suele estar ya en servidor por el debounce; igual dejamos salir.
+    }
+    try {
+      props.onContinueLater(webOnboardingSession);
+    } finally {
+      setContinueLaterBusy(false);
+    }
+  };
+
   const droppedMediaMessageText = useMemo(
     () => droppedMediaMessage(onboardingDraft.droppedMedia, props.language),
     [onboardingDraft.droppedMedia, props.language]
   );
+
+  const payoutFieldsForValidation = useMemo(
+    (): PayoutFormFields => ({
+      legalName: form.payoutLegalName,
+      taxId: form.taxId,
+      accountHolderName: form.payoutAccountHolderName,
+      bankTransferType: form.payoutBankTransferType,
+      bankAccountValue: form.payoutBankAccountValue,
+      bankName: form.payoutBankName,
+      payoutTermsAccepted: form.payoutTermsAccepted,
+      payoutCountry: form.payoutCountry,
+      beneficiaryFirstName: form.payoutBeneficiaryFirstName,
+      beneficiaryLastName: form.payoutBeneficiaryLastName,
+      documentType: form.payoutDocumentType,
+      bankCode: form.payoutBankCode,
+      bankBranch: form.payoutBankBranch,
+      accountType: form.payoutAccountType
+    }),
+    [form]
+  );
+
+  const continueBlockedReason = useMemo(() => {
+    if (canContinue || step === 2) {
+      return null;
+    }
+    if (step === 6) {
+      const hasPartial = form.diplomas.some(
+        (diploma) =>
+          diploma.institution.trim()
+          || diploma.degree.trim()
+          || diploma.startYear
+          || diploma.graduationYear
+          || diploma.diplomaUploaded
+      );
+      if (!hasPartial) {
+        return t(props.language, {
+          es: "Completá al menos un diploma (institución, título y años) para continuar.",
+          en: "Complete at least one diploma (institution, degree, and years) to continue.",
+          pt: "Preencha pelo menos um diploma (instituicao, titulo e anos) para continuar."
+        });
+      }
+      return t(props.language, {
+        es: "Completá institución, título y años de cada diploma iniciado (o borrá los incompletos).",
+        en: "Fill institution, degree, and years for every started diploma (or remove incomplete ones).",
+        pt: "Preencha instituicao, titulo e anos de cada diploma iniciado (ou remova os incompletos)."
+      });
+    }
+    if (step === 7) {
+      return payoutValidationMessage(
+        form.payoutProvider,
+        payoutFieldsForValidation,
+        props.language,
+        Boolean(form.stripeDocPreview.trim())
+      );
+    }
+    return null;
+  }, [canContinue, step, form, payoutFieldsForValidation, props.language]);
+
+  const documentUploadErrorMessage = (error: unknown) => {
+    const code = error instanceof Error ? error.message : String(error ?? "UNKNOWN");
+    console.error("[pro-web-onboarding] document upload failed", { code, error });
+    if (code === "DOCUMENT_TOO_LARGE") {
+      return t(props.language, {
+        es: "El archivo supera 10 MB. Subí un PDF más liviano o una foto.",
+        en: "The file is over 10 MB. Upload a smaller PDF or a photo.",
+        pt: "O arquivo passa de 10 MB. Envie um PDF menor ou uma foto."
+      });
+    }
+    if (code === "INVALID_DOCUMENT_TYPE" || code === "EMPTY_DOCUMENT") {
+      return t(props.language, {
+        es: "Formato no válido. Usá JPG, PNG o PDF.",
+        en: "Invalid format. Use JPG, PNG, or PDF.",
+        pt: "Formato invalido. Use JPG, PNG ou PDF."
+      });
+    }
+    if (code === "IMAGE_READ_FAILED") {
+      return t(props.language, {
+        es: "No pudimos leer la imagen. Probá con otro JPG/PNG, o un PDF.",
+        en: "We could not read the image. Try another JPG/PNG, or a PDF.",
+        pt: "Nao foi possivel ler a imagem. Tente outro JPG/PNG, ou um PDF."
+      });
+    }
+    // Código real en consola; en UI dejamos pista corta para depurar sin asustar.
+    const hint = code && code.length < 48 && !code.includes(" ") ? ` (${code})` : "";
+    return t(props.language, {
+      es: `No pudimos leer el archivo. Probá de nuevo con otro PDF o una foto.${hint}`,
+      en: `We could not read the file. Try again with another PDF or photo.${hint}`,
+      pt: `Nao foi possivel ler o arquivo. Tente de novo com outro PDF ou foto.${hint}`
+    });
+  };
 
   const identityReveal = useMemo(() => {
     const hasNames = Boolean(form.firstName.trim() && form.lastName.trim());
@@ -261,14 +385,30 @@ export function ProfessionalWebOnboardingWizard(props: {
     }
   }, [form.focusAreas.length]);
 
-  useEffect(() => {
-    if (identityReveal.showFocusAreas && !focusAreasWereVisibleRef.current) {
-      window.requestAnimationFrame(() => {
-        focusAreasSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
+  useLayoutEffect(() => {
+    // Solo congelar scroll dentro del paso Identidad; al cambiar de paso no reaplicar Y viejo.
+    if (step !== 2) {
+      lockedScrollYRef.current = null;
+      return;
     }
-    focusAreasWereVisibleRef.current = identityReveal.showFocusAreas;
-  }, [identityReveal.showFocusAreas]);
+    const lockedY = lockedScrollYRef.current;
+    if (lockedY == null) {
+      return;
+    }
+    lockedScrollYRef.current = null;
+    window.scrollTo({ top: lockedY, left: 0, behavior: "auto" });
+  }, [form.languages, identityReveal.showFocusAreas, step]);
+
+  // Tras Identidad el form es largo: el sidebar sticky engaña y el título queda arriba del viewport.
+  useLayoutEffect(() => {
+    if (activeInterstitialStep !== null) {
+      return;
+    }
+    lockedScrollYRef.current = null;
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [step, activeInterstitialStep]);
 
   const genderWebOptions = useMemo(
     () =>
@@ -425,21 +565,41 @@ export function ProfessionalWebOnboardingWizard(props: {
         >
           <header className="pro-web-panel-head">
             <div className="pro-web-head-meta">
-              <span className="pro-web-step-kicker">
-                {t(props.language, { es: "Paso", en: "Step", pt: "Etapa" })} {step + 1}
-              </span>
-              <small className="pro-web-step-counter">
-                {step + 1}/{labels.length}
-              </small>
+              <div className="pro-web-head-meta-left">
+                <span className="pro-web-step-kicker">
+                  {t(props.language, { es: "Paso", en: "Step", pt: "Etapa" })} {step + 1}
+                </span>
+                <small className="pro-web-step-counter">
+                  {step + 1}/{labels.length}
+                </small>
+              </div>
+              {props.onContinueLater && webOnboardingSession ? (
+                <button
+                  type="button"
+                  className="pro-web-continue-later"
+                  disabled={continueLaterBusy}
+                  onClick={() => void handleContinueLater()}
+                >
+                  {continueLaterBusy
+                    ? t(props.language, { es: "Guardando…", en: "Saving…", pt: "Salvando…" })
+                    : t(props.language, {
+                        es: "Continuar después",
+                        en: "Continue later",
+                        pt: "Continuar depois"
+                      })}
+                </button>
+              ) : null}
             </div>
-            <h1>{labels[step]}</h1>
-            {stepSubtitles[step] ? <p>{stepSubtitles[step]}</p> : null}
-            <OnboardingDraftNotice
-              language={props.language}
-              status={onboardingDraft.status}
-              restored={onboardingDraft.restored}
-              detail={droppedMediaMessageText}
-            />
+            <h1 className="pro-web-panel-title">{labels[step]}</h1>
+            {step === 2 ? (
+              <ProfessionalIdentityStepProgress
+                language={props.language}
+                active={identitySegments.active}
+                reached={identitySegments.reached}
+              />
+            ) : stepSubtitles[step] ? (
+              <p className="pro-web-panel-sub">{stepSubtitles[step]}</p>
+            ) : null}
           </header>
 
           {step === 0 ? (
@@ -449,6 +609,7 @@ export function ProfessionalWebOnboardingWizard(props: {
                 type="email"
                 autoComplete="email"
                 value={form.email}
+                readOnly={Boolean(webOnboardingSession)}
                 onChange={(event) => update({ email: event.target.value, turnstileToken: "" })}
                 placeholder={t(props.language, {
                   es: "nombre@ejemplo.com",
@@ -465,6 +626,7 @@ export function ProfessionalWebOnboardingWizard(props: {
                 type="email"
                 autoComplete="email"
                 value={form.emailConfirm}
+                readOnly={Boolean(webOnboardingSession)}
                 onChange={(event) => update({ emailConfirm: event.target.value, turnstileToken: "" })}
                 placeholder={t(props.language, {
                   es: "Igual que el correo anterior",
@@ -472,6 +634,30 @@ export function ProfessionalWebOnboardingWizard(props: {
                   pt: "Igual ao e-mail acima"
                 })}
               />
+              {webOnboardingSession ? (
+                <p className="pro-web-price-bounds-hint">
+                  {t(props.language, {
+                    es: "Ya creamos tu cuenta con este correo. Podés seguir al paso de verificación, o ",
+                    en: "We already created your account with this email. Continue to verification, or ",
+                    pt: "Ja criamos sua conta com este e-mail. Siga para a verificacao, ou "
+                  })}
+                  <button
+                    type="button"
+                    className="pro-web-inline-text-btn"
+                    onClick={() => {
+                      resetWebOnboardingSession();
+                      update({ email: "", emailConfirm: "", turnstileToken: "" });
+                    }}
+                  >
+                    {t(props.language, {
+                      es: "usar otro correo",
+                      en: "use a different email",
+                      pt: "usar outro e-mail"
+                    })}
+                  </button>
+                  .
+                </p>
+              ) : null}
               <McPasswordInput
                 label={t(props.language, { es: "Contraseña", en: "Password", pt: "Senha" })}
                 autoComplete="new-password"
@@ -498,7 +684,7 @@ export function ProfessionalWebOnboardingWizard(props: {
                 showLabel={t(props.language, { es: "Mostrar", en: "Show", pt: "Mostrar" })}
                 hideLabel={t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })}
               />
-              {requiresTurnstileWidget && turnstileSiteKey ? (
+              {requiresTurnstileWidget && turnstileSiteKey && !webOnboardingSession ? (
                 <div className="pro-web-turnstile-wrap">
                   <span className="pro-web-field-label-like">
                     {t(props.language, {
@@ -515,14 +701,6 @@ export function ProfessionalWebOnboardingWizard(props: {
                     onExpire={onTurnstileExpire}
                   />
                 </div>
-              ) : import.meta.env.DEV ? (
-                <p className="pro-web-price-bounds-hint">
-                  {t(props.language, {
-                    es: "Dev: opcional — definí VITE_TURNSTILE_SITE_KEY (front) y TURNSTILE_SECRET_KEY (API) para exigir captcha en registro.",
-                    en: "Dev: optional — set VITE_TURNSTILE_SITE_KEY and API TURNSTILE_SECRET_KEY to require captcha on signup.",
-                    pt: "Dev: opcional — defina VITE_TURNSTILE_SITE_KEY e TURNSTILE_SECRET_KEY na API para exigir captcha."
-                  })}
-                </p>
               ) : null}
               {credentialsStepError ? <McNotice>{credentialsStepError}</McNotice> : null}
             </div>
@@ -606,11 +784,6 @@ export function ProfessionalWebOnboardingWizard(props: {
 
           {step === 2 ? (
             <div className="pro-web-fields pro-web-fields--identity">
-              <ProfessionalIdentityStepProgress
-                language={props.language}
-                active={identitySegments.active}
-                reached={identitySegments.reached}
-              />
               <div className="pro-web-grid-2">
                 <McInput
                   label={t(props.language, { es: "Nombre", en: "First name", pt: "Nome" })}
@@ -741,7 +914,10 @@ export function ProfessionalWebOnboardingWizard(props: {
                           type="button"
                           className={`pro-web-lang-chip${active ? " active" : ""}`}
                           aria-pressed={active}
-                          onClick={() => toggleLanguage(lang.value)}
+                          onClick={() => {
+                            lockedScrollYRef.current = window.scrollY;
+                            toggleLanguage(lang.value);
+                          }}
                         >
                           {active ? <span className="pro-web-lang-chip-check" aria-hidden="true">✓</span> : null}
                           <span>{lang.label}</span>
@@ -796,19 +972,23 @@ export function ProfessionalWebOnboardingWizard(props: {
           {step === 3 ? (
             <div className="pro-web-fields">
               <McTextarea
-                label="Acerca de mí"
+                label={t(props.language, { es: "Acerca de mí", en: "About me", pt: "Sobre mim" })}
                 autoComplete="off"
                 value={form.about}
                 onChange={(event) => update({ about: event.target.value })}
               />
               <McTextarea
-                label="Cómo trabajo"
+                label={t(props.language, { es: "Cómo trabajo", en: "How I work", pt: "Como trabalho" })}
                 autoComplete="off"
                 value={form.methodology}
                 onChange={(event) => update({ methodology: event.target.value })}
               />
               <McInput
-                label="Descripción corta (250)"
+                label={t(props.language, {
+                  es: "Descripción corta (250)",
+                  en: "Short description (250)",
+                  pt: "Descricao curta (250)"
+                })}
                 autoComplete="off"
                 value={form.shortDescription}
                 onChange={(event) => update({ shortDescription: event.target.value.slice(0, 250) })}
@@ -1042,15 +1222,35 @@ export function ProfessionalWebOnboardingWizard(props: {
               <input
                 ref={webDiplomaInputRef}
                 type="file"
-                accept="image/*,.pdf,.doc,.docx"
+                accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf"
                 style={{ display: "none" }}
                 onChange={async (event) => {
                   const file = event.target.files?.[0];
-                  if (!file || activeDiplomaUploadIndex === null) {
+                  event.target.value = "";
+                  const index = getActiveDiplomaUploadIndex() ?? activeDiplomaUploadIndex;
+                  if (!file || index === null) {
                     return;
                   }
-                  const preview = await mediaPreviewFromFile(file);
-                  updateDiploma(activeDiplomaUploadIndex, { diplomaUploaded: true, diplomaPreview: preview ?? "" });
+                  setDiplomaUploadError("");
+                  try {
+                    const prepared = await documentFileForFormState(file);
+                    // Siempre conservar el File: los PDF solo dejan un marcador en preview.
+                    setDiplomaFile(index, file);
+                    updateDiploma(index, {
+                      diplomaUploaded: true,
+                      diplomaPreview: prepared.preview,
+                      diplomaFileName: file.name.trim() || (prepared.keepFileInMemory ? "documento.pdf" : "diploma.jpg")
+                    });
+                    setDiplomaStepError("");
+                  } catch (error) {
+                    setDiplomaFile(index, null);
+                    updateDiploma(index, {
+                      diplomaUploaded: false,
+                      diplomaPreview: "",
+                      diplomaFileName: ""
+                    });
+                    setDiplomaUploadError(documentUploadErrorMessage(error));
+                  }
                   setActiveDiplomaUploadIndex(null);
                 }}
               />
@@ -1058,12 +1258,15 @@ export function ProfessionalWebOnboardingWizard(props: {
                 <h3>{t(props.language, { es: "Añadí tus diplomas", en: "Add your diplomas", pt: "Adicione seus diplomas" })}</h3>
                 <p>
                   {t(props.language, {
-                    es: "El 97% de nuestros clientes revisa la formación del especialista antes de reservar una sesión. Podés cargar más de un diploma.",
-                    en: "97% of our clients review specialist education before booking. Your education and courses shape your profile value.",
-                    pt: "97% dos clientes revisam a formacao antes de reservar. Sua educacao e cursos definem o valor do seu perfil."
+                    es: "El 97% de nuestros clientes revisa la formación del especialista antes de reservar una sesión. Podés cargar foto o PDF de más de un diploma.",
+                    en: "97% of our clients review specialist education before booking. You can upload a photo or PDF for more than one diploma.",
+                    pt: "97% dos clientes revisam a formacao antes de reservar. Voce pode enviar foto ou PDF de mais de um diploma."
                   })}
                 </p>
               </div>
+              {diplomaUploadError || diplomaStepError ? (
+                <McNotice>{diplomaUploadError || diplomaStepError}</McNotice>
+              ) : null}
               {form.diplomas.map((diploma, index) => (
                 <div className="pro-web-diploma-card" key={`web-diploma-${index}`}>
                   <div className="pro-web-diploma-card__head">
@@ -1123,17 +1326,56 @@ export function ProfessionalWebOnboardingWizard(props: {
                     type="button"
                     className={`pro-web-diploma-upload ${diploma.diplomaUploaded ? "done" : ""}`}
                     onClick={() => {
+                      // Ref síncrono: el file picker puede resolver change antes del re-render.
                       setActiveDiplomaUploadIndex(index);
                       webDiplomaInputRef.current?.click();
                     }}
                   >
                     {diploma.diplomaUploaded
                       ? t(props.language, { es: "Cambiar diploma", en: "Change diploma", pt: "Alterar diploma" })
-                      : t(props.language, { es: "Subí una foto del diploma", en: "Upload diploma photo", pt: "Enviar foto do diploma" })}
+                      : t(props.language, {
+                          es: "Subí foto o PDF del diploma",
+                          en: "Upload diploma photo or PDF",
+                          pt: "Enviar foto ou PDF do diploma"
+                        })}
                   </button>
-                  {diploma.diplomaUploaded ? (
-                    <div className="pro-web-diploma-preview" aria-hidden="true">
-                      {diploma.diplomaPreview ? <img src={diploma.diplomaPreview} alt="" /> : <span>↻</span>}
+                  {diploma.diplomaUploaded && (diploma.diplomaFileName || diploma.diplomaPreview) ? (
+                    <div className="pro-web-diploma-attachment">
+                      {isImageDocumentSrc(diploma.diplomaPreview) ? (
+                        <img className="pro-web-diploma-attachment__thumb" src={diploma.diplomaPreview} alt="" />
+                      ) : (
+                        <span className="pro-web-diploma-attachment__icon" aria-hidden="true">
+                          PDF
+                        </span>
+                      )}
+                      <div className="pro-web-diploma-attachment__meta">
+                        <button
+                          type="button"
+                          className="pro-web-diploma-attachment__name"
+                          title={diploma.diplomaFileName || undefined}
+                          onClick={() => {
+                            // Abrir vía File/blob: un href data: multi-MB congela el navegador.
+                            const stored = getDiplomaFile(index);
+                            if (stored) {
+                              openDocumentFile(stored);
+                              return;
+                            }
+                            if (diploma.diplomaPreview && !isPdfDocumentSrc(diploma.diplomaPreview)) {
+                              openDocumentDataUrl(diploma.diplomaPreview);
+                            }
+                          }}
+                        >
+                          {diploma.diplomaFileName?.trim()
+                            || (isImageDocumentSrc(diploma.diplomaPreview) ? "diploma.jpg" : "diploma.pdf")}
+                        </button>
+                        <span className="pro-web-diploma-attachment__hint">
+                          {t(props.language, {
+                            es: "Adjunto listo · tocá para abrir",
+                            en: "Attached · tap to open",
+                            pt: "Anexo pronto · toque para abrir"
+                          })}
+                        </span>
+                      </div>
                     </div>
                   ) : null}
                 </div>
@@ -1146,6 +1388,7 @@ export function ProfessionalWebOnboardingWizard(props: {
 
           {step === 7 ? (
             <div className="pro-web-fields pro-web-fields--payout">
+              {diplomaStepError ? <McNotice>{diplomaStepError}</McNotice> : null}
               <ProfessionalPayoutSetupPanel
                 language={props.language}
                 provider={form.payoutProvider}
@@ -1197,11 +1440,23 @@ export function ProfessionalWebOnboardingWizard(props: {
                     ...(patch.accountType !== undefined ? { payoutAccountType: patch.accountType } : {})
                   });
                 }}
-                docPreview={form.stripeDocPreview}
+                docUploaded={Boolean(form.stripeDocPreview.trim())}
+                docFileName={identityDocFileName}
                 docInputRef={webStripeDocInputRef}
                 onDocSelected={async (file) => {
-                  const preview = await mediaPreviewFromFile(file);
-                  update({ stripeDocPreview: preview ?? "" });
+                  try {
+                    const prepared = await documentFileForFormState(file);
+                    // Siempre conservar el File: los PDF solo dejan un marcador en preview.
+                    setIdentityDocFile(file);
+                    setIdentityDocFileName(file.name);
+                    update({ stripeDocPreview: prepared.preview });
+                    setDiplomaStepError("");
+                  } catch (error) {
+                    setIdentityDocFile(null);
+                    setIdentityDocFileName("");
+                    update({ stripeDocPreview: "" });
+                    setDiplomaUploadError(documentUploadErrorMessage(error));
+                  }
                 }}
                 payoutStatus="draft"
               />
@@ -1214,15 +1469,22 @@ export function ProfessionalWebOnboardingWizard(props: {
             <span />
           </div>
 
+          {continueBlockedReason ? <McNotice>{continueBlockedReason}</McNotice> : null}
+
+          <OnboardingDraftNotice
+            language={props.language}
+            status={onboardingDraft.status}
+            restored={onboardingDraft.restored}
+            detail={droppedMediaMessageText}
+          />
+
           <footer className="pro-web-actions">
             <McButton
               variant="secondary"
               fullWidth={false}
               disabled={step === 0}
               onClick={() => {
-                if (step === 1) {
-                  resetWebOnboardingSession();
-                }
+                // Conservar sesión al volver de "Revisá tu correo": si no, re-register falla con email repetido.
                 setStep((current) => Math.max(0, current - 1));
               }}
             >
@@ -1294,7 +1556,7 @@ export function ProfessionalWebOnboardingWizard(props: {
                 <McButton variant="secondary" fullWidth={false} onClick={() => setShowCompletionCelebration(false)}>
                   {t(props.language, { es: "Seguir editando", en: "Keep editing", pt: "Continuar editando" })}
                 </McButton>
-                <McButton fullWidth={false} onClick={finishWebOnboarding}>
+                <McButton fullWidth={false} onClick={() => void finishWebOnboarding()}>
                   {t(props.language, { es: "Acceder a mi cuenta", en: "Access my account", pt: "Acessar minha conta" })}
                 </McButton>
               </div>
@@ -1306,6 +1568,22 @@ export function ProfessionalWebOnboardingWizard(props: {
           </article>
         </div>
       ) : null}
+
+      <ExistingAccountLoginModal
+        language={props.language}
+        email={existingAccountEmail ?? ""}
+        open={Boolean(existingAccountEmail)}
+        onClose={() => clearExistingAccountEmail()}
+        onGoToLogin={() => {
+          const email = existingAccountEmail ?? "";
+          clearExistingAccountEmail();
+          if (props.onGoToLogin) {
+            props.onGoToLogin(email);
+            return;
+          }
+          props.onBack();
+        }}
+      />
     </div>
   );
 }

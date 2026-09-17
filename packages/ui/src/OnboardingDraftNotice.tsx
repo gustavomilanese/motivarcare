@@ -3,8 +3,8 @@ import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i
 import type { OnboardingDraftStatus } from "./useOnboardingDraft";
 
 /**
- * Aviso de que el onboarding se está guardando solo. Lo comparten el cuestionario del
- * paciente y el wizard del profesional para que el mensaje sea el mismo en los dos.
+ * Línea de estado del autoguardado (abajo del formulario).
+ * Siempre reserva altura para que el contenido no salte al guardar.
  */
 export function OnboardingDraftNotice(props: {
   language: AppLanguage;
@@ -21,22 +21,45 @@ export function OnboardingDraftNotice(props: {
     pt: "Retomamos de onde voce parou."
   } satisfies LocalizedText);
 
-  const savedText = textByLanguage(props.language, {
-    es: "Progreso guardado. Si salís, podés seguir después.",
-    en: "Progress saved. If you leave, you can continue later.",
-    pt: "Progresso salvo. Se sair, pode continuar depois."
+  const savingText = textByLanguage(props.language, {
+    es: "Guardando…",
+    en: "Saving…",
+    pt: "Salvando…"
   } satisfies LocalizedText);
 
-  const message = props.restored ? restoredText : props.status === "saved" ? savedText : "";
-  if (!message) {
-    return null;
+  const savedText = textByLanguage(props.language, {
+    es: "Guardado",
+    en: "Saved",
+    pt: "Salvo"
+  } satisfies LocalizedText);
+
+  const errorText = textByLanguage(props.language, {
+    es: "No se pudo guardar. Reintentamos solo.",
+    en: "Couldn’t save. We’ll retry automatically.",
+    pt: "Nao foi possivel salvar. Tentaremos de novo."
+  } satisfies LocalizedText);
+
+  let message = "";
+  if (props.status === "saving") {
+    message = savingText;
+  } else if (props.status === "saved") {
+    message = savedText;
+  } else if (props.status === "error") {
+    message = errorText;
+  } else if (props.restored) {
+    message = restoredText;
+    if (props.detail) {
+      message = `${message} ${props.detail}`;
+    }
   }
 
-  const className = props.className ? `mc-draft-notice ${props.className}` : "mc-draft-notice";
+  const className = props.className
+    ? `mc-draft-notice ${props.className}`
+    : "mc-draft-notice";
+
   return (
-    <p className={className} role="status">
-      {message}
-      {props.restored && props.detail ? ` ${props.detail}` : ""}
+    <p className={className} role="status" aria-live="polite" data-empty={message ? undefined : "true"}>
+      {message || "\u00a0"}
     </p>
   );
 }
