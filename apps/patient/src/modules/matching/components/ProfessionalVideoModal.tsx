@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { professionalAccessibleName } from "../../app/lib/professionalDisplayName";
-import { professionalPhotoSrc } from "../../app/services/api";
+import { professionalPhotoSrc, resolvePublicAssetUrl } from "../../app/services/api";
 import type { MatchCardProfessional } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -17,6 +17,7 @@ export function ProfessionalVideoModal(props: {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const professionalName = professionalAccessibleName(props.professional);
   const posterSrc = props.professional.videoCoverUrl ?? props.professional.photoUrl;
+  const videoSrc = resolvePublicAssetUrl(props.professional.videoUrl);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -41,7 +42,7 @@ export function ProfessionalVideoModal(props: {
     };
   }, [props.professional.videoUrl]);
 
-  if (!props.professional.videoUrl) {
+  if (!videoSrc) {
     return null;
   }
 
@@ -79,7 +80,7 @@ export function ProfessionalVideoModal(props: {
           <video
             ref={videoRef}
             className="patient-professional-video-player"
-            src={props.professional.videoUrl}
+            src={videoSrc}
             poster={posterSrc ? professionalPhotoSrc(posterSrc) : undefined}
             controls
             playsInline

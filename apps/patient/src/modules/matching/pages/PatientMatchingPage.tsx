@@ -4,6 +4,7 @@ import { filterSlotsByBookingNotice } from "@therapy/types";
 import { MatchingHeader } from "../components/MatchingHeader";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 import { ProfessionalMatchCard } from "../components/ProfessionalMatchCard";
+import { MatchingProfessionalProfileModal } from "../components/MatchingProfessionalProfileModal";
 import { MatchingStickyAction } from "../components/MatchingStickyAction";
 import { AvailabilityPickerModal } from "../components/AvailabilityPickerModal";
 import { BookingSummaryModal } from "../components/BookingSummaryModal";
@@ -55,6 +56,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
   const [error, setError] = useState("");
   const [directoryReloadKey, setDirectoryReloadKey] = useState(0);
   const [bookingStep, setBookingStep] = useState<"availability" | "summary" | null>(null);
+  const [profileProfessionalId, setProfileProfessionalId] = useState("");
   const [bookingProfessionalId, setBookingProfessionalId] = useState("");
   const [bookingSlot, setBookingSlot] = useState<MatchTimeSlot | null>(null);
   const [allSlots, setAllSlots] = useState<MatchTimeSlot[]>([]);
@@ -250,6 +252,16 @@ export function PatientMatchingPage(props: MatchingPageProps) {
     () => professionals.find((item) => item.id === bookingProfessionalId) ?? null,
     [bookingProfessionalId, professionals]
   );
+  const profileProfessional = useMemo(
+    () => professionals.find((item) => item.id === profileProfessionalId) ?? null,
+    [profileProfessionalId, professionals]
+  );
+  const profileMatchScore = useMemo(() => {
+    if (!profileProfessionalId) {
+      return undefined;
+    }
+    return visibleOrdered.find((item) => item.professional.id === profileProfessionalId)?.score;
+  }, [profileProfessionalId, visibleOrdered]);
 
   slotHoldIdRef.current = slotHoldId;
   bookingProfessionalIdRef.current = bookingProfessionalId;
@@ -653,7 +665,10 @@ export function PatientMatchingPage(props: MatchingPageProps) {
                 onChat={props.onChat}
                 onImageFallback={props.onImageFallback}
                 showChatAction={!bookingFlowEnabled && !selectionConfirmRequired}
-                cardOpensAvailability={bookingFlowEnabled}
+                cardOpensProfile
+                onOpenProfile={(professionalId) => {
+                  setProfileProfessionalId(professionalId);
+                }}
               />
             ))}
           </div>
@@ -728,6 +743,22 @@ export function PatientMatchingPage(props: MatchingPageProps) {
               })
             );
           }}
+        />
+      ) : null}
+
+      {profileProfessional ? (
+        <MatchingProfessionalProfileModal
+          language={props.language}
+          professional={profileProfessional}
+          matchScore={profileMatchScore}
+          showScheduleAction={bookingFlowEnabled}
+          onClose={() => setProfileProfessionalId("")}
+          onShowSchedule={() => {
+            const id = profileProfessional.id;
+            setProfileProfessionalId("");
+            openAvailabilityFlow(id);
+          }}
+          onImageFallback={props.onImageFallback}
         />
       ) : null}
 

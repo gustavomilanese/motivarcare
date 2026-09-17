@@ -842,11 +842,6 @@ export function IntakeScreen(props: {
                 })}
           </span>
 
-          <OnboardingDraftNotice
-            language={props.language}
-            status={draftStatus}
-            restored={draftRestored}
-          />
         </div>
 
         <form className="intake-wizard-form" onSubmit={isLast ? handleSubmit : (e) => e.preventDefault()}>
@@ -1201,6 +1196,12 @@ export function IntakeScreen(props: {
           ) : null}
 
           {error ? <p className="error-text intake-wizard-error">{error}</p> : null}
+
+          <OnboardingDraftNotice
+            language={props.language}
+            status={draftStatus}
+            restored={draftRestored}
+          />
 
           <div className="intake-wizard-actions">
             <button className="ghost intake-wizard-secondary" type="button" onClick={handleCancel} disabled={submitting}>

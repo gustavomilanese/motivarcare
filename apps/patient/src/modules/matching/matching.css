@@ -402,3 +402,13 @@
   color: #0f172a;
   background: rgba(15, 23, 42, 0.04);
 }
+
+.matching-pro-profile-avatar-wrap {
+  position: relative;
+  width: fit-content;
+}
+.matching-pro-profile-avatar-wrap .matching-pro-profile-video-trigger {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+}
