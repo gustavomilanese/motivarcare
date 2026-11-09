@@ -10,16 +10,14 @@ import {
   formatWeekday,
   isSameZonedDay,
   sessionChipLabel,
-  sessionLengthMinutes,
-  sessionTiming,
-  timezoneCaption
+  sessionTiming
 } from "../../home/calm/calmHomeFormat";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-/** Card principal de Tus sesiones · mismo criterio que home (sin Ver detalle). */
+/** Próxima sesión compacta · sin meta repetida del home. */
 export function SessionsCalmNext(props: {
   booking: Booking;
   language: AppLanguage;
@@ -37,22 +35,10 @@ export function SessionsCalmNext(props: {
   const sameDay = isSameZonedDay(new Date(props.booking.startsAt), props.now, props.timeZone);
   const clock = formatClock(props.booking.startsAt, props.timeZone, props.language);
   const when = sameDay
-    ? t(props.language, { es: `Hoy, ${clock}`, en: `Today, ${clock}`, pt: `Hoje, ${clock}` })
-    : `${formatWeekday(props.booking.startsAt, props.timeZone, props.language)}, ${clock}`;
-  const minutes = sessionLengthMinutes(props.booking.startsAt, props.booking.endsAt);
+    ? t(props.language, { es: `Hoy · ${clock}`, en: `Today · ${clock}`, pt: `Hoje · ${clock}` })
+    : `${formatWeekday(props.booking.startsAt, props.timeZone, props.language)} · ${clock}`;
   const join = bookingJoinUrl(props.booking);
   const canMove = canPatientRescheduleBooking(props.booking.startsAt, professional?.cancellationHours);
-  const meta = minutes
-    ? t(props.language, {
-        es: `Videollamada de ${minutes} min · ${timezoneCaption(props.timeZone, props.language, props.now)}`,
-        en: `${minutes}-min video call · ${timezoneCaption(props.timeZone, props.language, props.now)}`,
-        pt: `Videochamada de ${minutes} min · ${timezoneCaption(props.timeZone, props.language, props.now)}`
-      })
-    : t(props.language, {
-        es: `Videollamada · ${timezoneCaption(props.timeZone, props.language, props.now)}`,
-        en: `Video call · ${timezoneCaption(props.timeZone, props.language, props.now)}`,
-        pt: `Videochamada · ${timezoneCaption(props.timeZone, props.language, props.now)}`
-      });
 
   return (
     <article className={`sessions-calm-next${urgent ? " is-urgent" : ""}`}>
@@ -60,21 +46,18 @@ export function SessionsCalmNext(props: {
         <span aria-hidden="true" />
         {sessionChipLabel(timing, props.language)}
       </p>
-      <div>
-        <h2 className="sessions-calm-next-when">{when}</h2>
-        <p className="sessions-calm-next-meta">{meta}</p>
-      </div>
-      <div className="sessions-calm-next-person">
-        <img src={professionalPhotoSrc(props.photoUrl)} alt="" width={48} height={48} onError={props.onImageFallback} />
-        <div>
-          <strong>{name}</strong>
+      <div className="sessions-calm-next-body">
+        <img src={professionalPhotoSrc(props.photoUrl)} alt="" width={44} height={44} onError={props.onImageFallback} />
+        <div className="sessions-calm-next-copy">
+          <h2 className="sessions-calm-next-when">{when}</h2>
+          {name ? <p className="sessions-calm-next-name">{name}</p> : null}
         </div>
       </div>
       <div className="sessions-calm-next-actions">
         {join ? (
           <a className="sessions-calm-join" href={join} target="_blank" rel="noopener noreferrer">
             <IconVideo size={18} />
-            {t(props.language, { es: "Entrar a la sesión", en: "Join session", pt: "Entrar na sessão" })}
+            {t(props.language, { es: "Entrar", en: "Join", pt: "Entrar" })}
           </a>
         ) : (
           <button type="button" className="sessions-calm-join" disabled>

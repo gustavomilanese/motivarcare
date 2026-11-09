@@ -55,6 +55,7 @@ import {
 } from "../lib/bookingReturnTo";
 import { findProfessionalById, findSlotIdForBooking } from "../lib/professionals";
 import { countAvailablePatientSessions } from "../lib/countAvailablePatientSessions";
+import { sessionTiming } from "../../home/calm/calmHomeFormat";
 import type {
   Booking,
   PackagePlan,
@@ -1471,10 +1472,26 @@ export function BookingPage(props: {
           language={props.language}
           timeZone={props.state.profile.timezone}
           now={new Date(now)}
-          weekBookings={props.state.bookings}
           upcoming={upcomingConfirmedBookings}
           professionals={props.professionals}
           photoMap={props.professionalPhotoMap}
+          available={availableSessions}
+          packageName={props.state.subscription.packageName}
+          packageSize={props.state.subscription.creditsTotal}
+          bookingOpen={panelMode === "new"}
+          canBuy={hasProfessionalsOnPortal}
+          bookPrimary={
+            upcomingConfirmedBookings[0]
+              ? sessionTiming(
+                  upcomingConfirmedBookings[0].startsAt,
+                  upcomingConfirmedBookings[0].endsAt,
+                  new Date(now),
+                  props.state.profile.timezone
+                ).kind === "later"
+              : true
+          }
+          onBook={toggleNewBookingPanel}
+          onBuy={() => dispatchAcquireSessions("buy_cta")}
           onImageFallback={props.onImageFallback}
           onOpenDetail={props.onOpenBookingDetail}
           onReschedule={(booking) => openReschedulePanelForBooking(booking)}

@@ -154,26 +154,33 @@
   .portal-mobile-nav {
     gap: 0;
     padding:
-      6px max(4px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px))
-      max(4px, env(safe-area-inset-right, 0px));
+      8px max(6px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px))
+      max(6px, env(safe-area-inset-left, 0px));
     background: var(--mobile-surface) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     border-top: 1px solid var(--mobile-divider);
     border-radius: 0;
-    box-shadow: 0 -1px 0 rgba(15, 23, 42, 0.06);
+    box-shadow: none;
   }
 
-  /* Immersive home routes: keep bottom tab bar visible (main mobile nav) */
+  /* Immersive routes: diary CSS zeroed padding; restore full bar + safe-area. */
   .portal-main--diary-home > .portal-mobile-nav,
   .portal-main--dashboard-home > .portal-mobile-nav,
   .portal-main--sessions-home > .portal-mobile-nav,
+  .portal-main--exercises-home > .portal-mobile-nav,
   .portal-main--wellbeing-relax > .portal-mobile-nav,
   .portal-main--chat > .portal-mobile-nav {
     display: flex !important;
     height: auto !important;
     overflow: visible !important;
-    border-top: 1px solid var(--mobile-divider);
+    margin: 0 !important;
+    border: 0 !important;
+    border-top: 1px solid #e2dfd3 !important;
+    background: #fff !important;
+    padding:
+      8px max(6px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px))
+      max(6px, env(safe-area-inset-left, 0px)) !important;
   }
 
   /* Notifications: bottom sheet on mobile (avoids hero overflow clipping) */
@@ -657,8 +664,8 @@
 
     .portal-mobile-nav {
       padding:
-        2px max(4px, env(safe-area-inset-left, 0px)) calc(2px + env(safe-area-inset-bottom, 0px))
-        max(4px, env(safe-area-inset-right, 0px));
+        2px max(4px, env(safe-area-inset-right, 0px)) calc(2px + env(safe-area-inset-bottom, 0px))
+        max(4px, env(safe-area-inset-left, 0px));
     }
 
     .portal-mobile-more-sheet {

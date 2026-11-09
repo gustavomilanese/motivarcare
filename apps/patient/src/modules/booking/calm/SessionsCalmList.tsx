@@ -67,11 +67,7 @@ export function SessionsCalmList(props: {
             >
               {expanded
                 ? t(props.language, { es: "Ver menos", en: "Show less", pt: "Ver menos" })
-                : t(props.language, {
-                    es: `Ver más (${props.bookings.length - PREVIEW})`,
-                    en: `See more (${props.bookings.length - PREVIEW})`,
-                    pt: `Ver mais (${props.bookings.length - PREVIEW})`
-                  })}
+                : t(props.language, { es: "Ver más", en: "See more", pt: "Ver mais" })}
             </button>
           ) : null}
         </>

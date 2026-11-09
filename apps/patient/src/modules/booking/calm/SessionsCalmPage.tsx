@@ -1,19 +1,26 @@
 import { type SyntheticEvent } from "react";
 import type { AppLanguage } from "@therapy/i18n-config";
 import type { Booking, Professional } from "../../app/types";
+import { SessionsCalmBalance } from "./SessionsCalmBalance";
 import { SessionsCalmHead } from "./SessionsCalmHead";
 import { SessionsCalmList } from "./SessionsCalmList";
 import { SessionsCalmNext } from "./SessionsCalmNext";
-import { SessionsCalmWeek } from "./SessionsCalmWeek";
 
 export function SessionsCalmPage(props: {
   language: AppLanguage;
   timeZone: string;
   now: Date;
-  weekBookings: Booking[];
   upcoming: Booking[];
   professionals: Professional[];
   photoMap: Record<string, string>;
+  available: number;
+  packageName: string;
+  packageSize: number;
+  bookingOpen: boolean;
+  canBuy: boolean;
+  bookPrimary: boolean;
+  onBook: () => void;
+  onBuy: () => void;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onOpenDetail: (bookingId: string) => void;
   onReschedule: (booking: Booking) => void;
@@ -24,6 +31,19 @@ export function SessionsCalmPage(props: {
   return (
     <div className="sessions-calm">
       <SessionsCalmHead language={props.language} timeZone={props.timeZone} now={props.now} />
+      <div className="sessions-calm-balance-mobile">
+        <SessionsCalmBalance
+          language={props.language}
+          available={props.available}
+          packageName={props.packageName}
+          packageSize={props.packageSize}
+          bookingOpen={props.bookingOpen}
+          canBuy={props.canBuy}
+          bookPrimary={props.bookPrimary}
+          onBook={props.onBook}
+          onBuy={props.onBuy}
+        />
+      </div>
       {next ? (
         <SessionsCalmNext
           booking={next}
@@ -47,15 +67,6 @@ export function SessionsCalmPage(props: {
         onImageFallback={props.onImageFallback}
         onOpenDetail={props.onOpenDetail}
         onReschedule={props.onReschedule}
-      />
-      <SessionsCalmWeek
-        language={props.language}
-        timeZone={props.timeZone}
-        now={props.now}
-        bookings={props.weekBookings}
-        professionals={props.professionals}
-        onOpenDetail={props.onOpenDetail}
-        quiet
       />
     </div>
   );

@@ -50,7 +50,7 @@ export function CalmSessionsBalance(props: {
           </div>
         ) : null}
       </div>
-      <button className="calm-btn calm-btn--outline" type="button" onClick={props.onReserveAnother}>
+      <button className="calm-btn calm-btn--yellow" type="button" onClick={props.onReserveAnother}>
         {t(props.language, { es: "Reservar otra", en: "Book another", pt: "Reservar outra" })}
       </button>
     </article>

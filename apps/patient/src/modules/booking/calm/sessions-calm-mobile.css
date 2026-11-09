@@ -1,45 +1,30 @@
 @media (max-width: 1080px) {
   .sessions-calm {
-    padding: 16px 16px 8px;
+    gap: 16px;
+    padding: 8px 0 8px;
   }
 
   .sessions-calm-head h1 {
-    font-size: 32px;
+    font-size: 30px;
   }
 
-  .sessions-calm-balance {
+  .sessions-calm-balance-mobile .sessions-calm-balance {
     flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 12px;
   }
 
-  .sessions-calm-balance-actions {
+  .sessions-calm-balance-mobile .sessions-calm-count {
+    font-size: 36px;
+  }
+
+  .sessions-calm-balance-mobile .sessions-calm-balance-actions {
     width: 100%;
     margin-left: 0;
   }
 
-  .sessions-calm-days {
-    display: flex;
-    overflow-x: auto;
-  }
-
-  .sessions-calm-day {
-    flex: 0 0 92px;
-  }
-
-  .sessions-calm-next-when {
-    font-size: 28px;
-  }
-
-  .sessions-calm-month-grid {
-    gap: 4px;
-  }
-
-  .sessions-calm-cell {
-    min-height: 52px;
-    padding: 4px;
-  }
-
-  .sessions-calm-cell button,
-  .sessions-calm button.sessions-calm-slot {
-    font-size: 10px;
+  .sessions-calm-balance-mobile .sessions-calm-book {
+    width: 100%;
   }
 }

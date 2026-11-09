@@ -262,12 +262,23 @@
     padding: 0;
   }
 
-  .sessions-calm-balance-host,
+  /* Créditos viven arriba en el main (mobile). El host del rail se oculta. */
+  .sessions-calm-balance-host {
+    display: none !important;
+  }
+
   .sessions-side-card {
     order: 1;
   }
+}
 
-  .sessions-calm-next h2 {
-    font-size: 28px;
+/* Slot de créditos solo en mobile (desktop usa el rail). */
+.sessions-calm-balance-mobile {
+  display: none;
+}
+
+@media (max-width: 1080px) {
+  .sessions-calm-balance-mobile {
+    display: block;
   }
 }

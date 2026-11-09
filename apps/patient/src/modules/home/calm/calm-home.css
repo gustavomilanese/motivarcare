@@ -799,7 +799,7 @@
   line-height: 1.35;
 }
 
-.calm-balance .calm-btn--outline {
+.calm-balance .calm-btn--yellow {
   white-space: nowrap;
 }
 
@@ -1328,8 +1328,12 @@ body:has(.calm-match) .treatment-chat-fab__icon svg {
 }
 
 .portal-mobile-nav.portal-mobile-nav--app {
-  background: #fff;
-  border-top: 1px solid #e2dfd3;
+  background: #fff !important;
+  border-top: 1px solid #e2dfd3 !important;
+  box-shadow: none;
+  padding:
+    8px max(6px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px))
+    max(6px, env(safe-area-inset-left, 0px)) !important;
 }
 
 .portal-mobile-nav.portal-mobile-nav--app .mobile-nav-link {
