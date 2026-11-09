@@ -133,13 +133,21 @@
   color: var(--bosque);
 }
 
+.diary-calm-cta {
+  display: none;
+}
+
+.diary-calm-all--head {
+  display: none;
+}
+
 .diary-calm button.diary-calm-new,
 .diary-calm button.diary-calm-new:hover,
 .diary-calm button.diary-calm-new:focus-visible {
   height: 44px;
   padding: 0 22px;
   border: 0;
-  border-radius: 99px;
+  border-radius: 8px;
   background: #f5c33b;
   color: #1e4033;
   font-family: var(--sans);
@@ -283,33 +291,4 @@
   box-shadow: none;
 }
 
-@media (max-width: 1080px) {
-  .diary-calm-columns {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding: 16px 16px 32px;
-  }
-
-  .diary-calm-side {
-    display: contents;
-  }
-
-  .diary-calm-side .diary-portal-toolbar {
-    order: -1;
-  }
-
-  .diary-calm-main {
-    order: 0;
-    border-right: 0;
-    padding: 0;
-  }
-
-  .diary-side-resources {
-    order: 1;
-  }
-
-  .diary-calm-head h1 {
-    font-size: 32px;
-  }
-}
+/* Mobile: ver diary-calm-mobile.css */

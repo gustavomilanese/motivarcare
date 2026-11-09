@@ -72,7 +72,7 @@
   height: 44px;
   padding: 0 22px;
   border: 0;
-  border-radius: 99px;
+  border-radius: 8px;
   background: #f5c33b;
   color: #1e4033;
   font-family: "Manrope", system-ui, sans-serif;
@@ -192,7 +192,7 @@
   height: 36px;
   padding: 0 14px;
   border: 1px solid #e2dfd3;
-  border-radius: 99px;
+  border-radius: 8px;
   background: #fff;
   color: #1e4033;
   font-family: "Manrope", system-ui, sans-serif;
@@ -318,7 +318,7 @@
   width: 100%;
   padding: 0 22px;
   border: 1px solid #e2dfd3;
-  border-radius: 99px;
+  border-radius: 8px;
   background: #fff;
   color: #1e4033;
   font-family: "Manrope", system-ui, sans-serif;

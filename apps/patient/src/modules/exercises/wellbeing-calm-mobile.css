@@ -1,0 +1,191 @@
+/* Bienestar · layout teléfono (no “web achicado”). */
+
+@media (max-width: 1080px) {
+  .exercises-page--ml.wellbeing-calm,
+  .exercise-routine-page.wellbeing-calm,
+  .exercise-reader-page.wellbeing-calm {
+    padding: 8px 10px 96px;
+    box-sizing: border-box;
+  }
+
+  .wellbeing-calm > .calm-toolbar-row {
+    margin-bottom: 10px;
+  }
+
+  .wellbeing-calm-columns {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 0;
+    min-width: 0;
+  }
+
+  .wellbeing-calm-main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border-right: 0;
+    padding: 0;
+    min-width: 0;
+  }
+
+  .wellbeing-calm-side,
+  .wellbeing-routines-slot--desktop {
+    display: none;
+  }
+
+  .wellbeing-routines-slot--mobile {
+    display: block;
+  }
+
+  .wellbeing-calm-head {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+  }
+
+  .wellbeing-calm-kicker {
+    margin: 0;
+    font-size: 11.5px;
+  }
+
+  .wellbeing-calm-head h1 {
+    font-size: 32px;
+    line-height: 1.08;
+  }
+
+  .wellbeing-calm-lead {
+    display: none;
+  }
+
+  /* Filtros: scroll horizontal, sin wrap de escritorio. */
+  .wellbeing-filters {
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin: 0 -2px;
+    padding: 2px;
+  }
+
+  .wellbeing-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .wellbeing-calm button.wellbeing-filter {
+    flex: none;
+    white-space: nowrap;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  /* Rutinas: lista compacta, sin blurb largo. */
+  .wellbeing-routines--side .wellbeing-section-head p {
+    display: none;
+  }
+
+  .wellbeing-routines--side .wellbeing-section-head h2 {
+    font-size: 22px;
+  }
+
+  .wellbeing-routines-list {
+    margin-top: 10px;
+    gap: 10px;
+  }
+
+  .wellbeing-routine-card.is-compact {
+    padding: 14px;
+    gap: 10px;
+    border-radius: 18px;
+  }
+
+  .wellbeing-routine-card.is-compact .wellbeing-routine-steps {
+    display: none;
+  }
+
+  .wellbeing-routines-more {
+    margin-top: 4px;
+  }
+
+  /* Prácticas: una columna. */
+  .wellbeing-exercises > h2,
+  .wellbeing-section-head h2 {
+    font-size: 22px;
+  }
+
+  .wellbeing-exercise-list {
+    margin-top: 10px;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .wellbeing-exercise-card {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 12px;
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .wellbeing-exercise-copy strong {
+    font-size: 15.5px;
+  }
+
+  .wellbeing-exercise-summary {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 13.5px;
+  }
+
+  .wellbeing-pills {
+    gap: 5px;
+  }
+
+  .wellbeing-pills span {
+    padding: 3px 8px;
+    font-size: 11.5px;
+  }
+
+  .wellbeing-note--main {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    border-radius: 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--tinta-suave, #5d6a63);
+  }
+
+  .wellbeing-note--side {
+    display: none;
+  }
+
+  .portal-main--home-ml .exercise-routine-page.wellbeing-calm,
+  .portal-main--home-ml .exercise-reader-page.wellbeing-calm,
+  .exercise-routine-page.wellbeing-calm,
+  .exercise-reader-page.wellbeing-calm {
+    padding: 8px 10px 96px;
+  }
+
+  .wellbeing-calm .exercise-reader-back {
+    font-size: 14px;
+  }
+
+  .wellbeing-calm .exercise-reader,
+  .wellbeing-calm .exercise-routine-active-card,
+  .wellbeing-calm .exercise-routine-sidebar {
+    border-radius: 18px;
+  }
+}
+
+@media (min-width: 1081px) {
+  .wellbeing-routines-slot--mobile,
+  .wellbeing-note--main {
+    display: none;
+  }
+}

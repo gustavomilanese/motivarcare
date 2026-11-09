@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
-import { PortalAccountToolsMount } from "../../app/components/PortalAccountToolsMount";
+import { CalmPortalToolbarRow } from "../../app/components/CalmPortalToolbarRow";
 import { navigateToSectionTop, useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
 import { DiaryEntriesTimeline } from "../components/DiaryEntriesTimeline";
 import { DiaryEntryDetailModal } from "../components/DiaryEntryDetailModal";
+import { CalmMoodCheckin } from "../../home/calm/CalmMoodCheckin";
 import { DiaryCalmHead } from "../components/DiaryCalmHead";
-import { DiaryMoodCheckin } from "../components/DiaryMoodCheckin";
 import { DiaryShell } from "../components/DiaryChrome";
 import { DiarySideResources } from "../components/DiarySideResources";
 import { t } from "../lib/labels";
@@ -73,11 +73,19 @@ export function DiaryHomePage(props: DiaryHomePageProps) {
 
   return (
     <DiaryShell language={props.language} className="diary-page--home diary-home-page diary-home-page--ml diary-calm">
+      <CalmPortalToolbarRow mountId="diary-hero-toolbar-mount" />
       <div className="diary-calm-columns">
         <div className="diary-calm-main">
           <DiaryCalmHead language={props.language} />
-          <DiaryMoodCheckin language={props.language} />
-          <section aria-labelledby="diary-recent-title">
+          <button
+            type="button"
+            className="diary-calm-cta"
+            onClick={() => navigateToSectionTop(navigate, "/diario/nueva")}
+          >
+            {t(props.language, { es: "Nueva entrada", en: "New entry", pt: "Nova entrada" })}
+          </button>
+          <CalmMoodCheckin language={props.language} />
+          <section className="diary-calm-recent" aria-labelledby="diary-recent-title">
             <div className="diary-calm-recent-head">
               <h2 id="diary-recent-title">
                 {t(props.language, { es: "Últimas entradas", en: "Recent entries", pt: "Últimas entradas" })}
@@ -89,6 +97,15 @@ export function DiaryHomePage(props: DiaryHomePageProps) {
               >
                 {t(props.language, { es: "Nueva entrada", en: "New entry", pt: "Nova entrada" })}
               </button>
+              {recent.length > 0 ? (
+                <button
+                  type="button"
+                  className="diary-calm-all diary-calm-all--head"
+                  onClick={() => navigateToSectionTop(navigate, "/diario/registros")}
+                >
+                  {t(props.language, { es: "Ver todas", en: "See all", pt: "Ver todas" })}
+                </button>
+              ) : null}
             </div>
             {error ? <p className="diary-error">{error}</p> : null}
             {loading ? (
@@ -111,7 +128,7 @@ export function DiaryHomePage(props: DiaryHomePageProps) {
                 {recent.length > 0 ? (
                   <button
                     type="button"
-                    className="diary-side-link diary-calm-all"
+                    className="diary-calm-all diary-calm-all--foot"
                     onClick={() => navigateToSectionTop(navigate, "/diario/registros")}
                   >
                     {t(props.language, { es: "Ver todas", en: "See all", pt: "Ver todas" })}
@@ -122,7 +139,6 @@ export function DiaryHomePage(props: DiaryHomePageProps) {
           </section>
         </div>
         <aside className="diary-calm-side">
-          <PortalAccountToolsMount id="diary-hero-toolbar-mount" className="diary-calm-tools" />
           <DiarySideResources language={props.language} />
         </aside>
       </div>

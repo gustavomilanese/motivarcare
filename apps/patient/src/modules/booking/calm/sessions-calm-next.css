@@ -1,108 +1,159 @@
+/* Card principal de Tus sesiones (próxima). */
+
 .sessions-calm-next {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 16px;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
   border-radius: 18px;
   background: var(--salvia);
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
 }
 
-.sessions-calm-next img {
-  width: 40px;
-  height: 40px;
+.sessions-calm-next-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--bosque);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sessions-calm-next-chip span {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
+  background: var(--verde-medio);
+}
+
+.sessions-calm-next-chip.is-live span {
+  background: var(--amarillo);
+}
+
+.sessions-calm-next-when {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 32px;
+  line-height: 1.08;
+  color: var(--bosque);
+}
+
+.sessions-calm-next-meta {
+  margin: 6px 0 0;
+  color: var(--tinta-suave);
+  font-size: 14.5px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.sessions-calm-next-person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sessions-calm-next-person img {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
   object-fit: cover;
   flex: none;
   background: var(--superficie);
 }
 
-.sessions-calm-next-copy {
-  min-width: 0;
-  flex: 1;
-}
-
-.sessions-calm-next-copy strong {
+.sessions-calm-next-person strong {
   display: block;
-  font-family: var(--serif);
-  font-weight: 500;
-  font-size: 22px;
-  line-height: 1.15;
   color: var(--bosque);
-}
-
-.sessions-calm-next-copy span {
-  display: block;
-  margin-top: 4px;
-  color: var(--tinta-suave);
-  font-size: 13.5px;
+  font-size: 15.5px;
+  font-weight: 700;
 }
 
 .sessions-calm-next-actions {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  margin-top: 2px;
 }
 
-.sessions-calm a.sessions-calm-join.is-outline,
-.sessions-calm button.sessions-calm-book.is-outline {
-  background: var(--superficie);
-  color: var(--bosque);
-  border: 1px solid var(--linea);
-}
-
-.sessions-calm a.sessions-calm-join.is-outline:hover,
-.sessions-calm a.sessions-calm-join.is-outline:focus-visible,
-.sessions-calm button.sessions-calm-book.is-outline:hover,
-.sessions-calm button.sessions-calm-book.is-outline:focus-visible {
-  background: var(--menta);
-  color: var(--bosque);
-}
-
-.sessions-calm-row a.sessions-calm-join,
-.sessions-calm-row button.sessions-calm-link,
 .sessions-calm-next a.sessions-calm-join,
-.sessions-calm-next button.sessions-calm-link {
+.sessions-calm-next button.sessions-calm-join {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 44px;
+  width: 100%;
+  min-height: 48px;
   padding: 0 18px;
-  border-radius: 99px;
-  border: 1px solid var(--linea);
-  background: var(--superficie);
+  border-radius: 8px;
+  border: 0;
+  background: var(--amarillo);
   color: var(--bosque);
-  font: 700 14px/1 var(--sans);
+  font: 700 15px/1 var(--sans);
   text-decoration: none;
-  white-space: nowrap;
   cursor: pointer;
 }
 
-.sessions-calm-row a.sessions-calm-join:hover,
-.sessions-calm-row a.sessions-calm-join:focus-visible,
-.sessions-calm-row button.sessions-calm-link:hover,
-.sessions-calm-row button.sessions-calm-link:focus-visible,
 .sessions-calm-next a.sessions-calm-join:hover,
 .sessions-calm-next a.sessions-calm-join:focus-visible,
-.sessions-calm-next button.sessions-calm-link:hover,
-.sessions-calm-next button.sessions-calm-link:focus-visible {
-  background: var(--menta);
-  color: var(--bosque);
-  text-decoration: none;
-}
-
-.sessions-calm-row a.sessions-calm-join,
-.sessions-calm-next a.sessions-calm-join:not(.is-outline) {
-  border-color: transparent;
-  background: var(--amarillo);
-}
-
-.sessions-calm-row a.sessions-calm-join:hover,
-.sessions-calm-row a.sessions-calm-join:focus-visible,
-.sessions-calm-next a.sessions-calm-join:not(.is-outline):hover,
-.sessions-calm-next a.sessions-calm-join:not(.is-outline):focus-visible {
+.sessions-calm-next button.sessions-calm-join:hover,
+.sessions-calm-next button.sessions-calm-join:focus-visible {
   background: #f0b81f;
+}
+
+.sessions-calm-next button.sessions-calm-join:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.sessions-calm-next button.sessions-calm-reschedule {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 8px;
+  border: 1px solid var(--linea);
+  background: var(--superficie);
   color: var(--bosque);
+  font: 700 14.5px/1 var(--sans);
+  cursor: pointer;
+}
+
+.sessions-calm-next button.sessions-calm-reschedule:hover,
+.sessions-calm-next button.sessions-calm-reschedule:focus-visible {
+  border-color: var(--bosque);
+}
+
+@media (min-width: 1081px) {
+  .sessions-calm-next-when {
+    font-size: 36px;
+  }
+
+  .sessions-calm-next-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .sessions-calm-next a.sessions-calm-join,
+  .sessions-calm-next button.sessions-calm-join {
+    width: auto;
+    flex: 1 1 auto;
+  }
+
+  .sessions-calm-next button.sessions-calm-reschedule {
+    width: auto;
+    flex: 0 0 auto;
+  }
 }

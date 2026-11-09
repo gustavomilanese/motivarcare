@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { type AppLanguage } from "@therapy/i18n-config";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
-import { PortalAccountToolsMount } from "../../app/components/PortalAccountToolsMount";
+import { CalmPortalToolbarRow } from "../../app/components/CalmPortalToolbarRow";
 import { useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
 import { WellbeingCalmHead } from "../components/WellbeingCalmHead";
 import { WellbeingExerciseGrid } from "../components/WellbeingExerciseGrid";
@@ -60,8 +60,15 @@ export function ExercisesListPage(props: ExercisesListPageProps) {
 
   const pageTitle = t(props.language, { es: "Bienestar", en: "Wellbeing", pt: "Bem-estar" });
 
+  const safetyNote = t(props.language, {
+    es: "Si alguno te genera molestia, suspendelo y comentalo en próxima sesión.",
+    en: "If any exercise causes discomfort, stop and bring it up in your next session.",
+    pt: "Se algum causar desconforto, interrompa e comente na próxima sessão."
+  });
+
   return (
     <section className="exercises-page exercises-page--ml wellbeing-calm" aria-label={pageTitle}>
+      <CalmPortalToolbarRow mountId="wellbeing-hero-toolbar-mount" />
       <div className="wellbeing-calm-columns">
         <div className="wellbeing-calm-main">
           <WellbeingCalmHead language={props.language} />
@@ -79,25 +86,26 @@ export function ExercisesListPage(props: ExercisesListPageProps) {
                 filter={filter}
                 onChange={setFilter}
               />
+              <div className="wellbeing-routines-slot wellbeing-routines-slot--mobile">
+                <WellbeingRoutinesSide language={props.language} routines={routines} />
+              </div>
               <WellbeingExerciseGrid
                 language={props.language}
                 exercises={filtered}
                 filter={filter}
                 hasRoutines={routines.length > 0}
               />
+              <p className="wellbeing-note wellbeing-note--main">{safetyNote}</p>
             </>
           ) : null}
         </div>
         <aside className="wellbeing-calm-side">
-          <PortalAccountToolsMount id="wellbeing-hero-toolbar-mount" className="wellbeing-calm-tools" />
-          {!loading && !error ? <WellbeingRoutinesSide language={props.language} routines={routines} /> : null}
-          <p className="wellbeing-note">
-            {t(props.language, {
-              es: "Si alguno te genera molestia, suspendelo y comentalo en próxima sesión.",
-              en: "If any exercise causes discomfort, stop and bring it up in your next session.",
-              pt: "Se algum causar desconforto, interrompa e comente na próxima sessão."
-            })}
-          </p>
+          {!loading && !error ? (
+            <div className="wellbeing-routines-slot wellbeing-routines-slot--desktop">
+              <WellbeingRoutinesSide language={props.language} routines={routines} />
+            </div>
+          ) : null}
+          <p className="wellbeing-note wellbeing-note--side">{safetyNote}</p>
         </aside>
       </div>
     </section>

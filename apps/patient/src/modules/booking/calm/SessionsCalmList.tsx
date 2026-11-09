@@ -61,7 +61,7 @@ export function SessionsCalmList(props: {
           {hasMore ? (
             <button
               type="button"
-              className="sessions-calm-link sessions-calm-list-more"
+              className="sessions-calm-list-more"
               aria-expanded={expanded}
               onClick={() => setExpanded((value) => !value)}
             >

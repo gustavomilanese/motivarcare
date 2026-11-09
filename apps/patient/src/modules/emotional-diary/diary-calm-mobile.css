@@ -1,0 +1,192 @@
+/* Diario · layout teléfono (no “web achicado”). */
+
+@media (max-width: 1080px) {
+  .diary-page.diary-calm {
+    padding: 8px 10px 96px;
+    box-sizing: border-box;
+  }
+
+  .diary-calm > .calm-toolbar-row {
+    margin-bottom: 10px;
+  }
+
+  .diary-calm-columns {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 0;
+    min-width: 0;
+  }
+
+  .diary-calm-main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border-right: 0;
+    padding: 0;
+    min-width: 0;
+  }
+
+  /* Recursos laterales: desktop only. En phone alcanza el tab Bienestar / Sesiones. */
+  .diary-calm-side {
+    display: none;
+  }
+
+  .diary-calm-head {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+  }
+
+  .diary-calm-kicker {
+    margin: 0;
+    font-size: 11.5px;
+  }
+
+  .diary-calm-head h1 {
+    font-size: 32px;
+    line-height: 1.08;
+  }
+
+  .diary-calm-cta {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    margin: 2px 0 0;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--amarillo, #f5c33b);
+    color: var(--bosque, #1e4033);
+    font: 700 15px/1 var(--sans, "Manrope", system-ui, sans-serif);
+    cursor: pointer;
+  }
+
+  .diary-calm-cta:hover,
+  .diary-calm-cta:focus-visible {
+    background: #f0b81f;
+  }
+
+  /* Mood: misma densidad que home phone. */
+  .diary-calm .calm-mood {
+    gap: 12px;
+    padding: 20px 18px;
+  }
+
+  .diary-calm .calm-mood h3 {
+    font-size: 16px;
+  }
+
+  .diary-calm .calm-mood__blurb,
+  .diary-calm .calm-mood > div > p:not(.calm-note) {
+    display: none;
+  }
+
+  .diary-calm .calm-mood-row {
+    gap: 12px;
+  }
+
+  .diary-calm .calm-mood-row button {
+    width: 4.6rem;
+    min-width: 4.6rem;
+    font-size: 12px;
+    padding: 12px 8px 10px;
+    gap: 8px;
+    border-radius: 14px;
+  }
+
+  .diary-calm .calm-mood-row button span,
+  .diary-calm .calm-mood-row button span svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .diary-calm .calm-note {
+    font-size: 12px;
+  }
+
+  .diary-calm-recent {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .diary-calm-recent-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0;
+  }
+
+  .diary-calm-recent-head h2 {
+    font-size: 22px;
+  }
+
+  /* El CTA amarillo vive abajo del título; acá solo “Ver todas”. */
+  .diary-calm-recent-head .diary-calm-new {
+    display: none;
+  }
+
+  .diary-calm-all {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--verde-medio, #2f6b51);
+    font: 700 14px/1.2 var(--sans, "Manrope", system-ui, sans-serif);
+    cursor: pointer;
+  }
+
+  .diary-calm-all--head {
+    display: inline-flex;
+    flex: none;
+  }
+
+  .diary-calm-all--foot {
+    display: none;
+  }
+
+  .diary-calm .diary-entry-row-min {
+    padding: 12px 14px;
+    border-radius: 18px;
+  }
+
+  .diary-calm .diary-entry-row-min-face,
+  .diary-calm .diary-entry-row-min-face svg {
+    width: 30px;
+    height: 30px;
+  }
+
+  /* Registros */
+  .diary-records-calm .diary-records-head h1 {
+    font-size: 32px;
+  }
+
+  .diary-records-calm .diary-records-lead {
+    font-size: 14.5px;
+  }
+
+  .diary-records-calm .diary-records-head-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .diary-records-calm button.diary-records-new,
+  .diary-records-calm button.diary-records-send {
+    width: 100%;
+    border-radius: 8px;
+  }
+
+  .diary-records-calm .diary-calm-side {
+    display: none;
+  }
+}
+
+@media (min-width: 1081px) {
+  .diary-calm-cta {
+    display: none;
+  }
+}

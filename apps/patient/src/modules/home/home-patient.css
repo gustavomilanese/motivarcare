@@ -598,11 +598,11 @@
 .patient-therapist-tags li {
   border-radius: 8px;
   padding: 4px 8px;
-  border: 1px solid #bfd1f6;
-  background: #ebf3ff;
-  color: #21427a;
+  border: 0;
+  background: #e7f1ea;
+  color: #1e4033;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
 }
 .patient-therapist-stats {
   grid-column: 1 / -1;

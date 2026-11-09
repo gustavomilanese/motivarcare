@@ -45,6 +45,7 @@ import { BookingActionModal } from "../components/booking/BookingActionModal";
 import { CheckoutPackagesPanel } from "../components/booking/CheckoutPackagesPanel";
 import { AssignProfessionalPromptModal } from "../components/AssignProfessionalPromptModal";
 import { SessionsContextRail } from "../../booking/calm/SessionsContextRail";
+import { CalmPortalToolbarRow } from "../components/CalmPortalToolbarRow";
 import { ProfessionalReviewsModal } from "../../reviews/components/ProfessionalReviewsModal";
 import {
   clearPersistedBookingReturnTo,
@@ -1459,6 +1460,7 @@ export function BookingPage(props: {
 
   return (
     <div className="page-stack sessions-booking-page sessions-booking-page--ml session-rn-root">
+      <CalmPortalToolbarRow mountId="sessions-hero-toolbar-mount" />
       <section
         className="sessions-page-ml"
         aria-label={t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
@@ -1560,7 +1562,6 @@ export function BookingPage(props: {
       ) : null}
         </div>
         <aside className="sessions-calm-side">
-          <div id="sessions-hero-toolbar-mount" className="sessions-calm-tools" />
           <SessionsContextRail
             language={props.language}
             timeZone={props.state.profile.timezone}

@@ -13,7 +13,7 @@ import { CalmUpcomingList } from "./CalmUpcomingList";
 import { CalmWeekAgenda } from "./CalmWeekAgenda";
 import { CalmWelcomeCard } from "./CalmWelcomeCard";
 import { resolveCalmHomeCase } from "./calmHomeCase";
-import { AuthBrand } from "../../auth/AuthBrand";
+import { CalmPortalToolbarRow } from "../../app/components/CalmPortalToolbarRow";
 import {
   formatDayHeading,
   isSameZonedDay,
@@ -85,10 +85,7 @@ export function CalmHome(props: {
 
   return (
     <div className="calm-home" data-calm-case={homeCase}>
-      <div className="calm-toolbar-row">
-        <AuthBrand />
-        <div id="dashboard-hero-toolbar-mount" className="calm-toolbar" />
-      </div>
+      <CalmPortalToolbarRow mountId="dashboard-hero-toolbar-mount" />
       <header className="calm-head">
         <div>
           {homeCase === "assigned" ? null : (

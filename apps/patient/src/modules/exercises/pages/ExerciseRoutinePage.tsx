@@ -11,7 +11,7 @@ import { ExerciseRelatedSection } from "../components/ExerciseRelatedSection";
 import { WellbeingRoutinePlayer } from "../components/WellbeingRoutinePlayer";
 import { WellbeingRoutinesSide } from "../components/WellbeingRoutines";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
-import { PortalAccountToolsMount } from "../../app/components/PortalAccountToolsMount";
+import { CalmPortalToolbarRow } from "../../app/components/CalmPortalToolbarRow";
 import { useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
 
 export interface ExerciseRoutinePageProps {
@@ -113,6 +113,7 @@ export function ExerciseRoutinePage(props: ExerciseRoutinePageProps) {
 
   return (
     <section className="exercises-page exercises-page--ml wellbeing-calm" aria-label={pageTitle}>
+      <CalmPortalToolbarRow mountId="wellbeing-hero-toolbar-mount" />
       <div className="wellbeing-calm-columns">
         <div className="wellbeing-calm-main">
           <Link to="/ejercicios" className="exercise-reader-back wellbeing-routine-back">
@@ -159,11 +160,10 @@ export function ExerciseRoutinePage(props: ExerciseRoutinePageProps) {
         </div>
 
         <aside className="wellbeing-calm-side">
-          <PortalAccountToolsMount id="wellbeing-hero-toolbar-mount" className="wellbeing-calm-tools" />
           {!loading && !error ? (
             <WellbeingRoutinesSide language={props.language} routines={routines} activeSlug={decodedSlug} />
           ) : null}
-          <p className="wellbeing-note">
+          <p className="wellbeing-note wellbeing-note--side">
             {t(props.language, {
               es: "Si alguno te genera molestia, suspendelo y comentalo en próxima sesión.",
               en: "If any exercise causes discomfort, stop and bring it up in your next session.",

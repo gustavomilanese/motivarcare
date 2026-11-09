@@ -120,7 +120,7 @@
   height: 44px;
   padding: 0 22px;
   border: 0;
-  border-radius: 99px;
+  border-radius: 8px;
   background: var(--amarillo);
   color: var(--bosque);
   font: inherit;

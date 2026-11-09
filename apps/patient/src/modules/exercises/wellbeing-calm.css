@@ -382,37 +382,8 @@
   border-radius: 18px;
 }
 
-@media (max-width: 1080px) {
-  .wellbeing-calm-columns {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding: 16px 16px 32px;
-  }
+/* Mobile: ver wellbeing-calm-mobile.css */
 
-  .wellbeing-calm-main,
-  .wellbeing-calm-side {
-    display: contents;
-  }
-
-  .wellbeing-calm-main {
-    border-right: 0;
-    padding: 0;
-  }
-
-  .wellbeing-calm-head { order: 0; }
-  .wellbeing-routines { order: 1; }
-  .wellbeing-filters { order: 2; }
-  .wellbeing-exercises,
-  .wellbeing-empty { order: 3; }
-  .wellbeing-note { order: 4; }
-
-  .wellbeing-calm-head h1 {
-    font-size: 32px;
-  }
-
-  .portal-main--home-ml .exercise-routine-page.wellbeing-calm,
-  .portal-main--home-ml .exercise-reader-page.wellbeing-calm {
-    padding: 16px 16px 32px;
-  }
+.wellbeing-routines-slot--mobile {
+  display: none;
 }

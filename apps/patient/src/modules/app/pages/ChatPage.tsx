@@ -5,6 +5,7 @@ import { formatShortDate } from "../../home/calm/calmHomeFormat";
 import { SessionDetailModal } from "../../booking/components/SessionDetailModal";
 import { DashboardHomeProfessionalProfileModal } from "../../home/ml/ProfessionalProfileModal";
 import { moodMeta } from "../../emotional-diary/lib/moods";
+import { CalmPortalToolbarRow } from "../components/CalmPortalToolbarRow";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
 import { ChatContextPanel } from "../../chat/ChatContextPanel";
 import { ChatConversation } from "../../chat/ChatConversation";
@@ -69,11 +70,7 @@ export function ChatPage(props: {
 
   return (
     <div className={`chat-page-root${props.embedded ? " chat-page-root--embedded" : ""}`}>
-      {props.embedded ? null : (
-        <div className="chat-portal-toolbar-shell">
-          <div id="chat-hero-toolbar-mount" className="chat-hero-toolbar-mount" />
-        </div>
-      )}
+      {props.embedded ? null : <CalmPortalToolbarRow mountId="chat-hero-toolbar-mount" mountClassName="chat-hero-toolbar-mount calm-toolbar" />}
       <div className="chat-page-body">
         <div className={`chat-ds${props.embedded ? " chat-ds--embedded" : ""}`}>
           <ChatConversation

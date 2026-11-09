@@ -1,0 +1,129 @@
+/* Fila superior compartida (logo + notificaciones + menú), criterio home calm. */
+
+.calm-toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-height: 44px;
+  margin-bottom: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.calm-toolbar-row > .auth-brand {
+  display: none;
+}
+
+.calm-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 44px;
+  flex: 1;
+  min-width: 0;
+}
+
+.calm-toolbar-row .header-actions--immersive-toolbar {
+  gap: 12px;
+  width: auto;
+  margin-left: auto;
+}
+
+.calm-toolbar-row .header-icon-link,
+.calm-toolbar-row .menu-toggle {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--linea, #e2dfd3);
+  background: var(--superficie, #fff);
+  color: var(--bosque, #1e4033);
+  box-shadow: none;
+}
+
+@media (max-width: 1080px) {
+  .calm-toolbar-row {
+    justify-content: space-between;
+    padding: 0 2px;
+    margin-bottom: 10px;
+  }
+
+  .calm-toolbar-row > .auth-brand {
+    display: flex;
+  }
+
+  .calm-toolbar {
+    flex: 0 0 auto;
+  }
+
+  .calm-toolbar-row .header-actions--immersive-toolbar,
+  .calm-toolbar-row .header-actions--immersive-toolbar.header-actions--toolbar-only {
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  .calm-toolbar-row .header-icon-link,
+  .calm-toolbar-row .menu-toggle {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
+  }
+
+  .calm-toolbar-row .calm-user-name,
+  .calm-toolbar-row .calm-user-caret,
+  .calm-toolbar-row .menu-toggle .user-name,
+  .calm-toolbar-row .menu-toggle .user-caret {
+    display: none;
+  }
+}
+
+/* Chat: sin barra gris tipo WhatsApp; misma fila que home. */
+.chat-page-root > .calm-toolbar-row {
+  flex-shrink: 0;
+  background: transparent;
+  border: 0;
+  padding-left: 10px;
+  padding-right: 10px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1080px) {
+  .portal-main--chat .chat-page-root > .calm-toolbar-row,
+  .portal-main .chat-page-root > .calm-toolbar-row {
+    padding-top: 8px;
+    padding-bottom: 0;
+    padding-left: max(10px, env(safe-area-inset-left, 0px));
+    padding-right: max(10px, env(safe-area-inset-right, 0px));
+    background: transparent !important;
+    border: 0 !important;
+  }
+}
+
+@media (min-width: 1081px) {
+  .sessions-booking-page,
+  .diary-calm,
+  .wellbeing-calm,
+  .chat-page-root:not(.chat-page-root--embedded) {
+    position: relative;
+  }
+
+  .sessions-booking-page > .calm-toolbar-row,
+  .diary-calm > .calm-toolbar-row,
+  .wellbeing-calm > .calm-toolbar-row,
+  .chat-page-root > .calm-toolbar-row {
+    position: absolute;
+    top: var(--portal-chrome-top, 26px);
+    right: 48px;
+    width: auto;
+    margin: 0;
+    min-height: 0;
+    z-index: 2;
+  }
+
+  .portal-shell--home-ml .chat-page-root > .calm-toolbar-row {
+    display: none !important;
+  }
+}

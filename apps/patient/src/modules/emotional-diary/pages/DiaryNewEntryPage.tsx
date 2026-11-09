@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
-import { PortalAccountToolsMount } from "../../app/components/PortalAccountToolsMount";
+import { CalmPortalToolbarRow } from "../../app/components/CalmPortalToolbarRow";
 import { navigateToSectionTop, useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
 import { useDiaryLeaveConfirm, DiaryShell } from "../components/DiaryChrome";
 import { DiaryEntryClimateCard } from "../components/DiaryEntryClimateCard";
@@ -112,7 +112,7 @@ export function DiaryNewEntryPage(props: DiaryNewEntryPageProps) {
   return (
     <DiaryShell language={props.language} className="diary-page--entry diary-calm diary-entry-calm">
       <div data-section-top-anchor className="diary-page-top-anchor" aria-hidden="true" />
-      <PortalAccountToolsMount id="diary-hero-toolbar-mount" className="diary-calm-tools diary-calm-tools--entry" />
+      <CalmPortalToolbarRow mountId="diary-hero-toolbar-mount" />
       <div className="diary-entry-calm-wrap">
         <DiaryEntryHead language={props.language} isDirty={isDirty} onConfirmLeave={confirmLeave} />
         {error ? <p className="diary-error">{error}</p> : null}

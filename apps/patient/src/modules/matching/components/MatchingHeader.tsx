@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
-import { AuthBrand } from "../../auth/AuthBrand";
-import { PortalAccountToolsMount } from "../../app/components/PortalAccountToolsMount";
+import { CalmPortalToolbarRow } from "../../app/components/CalmPortalToolbarRow";
 import type { SortOption, TranslationFn } from "../types";
 
 function SortSheet(props: {
@@ -78,10 +77,7 @@ export function MatchingHeader(props: {
     return (
       <>
       {props.pillSort ? (
-        <div className="calm-pick-top">
-          <AuthBrand />
-          <PortalAccountToolsMount id="dashboard-hero-toolbar-mount" className="calm-pick-tools" />
-        </div>
+        <CalmPortalToolbarRow mountId="dashboard-hero-toolbar-mount" mountClassName="calm-pick-tools calm-toolbar" />
       ) : null}
       <section className={sectionClass}>
         {props.pillSort ? (

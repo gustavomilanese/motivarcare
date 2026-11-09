@@ -13,7 +13,7 @@ import { ExerciseInteractiveSteps } from "../components/ExerciseInteractiveSteps
 import { ExerciseRelatedSection } from "../components/ExerciseRelatedSection";
 import { WellbeingMark } from "../components/WellbeingMark";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
-import { PortalAccountToolsMount } from "../../app/components/PortalAccountToolsMount";
+import { CalmPortalToolbarRow } from "../../app/components/CalmPortalToolbarRow";
 
 export interface ExerciseDetailPageProps {
   language: AppLanguage;
@@ -65,7 +65,7 @@ export function ExerciseDetailPage(props: ExerciseDetailPageProps) {
   if (loading) {
     return (
       <section className="exercise-reader-page wellbeing-calm">
-        <PortalAccountToolsMount id="wellbeing-hero-toolbar-mount" className="wellbeing-calm-tools wellbeing-calm-tools--reader" />
+        <CalmPortalToolbarRow mountId="wellbeing-hero-toolbar-mount" />
         <Link to="/ejercicios" className="exercise-reader-back">
           ← {t(props.language, { es: "Volver a ejercicios", en: "Back to exercises", pt: "Voltar aos exercícios" })}
         </Link>
@@ -77,7 +77,7 @@ export function ExerciseDetailPage(props: ExerciseDetailPageProps) {
   if (error) {
     return (
       <section className="exercise-reader-page wellbeing-calm">
-        <PortalAccountToolsMount id="wellbeing-hero-toolbar-mount" className="wellbeing-calm-tools wellbeing-calm-tools--reader" />
+        <CalmPortalToolbarRow mountId="wellbeing-hero-toolbar-mount" />
         <Link to="/ejercicios" className="exercise-reader-back">
           ← {t(props.language, { es: "Volver a ejercicios", en: "Back to exercises", pt: "Voltar aos exercícios" })}
         </Link>
@@ -91,7 +91,7 @@ export function ExerciseDetailPage(props: ExerciseDetailPageProps) {
   if (!exercise) {
     return (
       <section className="exercise-reader-page wellbeing-calm">
-        <PortalAccountToolsMount id="wellbeing-hero-toolbar-mount" className="wellbeing-calm-tools wellbeing-calm-tools--reader" />
+        <CalmPortalToolbarRow mountId="wellbeing-hero-toolbar-mount" />
         <Link to="/ejercicios" className="exercise-reader-back">
           ← {t(props.language, { es: "Volver a ejercicios", en: "Back to exercises", pt: "Voltar aos exercícios" })}
         </Link>
@@ -111,7 +111,7 @@ export function ExerciseDetailPage(props: ExerciseDetailPageProps) {
       className="exercise-reader-page wellbeing-calm"
       style={{ "--exercise-accent": "#1e4033", "--exercise-accent-soft": "#e7f1ea" } as React.CSSProperties}
     >
-      <PortalAccountToolsMount id="wellbeing-hero-toolbar-mount" className="wellbeing-calm-tools wellbeing-calm-tools--reader" />
+      <CalmPortalToolbarRow mountId="wellbeing-hero-toolbar-mount" />
       <Link to="/ejercicios" className="exercise-reader-back">
         ← {t(props.language, { es: "Volver a ejercicios", en: "Back to exercises", pt: "Voltar aos exercícios" })}
       </Link>

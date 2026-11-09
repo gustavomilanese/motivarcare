@@ -1,6 +1,6 @@
 import { type AppLanguage } from "@therapy/i18n-config";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
-import { PortalAccountToolsMount } from "../../app/components/PortalAccountToolsMount";
+import { CalmPortalToolbarRow } from "../../app/components/CalmPortalToolbarRow";
 import { useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
 import { DiaryEntriesTimeline } from "../components/DiaryEntriesTimeline";
 import { DiaryEntryDetailModal } from "../components/DiaryEntryDetailModal";
@@ -25,6 +25,7 @@ export function DiaryRecordsPage(props: DiaryRecordsPageProps) {
   return (
     <DiaryShell language={props.language} className="diary-page--records diary-calm diary-records-calm">
       <div data-section-top-anchor className="diary-page-top-anchor" aria-hidden="true" />
+      <CalmPortalToolbarRow mountId="diary-hero-toolbar-mount" />
       <div className="diary-calm-columns">
         <div className="diary-calm-main">
           <DiaryRecordsHead language={props.language} />
@@ -67,7 +68,6 @@ export function DiaryRecordsPage(props: DiaryRecordsPageProps) {
           )}
         </div>
         <aside className="diary-calm-side">
-          <PortalAccountToolsMount id="diary-hero-toolbar-mount" className="diary-calm-tools" />
           {records.loading ? null : (
             <>
               <DiaryRecordsInsights language={props.language} insights={records.stats?.insights ?? []} />

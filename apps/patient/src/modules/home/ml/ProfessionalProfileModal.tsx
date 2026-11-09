@@ -10,6 +10,7 @@ import { ProfessionalNameStack, professionalPhotoAlt } from "../../app/component
 import { professionalAccessibleName } from "../../app/lib/professionalDisplayName";
 import { professionalPhotoSrc } from "../../app/services/api";
 import type { Professional } from "../../app/types";
+import { ProfileExpandableText } from "./ProfileExpandableText";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -168,15 +169,18 @@ export function DashboardHomeProfessionalProfileModal(props: {
                   pt: "Sobre o profissional"
                 })}
               </h3>
-              <p className="dashboard-home-pro-profile-bio">
-                {pro.bio?.trim()
-                  ? pro.bio.trim()
-                  : t(props.language, {
-                      es: "Sin descripción publicada todavía.",
-                      en: "No description published yet.",
-                      pt: "Sem descricao publicada ainda."
-                    })}
-              </p>
+              <ProfileExpandableText
+                language={props.language}
+                text={
+                  pro.bio?.trim()
+                    ? pro.bio.trim()
+                    : t(props.language, {
+                        es: "Sin descripción publicada todavía.",
+                        en: "No description published yet.",
+                        pt: "Sem descricao publicada ainda."
+                      })
+                }
+              />
             </section>
 
             {pro.approach?.trim() ? (
@@ -188,7 +192,7 @@ export function DashboardHomeProfessionalProfileModal(props: {
                     pt: "Abordagem"
                   })}
                 </h3>
-                <p className="dashboard-home-pro-profile-bio">{pro.approach.trim()}</p>
+                <ProfileExpandableText language={props.language} text={pro.approach.trim()} />
               </section>
             ) : null}
 

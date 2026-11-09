@@ -32,21 +32,35 @@
 
 .calm-mood-row {
   display: flex;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  margin: 0 -4px;
+  padding: 2px 4px 4px;
+}
+
+.calm-mood-row::-webkit-scrollbar {
+  display: none;
 }
 
 .calm-mood-row button {
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
-  min-width: 0;
+  width: 4.75rem;
+  min-width: 4.75rem;
   border: 0;
   border-radius: 14px;
   background: var(--superficie);
-  padding: 12px 4px 10px;
+  padding: 12px 8px 10px;
   color: var(--tinta-suave);
   font: inherit;
   font-size: 12.5px;
@@ -54,6 +68,7 @@
   line-height: 1.2;
   text-align: center;
   cursor: pointer;
+  scroll-snap-align: start;
 }
 
 .calm-mood-row button:hover,
@@ -109,19 +124,21 @@
   }
 
   .calm-between--phone-compact .calm-mood-row {
-    gap: 6px;
+    gap: 12px;
   }
 
   .calm-between--phone-compact .calm-mood-row button {
-    font-size: 11px;
-    padding: 10px 2px 8px;
-    gap: 6px;
+    width: 4.6rem;
+    min-width: 4.6rem;
+    font-size: 12px;
+    padding: 12px 8px 10px;
+    gap: 8px;
   }
 
   .calm-between--phone-compact .calm-mood-row button span,
   .calm-between--phone-compact .calm-mood-row button span svg {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
   }
 
   .calm-between--phone-compact .calm-mood .calm-note {

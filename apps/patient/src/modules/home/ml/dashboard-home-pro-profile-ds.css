@@ -1,0 +1,144 @@
+/* Ficha del profesional · tokens MotivarCare DS 0.1 (sin violeta legacy). */
+
+.dashboard-home-pro-profile-head {
+  background: linear-gradient(180deg, #e7f1ea, transparent);
+  border-bottom-color: #e2dfd3;
+}
+
+.dashboard-home-pro-profile-kicker {
+  color: #2f6b51;
+}
+
+.dashboard-home-pro-profile-title {
+  color: #1e4033;
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 500;
+}
+
+.dashboard-home-pro-profile-role {
+  color: #5d6a63;
+}
+
+.dashboard-home-pro-profile-close {
+  border-radius: 8px;
+  border-color: #e2dfd3;
+  color: #1e4033;
+  box-shadow: none;
+}
+
+.dashboard-home-pro-profile-close:hover {
+  background: #e7f1ea;
+  color: #1e4033;
+}
+
+.dashboard-home-pro-profile-close:focus-visible {
+  outline: 2px solid #1e4033;
+  outline-offset: 2px;
+}
+
+.dashboard-home-pro-profile-avatar {
+  box-shadow: none;
+  border: 2px solid #1e4033;
+  background: #d6e7dc;
+}
+
+.dashboard-home-pro-profile-verified {
+  border-radius: 8px;
+  background: #e7f1ea;
+  color: #1e4033;
+}
+
+.dashboard-home-pro-profile-rating {
+  color: #1e4033;
+}
+
+.dashboard-home-pro-profile-rating-empty,
+.dashboard-home-pro-profile-compat,
+.dashboard-home-pro-profile-patients {
+  color: #5d6a63;
+}
+
+.dashboard-home-pro-profile-section-title {
+  color: #2f6b51;
+  letter-spacing: 0.14em;
+}
+
+.dashboard-home-pro-profile-bio {
+  color: #1b2a23;
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+.dashboard-home-pro-profile-bio.is-collapsed {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+}
+
+.dashboard-home-pro-profile-bio.is-expanded {
+  display: block;
+  white-space: pre-wrap;
+}
+
+.dashboard-home-pro-profile-more {
+  appearance: none;
+  margin: 6px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #2f6b51;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dashboard-home-pro-profile-more:hover,
+.dashboard-home-pro-profile-more:focus-visible {
+  color: #1e4033;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dashboard-home-pro-profile-tags li {
+  border-radius: 8px;
+  border: 0;
+  background: #e7f1ea;
+  color: #1e4033;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.dashboard-home-pro-profile-actions {
+  border-top-color: #e2dfd3;
+  background: #f5f3eb;
+}
+
+.dashboard-home-pro-profile-action {
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.dashboard-home-pro-profile-action--primary {
+  color: #1e4033;
+  background: #f5c33b;
+  box-shadow: none;
+}
+
+.dashboard-home-pro-profile-action--primary:hover {
+  background: #f0b81f;
+  color: #1e4033;
+}
+
+.dashboard-home-pro-profile-action--secondary {
+  color: #1e4033;
+  background: #fff;
+  border: 1px solid #e2dfd3;
+}
+
+.dashboard-home-pro-profile-action--secondary:hover {
+  background: #e7f1ea;
+  border-color: #1e4033;
+  color: #1e4033;
+}

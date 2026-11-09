@@ -11,6 +11,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 }
 
 .sessions-calm-empty {
@@ -19,14 +20,14 @@
 }
 
 .sessions-calm-row {
-  display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) auto;
-  gap: 14px;
+  display: flex;
   align-items: center;
-  padding: 14px 16px;
+  gap: 12px;
+  padding: 12px 14px;
   border-radius: 18px;
   background: var(--superficie);
   border: 1px solid var(--linea);
+  min-width: 0;
 }
 
 .sessions-calm-row.is-today {
@@ -34,31 +35,78 @@
   border-color: transparent;
 }
 
-.sessions-calm-row img {
-  width: 48px;
-  height: 48px;
+.sessions-calm-row-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.sessions-calm-row-main img {
+  width: 44px;
+  height: 44px;
   border-radius: 8px;
   object-fit: cover;
+  flex: none;
+  background: var(--salvia);
 }
 
-.sessions-calm-row b {
+.sessions-calm-row-main b {
   display: block;
   color: var(--bosque);
+  font-size: 15px;
+  font-weight: 700;
 }
 
-.sessions-calm-row span {
+.sessions-calm-row-main span {
+  display: block;
   color: var(--tinta-suave);
-  font-size: 14px;
+  font-size: 13.5px;
+  font-weight: 500;
 }
 
-.sessions-calm-row-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 12px;
+.sessions-calm-row-link {
+  flex: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--verde-medio);
+  font: 700 13.5px/1.2 var(--sans);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sessions-calm-row-link:hover,
+.sessions-calm-row-link:focus-visible {
+  color: var(--bosque);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .sessions-calm-list-more {
   align-self: flex-start;
   margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--verde-medio);
+  font: 700 14px/1.2 var(--sans);
+  cursor: pointer;
+}
+
+.sessions-calm-list-more:hover,
+.sessions-calm-list-more:focus-visible {
+  color: var(--bosque);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }

@@ -256,10 +256,6 @@
     padding-top: 0;
   }
 
-  .sessions-calm-tools {
-    order: -1;
-  }
-
   .sessions-calm-main {
     order: 0;
     border-right: 0;

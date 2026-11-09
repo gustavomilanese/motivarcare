@@ -11,6 +11,7 @@ import { professionalAccessibleName } from "../../app/lib/professionalDisplayNam
 import { professionalPhotoSrc } from "../../app/services/api";
 import { countryToFlag } from "../utils/countryFlag";
 import type { MatchCardProfessional } from "../types";
+import { ProfileExpandableText } from "../../home/ml/ProfileExpandableText";
 import { ProfessionalVideoModal } from "./ProfessionalVideoModal";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -184,15 +185,18 @@ export function MatchingProfessionalProfileModal(props: {
                   pt: "Sobre o profissional"
                 })}
               </h3>
-              <p className="dashboard-home-pro-profile-bio">
-                {pro.bio?.trim()
-                  ? pro.bio.trim()
-                  : t(props.language, {
-                      es: "Sin descripción publicada todavía.",
-                      en: "No description published yet.",
-                      pt: "Sem descricao publicada ainda."
-                    })}
-              </p>
+              <ProfileExpandableText
+                language={props.language}
+                text={
+                  pro.bio?.trim()
+                    ? pro.bio.trim()
+                    : t(props.language, {
+                        es: "Sin descripción publicada todavía.",
+                        en: "No description published yet.",
+                        pt: "Sem descricao publicada ainda."
+                      })
+                }
+              />
             </section>
 
             {pro.therapeuticApproach?.trim() ? (
@@ -204,7 +208,7 @@ export function MatchingProfessionalProfileModal(props: {
                     pt: "Abordagem"
                   })}
                 </h3>
-                <p className="dashboard-home-pro-profile-bio">{pro.therapeuticApproach.trim()}</p>
+                <ProfileExpandableText language={props.language} text={pro.therapeuticApproach.trim()} />
               </section>
             ) : null}
 

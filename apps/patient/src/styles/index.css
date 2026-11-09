@@ -21,6 +21,7 @@
 @import "../modules/home/home-promo.css";
 @import "../modules/home/home-dashboard.css";
 @import "../modules/home/home-widgets.css";
+@import "../modules/home/ml/dashboard-home-pro-profile-ds.css";
 @import "../modules/home/ml/purchase-modal-calm.css";
 @import "../modules/home/home-patient.css";
 @import "../modules/home/home-sessions.css";
@@ -70,14 +71,17 @@
 @import "../modules/emotional-diary/diary-entry-ds.css";
 @import "../modules/emotional-diary/diary-entry-calm.css";
 @import "../modules/app/styles/portal-account-tools.css";
+@import "../modules/app/styles/calm-portal-toolbar.css";
 @import "../modules/app/components/booking/booking-action-ds.css";
 @import "../modules/home/ml/chat-modal.css";
 @import "../modules/home/patient-tour-step.css";
 @import "../modules/app/components/acquire-sessions-choice-ds.css";
 @import "../modules/app/components/individual-qty-ds.css";
 @import "../modules/emotional-diary/diary-calm.css";
+@import "../modules/emotional-diary/diary-calm-mobile.css";
 @import "../modules/emotional-diary/diary-records-calm.css";
 @import "../modules/exercises/wellbeing-calm.css";
+@import "../modules/exercises/wellbeing-calm-mobile.css";
 @import "../modules/exercises/wellbeing-marks.css";
 @import "../modules/exercises/wellbeing-pills.css";
 @import "../modules/exercises/wellbeing-routines.css";

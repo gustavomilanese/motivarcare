@@ -82,38 +82,25 @@
     overflow: hidden;
     box-sizing: border-box !important;
   }
-  .portal-main .chat-portal-toolbar-shell {
-    flex-shrink: 0;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    /* Edge-to-edge: solo safe-area (sin pad-x / pad-x-end) */
-    padding-top: 2px !important;
-    padding-bottom: 2px !important;
-    padding-left: max(2px, env(safe-area-inset-left, 0px)) !important;
-    padding-right: max(2px, env(safe-area-inset-right, 0px)) !important;
-    background: #f0f2f5;
-    border-bottom: 1px solid #d1d7db;
-    box-sizing: border-box !important;
-  }
-  .portal-main .chat-hero-toolbar-mount {
+  .portal-main .chat-page-root > .calm-toolbar-row .chat-hero-toolbar-mount {
     position: relative !important;
     left: auto !important;
     right: auto !important;
     top: auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
+    width: auto !important;
+    max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
     justify-content: flex-end;
     box-sizing: border-box !important;
   }
-  .portal-main .chat-hero-toolbar-mount .header-actions,
-  .portal-main .chat-hero-toolbar-mount .header-actions-cluster,
-  .portal-main .chat-hero-toolbar-mount .menu-wrap {
-    gap: 0;
+  .portal-main .chat-page-root > .calm-toolbar-row .header-actions,
+  .portal-main .chat-page-root > .calm-toolbar-row .header-actions-cluster,
+  .portal-main .chat-page-root > .calm-toolbar-row .menu-wrap {
+    gap: 12px;
     margin: 0 !important;
     padding: 0 !important;
+    width: auto !important;
   }
   .portal-main .chat-page-root .wa-shell {
     display: flex;

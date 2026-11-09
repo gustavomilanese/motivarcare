@@ -33,7 +33,6 @@ export function SessionsCalmPage(props: {
           professionals={props.professionals}
           photoUrl={props.photoMap[next.professionalId] ?? null}
           onImageFallback={props.onImageFallback}
-          onOpenDetail={props.onOpenDetail}
           onReschedule={props.onReschedule}
         />
       ) : null}
