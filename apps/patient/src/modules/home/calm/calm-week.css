@@ -3,6 +3,7 @@
   flex-direction: column;
   gap: 12px;
   margin-top: 8px;
+  min-width: 0;
 }
 
 .calm-agenda header {
@@ -31,6 +32,7 @@
   flex-direction: column;
   gap: 6px;
   min-height: 92px;
+  min-width: 0;
   padding: 10px;
   border-radius: 18px;
   background: var(--superficie);
@@ -58,6 +60,10 @@
 }
 
 .calm-agenda button.calm-agenda-session {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   margin: 0;
   padding: 6px 8px;
   border: 0;
@@ -69,6 +75,20 @@
   font-weight: 700;
   text-align: left;
   cursor: pointer;
+  width: 100%;
+  min-width: 0;
+}
+
+.calm-agenda-session-name,
+.calm-agenda-session-time {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 .calm-agenda button.calm-agenda-session:hover,
@@ -78,7 +98,33 @@
 }
 
 @media (max-width: 1080px) {
+  .calm-agenda h2 {
+    font-size: 22px;
+  }
+
   .calm-agenda-days {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px 2px 8px;
+    margin: 0 -4px;
+  }
+
+  .calm-agenda-days::-webkit-scrollbar {
+    height: 0;
+  }
+
+  .calm-agenda-day {
+    flex: 0 0 96px;
+    scroll-snap-align: start;
+    min-height: 112px;
+  }
+
+  .calm-agenda button.calm-agenda-session {
+    font-size: 11px;
+    padding: 6px 7px;
   }
 }

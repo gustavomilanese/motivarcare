@@ -22,6 +22,7 @@ import {
 } from "../../home/calm/calmHomeFormat";
 import { IconVideo } from "../../home/calm/calmIcons";
 import type { Booking } from "../../app/types";
+import { useMobilePortal } from "../../app/hooks/useMobilePortal";
 import { DeviceTestLink } from "./DeviceTestLink";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -51,10 +52,19 @@ export function SessionDetailModal(props: {
   onMessageProfessional?: () => void;
   onCancel?: (reason: string) => void | Promise<void>;
   cancelSubmitting?: boolean;
+  /** Abre directo el paso de confirmación de cancelación (p. ej. desde home mobile). */
+  startInCancelConfirm?: boolean;
 }) {
-  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(() => Boolean(props.startInCancelConfirm));
   const [rescheduleBlocked, setRescheduleBlocked] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const isMobilePortal = useMobilePortal();
+
+  useEffect(() => {
+    if (props.startInCancelConfirm) {
+      setConfirmCancel(true);
+    }
+  }, [props.startInCancelConfirm, props.booking.id]);
   const noticeHours = resolvePatientChangeNoticeHours(props.noticeHours);
   const isTrialBooking = props.booking.bookingMode === "trial";
   const isCancelled = props.booking.status === "cancelled";
@@ -382,7 +392,9 @@ export function SessionDetailModal(props: {
                 ) : (
                   <span />
                 )}
-                <DeviceTestLink language={props.language} className="session-detail-av-link" />
+                {isMobilePortal ? null : (
+                  <DeviceTestLink language={props.language} className="session-detail-av-link" />
+                )}
               </div>
             ) : null}
           </>

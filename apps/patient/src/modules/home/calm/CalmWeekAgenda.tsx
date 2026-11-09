@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
 import type { Booking, Professional } from "../../app/types";
@@ -36,6 +36,7 @@ export function CalmWeekAgenda(props: {
   onOpenBooking: (bookingId: string) => void;
 }) {
   const navigate = useNavigate();
+  const scrollerRef = useRef<HTMLDivElement>(null);
   const days = useMemo(() => {
     const next = [...props.bookings]
       .filter((booking) => booking.status === "confirmed" && new Date(booking.startsAt).getTime() >= props.now.getTime() - 3_600_000)
@@ -46,6 +47,12 @@ export function CalmWeekAgenda(props: {
     () => weekSessions(props.bookings, days, props.timeZone),
     [days, props.bookings, props.timeZone]
   );
+
+  useEffect(() => {
+    const today = scrollerRef.current?.querySelector<HTMLElement>(".calm-agenda-day.is-today");
+    today?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  }, [days]);
+
   if (grouped.every((day) => day.length === 0)) return null;
 
   return (
@@ -56,7 +63,7 @@ export function CalmWeekAgenda(props: {
           {t(props.language, { es: "Ver el mes", en: "See the month", pt: "Ver o mês" })}
         </button>
       </header>
-      <div className="calm-agenda-days">
+      <div className="calm-agenda-days" ref={scrollerRef}>
         {days.map((day, index) => {
           const sessions = grouped[index] ?? [];
           const today = isSameZonedDay(day, props.now, props.timeZone);
@@ -69,8 +76,8 @@ export function CalmWeekAgenda(props: {
                 const given = professional ? calmGivenName(professional) : "";
                 return (
                   <button key={booking.id} type="button" className="calm-agenda-session" onClick={() => props.onOpenBooking(booking.id)}>
-                    {given ? `${given} ` : ""}
-                    {formatClock(booking.startsAt, props.timeZone, props.language)}
+                    {given ? <span className="calm-agenda-session-name">{given}</span> : null}
+                    <span className="calm-agenda-session-time">{formatClock(booking.startsAt, props.timeZone, props.language)}</span>
                   </button>
                 );
               })}

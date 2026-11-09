@@ -1,0 +1,130 @@
+/* Home · ¿Cómo estás hoy? (app-usuario opciones-animo). */
+
+.calm-mood {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  padding: 26px;
+  background: var(--menta);
+  border-color: transparent;
+}
+
+.calm-mood h3 {
+  margin: 0;
+  font-family: var(--sans);
+  font-variation-settings: normal;
+  font-size: 16.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0;
+  color: var(--bosque);
+}
+
+.calm-mood p,
+.calm-mood__blurb {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tinta-suave);
+}
+
+.calm-mood-row {
+  display: flex;
+  gap: 8px;
+}
+
+.calm-mood-row button {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-width: 0;
+  border: 0;
+  border-radius: 14px;
+  background: var(--superficie);
+  padding: 12px 4px 10px;
+  color: var(--tinta-suave);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+}
+
+.calm-mood-row button:hover,
+.calm-mood-row button:focus-visible {
+  background: var(--salvia);
+  color: var(--bosque);
+}
+
+.calm-mood-row button span {
+  display: block;
+  width: 34px;
+  height: 34px;
+  border-radius: 0;
+  background: none;
+}
+
+.calm-mood-row button span svg {
+  display: block;
+  width: 34px;
+  height: 34px;
+}
+
+.calm-mood .calm-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--verde-medio);
+}
+
+.calm-mood .calm-note svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--verde-medio);
+}
+
+@media (max-width: 1080px) {
+  .calm-between--phone-compact .calm-mood {
+    gap: 12px;
+    padding: 20px 18px;
+  }
+
+  .calm-between--phone-compact .calm-mood h3 {
+    font-size: 16px;
+  }
+
+  .calm-between--phone-compact .calm-mood__blurb {
+    display: none;
+  }
+
+  .calm-between--phone-compact .calm-mood-row {
+    gap: 6px;
+  }
+
+  .calm-between--phone-compact .calm-mood-row button {
+    font-size: 11px;
+    padding: 10px 2px 8px;
+    gap: 6px;
+  }
+
+  .calm-between--phone-compact .calm-mood-row button span,
+  .calm-between--phone-compact .calm-mood-row button span svg {
+    width: 30px;
+    height: 30px;
+  }
+
+  .calm-between--phone-compact .calm-mood .calm-note {
+    font-size: 12px;
+  }
+}

@@ -924,6 +924,7 @@ export function HomePage(props: {
           firstMeetBookingId={firstMeetBookingId}
           onImageFallback={props.onImageFallback}
           onOpenBookingDetail={props.onOpenBookingDetail}
+          onRescheduleBooking={props.onRescheduleBooking}
           onGoToBooking={openHomeBooking}
           currency={props.currency}
           fxRates={props.fxRates}

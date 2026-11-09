@@ -14,6 +14,8 @@ export function CalmSessionsBalance(props: {
   includesToday: boolean;
   professional: Professional | null;
   onReserveAnother: () => void;
+  /** Compacta para el stack mobile debajo de la card de sesión. */
+  compact?: boolean;
 }) {
   const given = props.professional ? calmGivenName(props.professional) : "";
   const packageLine = props.packageName.trim();
@@ -29,7 +31,10 @@ export function CalmSessionsBalance(props: {
   const copy = props.includesToday ? (withName ? `${withName} · ${today}` : today) : withName;
 
   return (
-    <article className="calm-card calm-balance" data-tour="patient-tour-credits">
+    <article
+      className={`calm-card calm-balance${props.compact ? " calm-balance--follow" : ""}`}
+      data-tour="patient-tour-credits"
+    >
       <strong className="calm-balance-number">{props.available}</strong>
       <div className="calm-balance-text">
         <b>{t(props.language, { es: "sesiones disponibles", en: "sessions available", pt: "sessões disponíveis" })}</b>

@@ -134,7 +134,7 @@ export function PortalRoutes(props: {
   professionalDirectory: Professional[];
   professionalPhotoMap: Record<string, string>;
   onStateChange: (updater: (current: PatientAppState) => PatientAppState) => void;
-  setSelectedBookingId: (bookingId: string) => void;
+  setSelectedBookingId: (bookingId: string, options?: { cancel?: boolean }) => void;
   navigate: NavigateFunction;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onHeroFallback: (event: SyntheticEvent<HTMLImageElement>) => void;

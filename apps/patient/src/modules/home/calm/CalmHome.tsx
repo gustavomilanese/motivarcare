@@ -9,6 +9,7 @@ import { CalmSideProfessional } from "./CalmSideProfessional";
 import { CalmSessionsBalance } from "./CalmSessionsBalance";
 import { CalmSessionCard } from "./CalmSessionCard";
 import { CalmSuggestedList } from "./CalmSuggestedList";
+import { CalmUpcomingList } from "./CalmUpcomingList";
 import { CalmWeekAgenda } from "./CalmWeekAgenda";
 import { CalmWelcomeCard } from "./CalmWelcomeCard";
 import { resolveCalmHomeCase } from "./calmHomeCase";
@@ -16,9 +17,7 @@ import { AuthBrand } from "../../auth/AuthBrand";
 import {
   formatDayHeading,
   isSameZonedDay,
-  calmGivenName,
-  patientFirstName,
-  sessionTiming
+  patientFirstName
 } from "./calmHomeFormat";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -37,6 +36,7 @@ export function CalmHome(props: {
   firstMeetBookingId: string | null;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onOpenBookingDetail: (bookingId: string) => void;
+  onRescheduleBooking: (bookingId: string) => void;
   onGoToBooking: (professionalId: string) => void;
   currency: SupportedCurrency;
   fxRates?: DisplayFxRates;
@@ -58,9 +58,6 @@ export function CalmHome(props: {
     : props.activeProfessional;
   const photoFor = (professional: Professional | null) =>
     professional ? props.professionalPhotoMap[professional.id] ?? null : null;
-  const timing = props.nextBooking
-    ? sessionTiming(props.nextBooking.startsAt, props.nextBooking.endsAt, now, props.timeZone)
-    : null;
   const includesToday = Boolean(
     props.nextBooking && isSameZonedDay(new Date(props.nextBooking.startsAt), now, props.timeZone)
   );
@@ -83,55 +80,35 @@ export function CalmHome(props: {
         pt: "Você já escolheu seu profissional. Só falta reservar a primeira sessão."
       });
     }
-    const given = bookingProfessional ? calmGivenName(bookingProfessional) : "";
-    if (given && (timing?.kind === "live" || timing?.kind === "soon")) {
-      return t(props.language, {
-        es: `Tu sesión con ${given} empieza en unos minutos.`,
-        en: `Your session with ${given} starts in a few minutes.`,
-        pt: `Sua sessão com ${given} começa em alguns minutos.`
-      });
-    }
-    if (given && includesToday) {
-      return t(props.language, {
-        es: `Hoy tenés sesión con ${given}.`,
-        en: `You have a session with ${given} today.`,
-        pt: `Hoje você tem sessão com ${given}.`
-      });
-    }
-    if (given && props.nextBooking) {
-      return t(props.language, {
-        es: `Tu próxima sesión es con ${given}.`,
-        en: `Your next session is with ${given}.`,
-        pt: `Sua próxima sessão é com ${given}.`
-      });
-    }
-    return t(props.language, {
-      es: "Tu espacio entre una sesión y la siguiente.",
-      en: "Your space between one session and the next.",
-      pt: "Seu espaço entre uma sessão e a seguinte."
-    });
-  }, [bookingProfessional, homeCase, includesToday, props.language, props.nextBooking, timing?.kind]);
+    return "";
+  }, [homeCase, props.language]);
 
   return (
-    <div className="calm-home">
+    <div className="calm-home" data-calm-case={homeCase}>
       <div className="calm-toolbar-row">
         <AuthBrand />
         <div id="dashboard-hero-toolbar-mount" className="calm-toolbar" />
       </div>
       <header className="calm-head">
         <div>
-          <p className="calm-kicker">
-            {homeCase === "new"
-              ? t(props.language, { es: "Te damos la bienvenida", en: "Welcome", pt: "Boas-vindas" })
-              : formatDayHeading(now, props.timeZone, props.language)}
-          </p>
+          {homeCase === "assigned" ? null : (
+            <p className="calm-kicker">
+              {homeCase === "new"
+                ? t(props.language, { es: "Te damos la bienvenida", en: "Welcome", pt: "Boas-vindas" })
+                : formatDayHeading(now, props.timeZone, props.language)}
+            </p>
+          )}
           <h1>
             {firstName
               ? t(props.language, { es: "Hola, ", en: "Hi, ", pt: "Olá, " })
               : t(props.language, { es: "Hola.", en: "Hi.", pt: "Olá." })}
             {firstName ? <em>{firstName}.</em> : null}
           </h1>
-          <p className="calm-lead">{lead}</p>
+          {homeCase === "upcoming" ? null : homeCase === "assigned" ? (
+            <p className="calm-lead calm-lead--desktop-only">{lead}</p>
+          ) : (
+            <p className="calm-lead">{lead}</p>
+          )}
         </div>
       </header>
 
@@ -145,10 +122,14 @@ export function CalmHome(props: {
             now={now}
             professional={bookingProfessional}
             photoUrl={photoFor(bookingProfessional)}
+            currency={props.currency}
+            fxRates={props.fxRates}
+            residencyCountry={props.residencyCountry}
             onImageFallback={props.onImageFallback}
             onBook={() => props.onGoToBooking(bookingProfessional.id)}
             canRequestChange={props.canSelfChangeProfessional}
             onRequestChange={props.onRequestProfessionalChange}
+            onOpenProfile={props.onOpenProfile}
           />
         ) : (
           <CalmSessionCard
@@ -161,9 +142,11 @@ export function CalmHome(props: {
             showJoinTour={Boolean(props.firstMeetBookingId && props.nextBooking && props.firstMeetBookingId === props.nextBooking.id)}
             onImageFallback={props.onImageFallback}
             onOpenBookingDetail={props.onOpenBookingDetail}
+            onRescheduleBooking={props.onRescheduleBooking}
             onGoToBooking={props.onGoToBooking}
             onChooseProfessional={() => props.onChooseProfessional()}
             onBookTrial={props.onBookTrial}
+            onOpenProfile={props.onOpenProfile}
           />
         )}
         {homeCase === "new" ? (
@@ -220,6 +203,36 @@ export function CalmHome(props: {
         )}
       </div>
 
+      {homeCase !== "new" ? (
+        <div className="calm-mobile-follow">
+          {homeCase === "upcoming" ? (
+            <CalmUpcomingList
+              language={props.language}
+              timeZone={props.timeZone}
+              now={now}
+              bookings={props.state.bookings}
+              professionals={props.professionals}
+              photoMap={props.professionalPhotoMap}
+              excludeBookingId={props.nextBooking?.id}
+              limit={3}
+              onImageFallback={props.onImageFallback}
+              onOpenBooking={props.onOpenBookingDetail}
+              onRescheduleBooking={props.onRescheduleBooking}
+            />
+          ) : null}
+          <CalmSessionsBalance
+            language={props.language}
+            available={props.availableSessions}
+            packageName={props.state.subscription.packageName}
+            packageSize={props.state.subscription.creditsTotal}
+            includesToday={includesToday}
+            professional={props.activeProfessional}
+            onReserveAnother={props.onReserveAnother}
+            compact
+          />
+        </div>
+      ) : null}
+
       {homeCase === "upcoming" ? (
         <CalmWeekAgenda
           language={props.language}
@@ -236,7 +249,7 @@ export function CalmHome(props: {
         timeZone={props.timeZone}
         now={now}
         authToken={props.state.authToken}
-        mode={homeCase === "new" ? "welcome" : "between"}
+        mode={homeCase === "new" ? "welcome" : homeCase === "assigned" ? "assigned" : "between"}
       />
     </div>
   );

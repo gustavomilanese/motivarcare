@@ -1,8 +1,15 @@
 import { type SyntheticEvent } from "react";
-import { bookingJoinUrl, type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import {
+  bookingJoinUrl,
+  canPatientRescheduleBooking,
+  resolvePatientChangeNoticeHours,
+  type AppLanguage,
+  type LocalizedText,
+  textByLanguage
+} from "@therapy/i18n-config";
 import { professionalAccessibleName, professionalFirstName } from "../../app/lib/professionalDisplayName";
-import { professionalPhotoSrc } from "../../app/services/api";
 import type { Booking, Professional } from "../../app/types";
+import { CalmPersonHit } from "./CalmPersonHit";
 import {
   formatClock,
   formatWeekday,
@@ -12,6 +19,7 @@ import {
   sessionTiming,
   timezoneCaption
 } from "./calmHomeFormat";
+import { useMobilePortal } from "../../app/hooks/useMobilePortal";
 import { DeviceTestLink } from "../../booking/components/DeviceTestLink";
 import { IconVideo } from "./calmIcons";
 
@@ -29,11 +37,14 @@ export function CalmSessionCard(props: {
   showJoinTour: boolean;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onOpenBookingDetail: (bookingId: string) => void;
+  onRescheduleBooking: (bookingId: string) => void;
   onGoToBooking: (professionalId: string) => void;
   onChooseProfessional: () => void;
   onBookTrial: () => void;
+  onOpenProfile: () => void;
 }) {
   const { language, timeZone, now, booking, professional } = props;
+  const isMobilePortal = useMobilePortal();
 
   if (!booking || !professional) {
     return (
@@ -79,6 +90,8 @@ export function CalmSessionCard(props: {
   const name = professionalAccessibleName(professional);
   const given = professionalFirstName(professional);
   const meta = [professional.title, professional.specialties[0]].filter(Boolean).join(" · ");
+  const noticeHours = resolvePatientChangeNoticeHours(professional.cancellationHours);
+  const canReschedule = canPatientRescheduleBooking(booking.startsAt, noticeHours);
 
   return (
     <article className="calm-card calm-session" data-tour="patient-tour-bookings">
@@ -97,34 +110,26 @@ export function CalmSessionCard(props: {
             : `${formatWeekday(booking.startsAt, timeZone, language)}, ${clock}`}
         </h2>
         <p className="calm-session-meta">
-        {minutes
-          ? t(language, {
-              es: `Videollamada de ${minutes} min · ${timezoneCaption(timeZone, language, now)}`,
-              en: `${minutes}-min video call · ${timezoneCaption(timeZone, language, now)}`,
-              pt: `Videochamada de ${minutes} min · ${timezoneCaption(timeZone, language, now)}`
-            })
-          : t(language, {
-              es: `Videollamada · ${timezoneCaption(timeZone, language, now)}`,
-              en: `Video call · ${timezoneCaption(timeZone, language, now)}`,
-              pt: `Videochamada · ${timezoneCaption(timeZone, language, now)}`
-            })}
+          {minutes
+            ? t(language, {
+                es: `Videollamada de ${minutes} min · ${timezoneCaption(timeZone, language, now)}`,
+                en: `${minutes}-min video call · ${timezoneCaption(timeZone, language, now)}`,
+                pt: `Videochamada de ${minutes} min · ${timezoneCaption(timeZone, language, now)}`
+              })
+            : t(language, {
+                es: `Videollamada · ${timezoneCaption(timeZone, language, now)}`,
+                en: `Video call · ${timezoneCaption(timeZone, language, now)}`,
+                pt: `Videochamada · ${timezoneCaption(timeZone, language, now)}`
+              })}
         </p>
       </div>
-      <div className="calm-person">
-        <span className="calm-person-ring">
-          <img
-            src={professionalPhotoSrc(props.photoUrl)}
-            alt=""
-            width={52}
-            height={52}
-            onError={props.onImageFallback}
-          />
-        </span>
-        <div>
-          <strong>{name}</strong>
-          {meta ? <span>{meta}</span> : null}
-        </div>
-      </div>
+      <CalmPersonHit
+        name={name}
+        meta={meta}
+        photoUrl={props.photoUrl}
+        onImageFallback={props.onImageFallback}
+        onOpenProfile={props.onOpenProfile}
+      />
       <div className="calm-session-actions">
         {joinUrl ? (
           <a
@@ -146,10 +151,25 @@ export function CalmSessionCard(props: {
             })}
           </button>
         )}
-        <button className="calm-btn calm-btn--outline" type="button" onClick={() => props.onOpenBookingDetail(booking.id)}>
-          {t(language, { es: "Ver detalle", en: "View details", pt: "Ver detalhe" })}
-        </button>
-        <DeviceTestLink language={language} />
+        {isMobilePortal ? (
+          <div className="calm-session-secondary calm-session-secondary--solo">
+            <button
+              className="calm-btn calm-btn--outline"
+              type="button"
+              disabled={!canReschedule}
+              onClick={() => props.onRescheduleBooking(booking.id)}
+            >
+              {t(language, { es: "Reprogramar", en: "Reschedule", pt: "Reagendar" })}
+            </button>
+          </div>
+        ) : (
+          <div className="calm-session-secondary">
+            <button className="calm-btn calm-btn--outline" type="button" onClick={() => props.onOpenBookingDetail(booking.id)}>
+              {t(language, { es: "Ver detalle", en: "View details", pt: "Ver detalhe" })}
+            </button>
+            <DeviceTestLink language={language} className="calm-text-link calm-session-av-test" />
+          </div>
+        )}
       </div>
       <p className="sr-only">
         {t(language, {

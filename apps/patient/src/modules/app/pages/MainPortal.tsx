@@ -107,7 +107,18 @@ export function MainPortal(props: {
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedBookingId, setSelectedBookingId] = useState("");
+  const [sessionDetailCancelOpen, setSessionDetailCancelOpen] = useState(false);
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
+
+  const openBookingDetail = (bookingId: string, options?: { cancel?: boolean }) => {
+    setSessionDetailCancelOpen(Boolean(options?.cancel));
+    setSelectedBookingId(bookingId);
+  };
+
+  const closeBookingDetail = () => {
+    setSelectedBookingId("");
+    setSessionDetailCancelOpen(false);
+  };
   const [browseReviewsProfessionalId, setBrowseReviewsProfessionalId] = useState<string | null>(null);
   const reviewInviteProfessionalId = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -171,7 +182,7 @@ export function MainPortal(props: {
     onStateChange: props.onStateChange,
     onLogout: props.onLogout,
     assignedProfessionalId: props.state.assignedProfessionalId,
-    onOpenBooking: setSelectedBookingId,
+    onOpenBooking: (bookingId: string) => openBookingDetail(bookingId),
     onNotificationsPanelOpen: acknowledgeNotificationBadge,
     onDismissNotification: dismissNotification,
     onOpenProfessionalReview: () => {
@@ -623,7 +634,7 @@ export function MainPortal(props: {
             professionalDirectory={props.professionalDirectory}
             professionalPhotoMap={props.professionalPhotoMap}
             onStateChange={props.onStateChange}
-            setSelectedBookingId={setSelectedBookingId}
+            setSelectedBookingId={openBookingDetail}
             navigate={navigate}
             onImageFallback={handleImageFallback}
             onHeroFallback={handleHeroFallback}
@@ -678,14 +689,15 @@ export function MainPortal(props: {
             photoUrl: props.professionalPhotoMap[selectedBooking.professionalId]
           }}
           noticeHours={sessionDetailProfessional.cancellationHours}
+          startInCancelConfirm={sessionDetailCancelOpen}
           onReschedule={() => {
             const bookingId = selectedBooking.id;
-            setSelectedBookingId("");
+            closeBookingDetail();
             handleRescheduleBookingFromAnywhere(bookingId);
           }}
           onMessageProfessional={() => {
             const professionalId = selectedBooking.professionalId;
-            setSelectedBookingId("");
+            closeBookingDetail();
             handleChatFromAnywhere(professionalId);
           }}
           onCancel={async (reason) => {
@@ -693,11 +705,11 @@ export function MainPortal(props: {
             const result = await cancelBooking(selectedBooking.id, reason);
             setCancelSubmitting(false);
             if (result.ok) {
-              setSelectedBookingId("");
+              closeBookingDetail();
             }
           }}
           cancelSubmitting={cancelSubmitting}
-          onClose={() => setSelectedBookingId("")}
+          onClose={closeBookingDetail}
           onOpenProfessionalReviews={() => setBrowseReviewsProfessionalId(selectedBooking.professionalId)}
           onImageFallback={handleImageFallback}
         />

@@ -1,12 +1,7 @@
 /* Prueba local de cámara y micrófono (solo en el dispositivo). */
 
-.calm-session-actions {
-  flex-wrap: wrap;
-}
-
-/* En la card de Inicio el test AV sigue a la derecha de las acciones. */
+/* En la fila secundaria de la card de Inicio, el test AV va a la derecha. */
 .calm-session-av-test {
-  margin-left: auto;
   flex: none;
 }
 
@@ -199,9 +194,8 @@
     font-size: 24px;
   }
 
-  .calm-session-av-test {
-    width: 100%;
-    margin-left: 0;
-    justify-content: flex-end;
+  .calm-session-av-test,
+  .session-detail-av-link {
+    display: none;
   }
 }

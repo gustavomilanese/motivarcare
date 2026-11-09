@@ -84,8 +84,8 @@ function IconMenu(props: { className?: string }) {
 function IconAccount(props: { className?: string }) {
   return (
     <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 20a8 8 0 0 1 16 0" />
+      <circle cx="12" cy="8.5" r="4" />
+      <path d="M4.5 20.5c.8-4 3.9-6.3 7.5-6.3s6.7 2.3 7.5 6.3" />
     </svg>
   );
 }
@@ -1239,20 +1239,20 @@ export function PortalNavigation(props: {
                     <span className="mobile-nav-pill"><IconHome className="mobile-nav-icon" /></span>
                     <span className="mobile-nav-label">{t(props.language, { es: "Inicio", en: "Home", pt: "Início" })}</span>
                   </NavLink>
+                  <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/sessions" onClick={goSessionsToTop}>
+                    <span className="mobile-nav-pill"><IconSessions className="mobile-nav-icon" /></span>
+                    <span className="mobile-nav-label">{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessões" })}</span>
+                  </NavLink>
                   <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/chat" onClick={() => goPathToTop("/chat")}>
                     <span className="mobile-nav-pill">
-                      <IconChat className="mobile-nav-icon" />
+                      <IconAccount className="mobile-nav-icon" />
                       {props.unreadMessagesCount > 0 ? (
                         <span className="mobile-nav-badge" aria-label={t(props.language, { es: "Mensajes nuevos", en: "New messages", pt: "Novas mensagens" })}>
                           {props.unreadMessagesCount > 99 ? "99+" : props.unreadMessagesCount}
                         </span>
                       ) : null}
                     </span>
-                    <span className="mobile-nav-label">{t(props.language, { es: "Mensajes", en: "Messages", pt: "Mensagens" })}</span>
-                  </NavLink>
-                  <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/sessions" onClick={goSessionsToTop}>
-                    <span className="mobile-nav-pill"><IconSessions className="mobile-nav-icon" /></span>
-                    <span className="mobile-nav-label">{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessões" })}</span>
+                    <span className="mobile-nav-label">{t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</span>
                   </NavLink>
                   <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/diario" end={false} onClick={() => goPathToTop("/diario", { prefix: true })}>
                     <span className="mobile-nav-pill"><IconNotes className="mobile-nav-icon" /></span>

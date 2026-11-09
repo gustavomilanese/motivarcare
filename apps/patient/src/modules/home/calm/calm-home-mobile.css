@@ -1,0 +1,163 @@
+/* Home calm · overrides teléfono vs mock app-usuario (#2 / #4 / #6). */
+
+.calm-first-session {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.calm-first-session__chip {
+  order: 1;
+}
+
+.calm-first-session__copy {
+  order: 2;
+}
+
+.calm-first-session__slots {
+  order: 3;
+}
+
+.calm-first-session__person {
+  order: 4;
+}
+
+.calm-first-session__actions {
+  order: 5;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.calm-first-session__price {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tinta-suave);
+}
+
+.calm-first-session__pay-note {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--bosque);
+}
+
+.calm-first-session__cta-mobile {
+  display: none;
+}
+
+.calm-first-session__cta-desktop {
+  display: inline;
+}
+
+.calm-lead--desktop-only {
+  display: block;
+}
+
+@media (max-width: 1080px) {
+  .calm-home[data-calm-case="assigned"] .calm-lead--desktop-only {
+    display: none;
+  }
+
+  .calm-home[data-calm-case="new"] .calm-between {
+    display: none;
+  }
+
+  .calm-home[data-calm-case="assigned"] .calm-side,
+  .calm-home[data-calm-case="upcoming"] .calm-side {
+    display: none;
+  }
+
+  .calm-home[data-calm-case="assigned"] .calm-top,
+  .calm-home[data-calm-case="upcoming"] .calm-top {
+    grid-template-columns: 1fr;
+  }
+
+  .calm-home[data-calm-case="assigned"] .calm-agenda {
+    display: none;
+  }
+
+  .calm-between--phone-compact .calm-between-head,
+  .calm-between--phone-compact .calm-week,
+  .calm-between--phone-compact .calm-breath {
+    display: none;
+  }
+
+  .calm-between--phone-compact .calm-between-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .calm-first-session__chip,
+  .calm-first-session__meta,
+  .calm-first-session__pay-note {
+    display: none;
+  }
+
+  .calm-first-session__person {
+    order: 3;
+  }
+
+  .calm-first-session__slots {
+    order: 4;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .calm-first-session__slots .calm-slot:nth-child(n + 4),
+  .calm-first-session__slots .calm-slot--more {
+    display: none;
+  }
+
+  .calm-first-session__slots .calm-slot {
+    padding: 9px 10px;
+    font-size: 14px;
+    min-width: 0;
+  }
+
+  .calm-first-session__actions {
+    order: 5;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .calm-first-session__cta {
+    width: 100%;
+  }
+
+  .calm-first-session__cta-desktop {
+    display: none;
+  }
+
+  .calm-first-session__cta-mobile {
+    display: inline;
+  }
+
+  .calm-first-session .calm-session-when {
+    font-size: 26px;
+  }
+
+  .calm-first-session .calm-person-ring {
+    width: 48px;
+    height: 48px;
+  }
+
+  .calm-session-change-link {
+    align-self: center;
+    margin-left: 0;
+    max-width: none;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .calm-home {
+    padding: 8px 10px 96px;
+  }
+
+  .calm-toolbar-row {
+    padding: 0 2px;
+    margin-bottom: 10px;
+  }
+}
