@@ -562,6 +562,20 @@ export function friendlyCheckoutPackageMessage(raw: string, language: AppLanguag
       pt: "Nao foi possivel iniciar o pagamento. Verifique a conexao e tente de novo."
     });
   }
+  if (
+    /Unique constraint failed/i.test(n)
+    || /PatientPackagePurchase_stripeCheckoutSessionId/i.test(n)
+    || /violación de unicidad/i.test(n)
+    || /Este registro ya existe/i.test(n)
+    || /Invalid\s*`?prisma\./i.test(n)
+    || /packagePurchaseFulfillment/i.test(n)
+  ) {
+    return t(language, {
+      es: "Tu pago ya estaba registrado. Actualizá la página: deberías ver las sesiones. Si no aparecen, escribinos a soporte.",
+      en: "Your payment was already recorded. Refresh the page—you should see your sessions. If not, contact support.",
+      pt: "Seu pagamento ja estava registrado. Atualize a pagina: as sessoes devem aparecer. Se nao, fale com o suporte."
+    });
+  }
   if (n === "Unauthorized" || n === "Missing bearer token" || n === "Invalid or expired token") {
     return t(language, {
       es: "Tu sesión no es válida para cobrar. Volvé a iniciar sesión e intentá de nuevo.",

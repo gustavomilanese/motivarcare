@@ -18,6 +18,7 @@ import { resolveIndividualSessionsPurchaseQuote } from "../../lib/individualSess
 import { assertPatientOwnsPaymentCheckout } from "./paymentCheckout.service.js";
 import { isDlocalGoConfigured, verifyDlocalGoNotificationSignature } from "../../lib/dlocalGoClient.js";
 import { prisma } from "../../lib/prisma.js";
+import { prismaErrorUserMessage } from "../../lib/prismaUserError.js";
 import {
   extendBookingSlotHold,
   requireBookingSlotHoldForPatient,
@@ -607,7 +608,7 @@ paymentsRouter.post("/dlocal/sync-trial", requireAuth, async (req: Authenticated
     });
     return respondDlocalSyncResult(res, result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not sync trial payment";
+    const message = prismaErrorUserMessage(error);
     return res.status(400).json({ error: message });
   }
 });
@@ -639,7 +640,7 @@ paymentsRouter.post("/dlocal/sync-payment", requireAuth, async (req: Authenticat
     });
     return respondDlocalSyncResult(res, result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not sync payment";
+    const message = prismaErrorUserMessage(error);
     return res.status(400).json({ error: message });
   }
 });
@@ -671,7 +672,7 @@ paymentsRouter.post("/dlocal/sync-order", requireAuth, async (req: Authenticated
     });
     return respondDlocalSyncResult(res, result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not sync payment";
+    const message = prismaErrorUserMessage(error);
     return res.status(400).json({ error: message });
   }
 });
@@ -701,7 +702,7 @@ paymentsRouter.post("/dlocal/sync-pending", requireAuth, async (req: Authenticat
       checkoutId: result.checkoutId ?? null
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not sync pending payments";
+    const message = prismaErrorUserMessage(error);
     return res.status(400).json({ error: message });
   }
 });

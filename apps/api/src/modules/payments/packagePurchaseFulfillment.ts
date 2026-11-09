@@ -1,7 +1,38 @@
 import type { Market, Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
+import { isPrismaUniqueViolation } from "../../lib/prismaUserError.js";
 import { computeFxSnapshot } from "../../lib/fxSnapshot.js";
 import { getFinanceRules } from "../finance/finance.service.js";
+
+async function findPurchaseIdByCheckoutSession(checkoutSessionId: string): Promise<string | null> {
+  const existing = await prisma.patientPackagePurchase.findUnique({
+    where: { stripeCheckoutSessionId: checkoutSessionId },
+    select: { id: true }
+  });
+  return existing?.id ?? null;
+}
+
+/**
+ * Webhook + return del paciente pueden llegar juntos: el findUnique previo no alcanza.
+ * Si el create choca por unique, devolvemos la compra ya grabada (idempotente).
+ */
+async function withCheckoutSessionIdempotency(
+  checkoutSessionId: string,
+  run: () => Promise<string | null>
+): Promise<string | null> {
+  try {
+    return await run();
+  } catch (error) {
+    if (!isPrismaUniqueViolation(error)) {
+      throw error;
+    }
+    const existingId = await findPurchaseIdByCheckoutSession(checkoutSessionId);
+    if (existingId) {
+      return existingId;
+    }
+    throw error;
+  }
+}
 
 export async function fulfillPaidPackagePurchase(params: {
   checkoutSessionId: string;
@@ -17,93 +48,100 @@ export async function fulfillPaidPackagePurchase(params: {
   billingCurrency: string;
   paymentProviderSnapshot: string;
 }): Promise<string | null> {
-  const financeRules = await getFinanceRules();
-  let purchaseIdForEmail: string | null = null;
+  const existingId = await findPurchaseIdByCheckoutSession(params.checkoutSessionId);
+  if (existingId) {
+    return existingId;
+  }
 
-  await prisma.$transaction(async (tx) => {
-    const existingPurchase = await tx.patientPackagePurchase.findUnique({
-      where: { stripeCheckoutSessionId: params.checkoutSessionId }
-    });
-    if (existingPurchase) {
-      purchaseIdForEmail = existingPurchase.id;
-      return;
-    }
+  return withCheckoutSessionIdempotency(params.checkoutSessionId, async () => {
+    const financeRules = await getFinanceRules();
+    let purchaseIdForEmail: string | null = null;
 
-    const patient = await tx.patientProfile.findUnique({
-      where: { id: params.patientId },
-      select: { id: true }
-    });
-    if (!patient) {
-      throw new Error("Patient profile not found for checkout");
-    }
-
-    const sessionPackage = await tx.sessionPackage.findUnique({
-      where: { id: params.packageId }
-    });
-    if (!sessionPackage || !sessionPackage.active) {
-      throw new Error("Session package not found or inactive");
-    }
-
-    /** Cada compra mantiene su saldo; al reservar se consume FIFO (más antigua primero). */
-    const purchaseCurrency = params.billingCurrency.toLowerCase();
-    const fxSnapshot = await computeFxSnapshot({
-      priceCents: params.pricing.priceCents,
-      currency: purchaseCurrency
-    });
-
-    const purchase = await tx.patientPackagePurchase.create({
-      data: {
-        patientId: patient.id,
-        packageId: sessionPackage.id,
-        stripeCheckoutSessionId: params.checkoutSessionId,
-        totalCredits: sessionPackage.credits,
-        remainingCredits: sessionPackage.credits,
-        packageNameSnapshot: sessionPackage.name,
-        packageCreditsSnapshot: sessionPackage.credits,
-        packageListPriceCentsSnapshot: params.pricing.listPriceCents,
-        packagePriceCentsSnapshot: params.pricing.priceCents,
-        packageDiscountPercentSnapshot: params.pricing.discountPercent,
-        packageCurrencySnapshot: purchaseCurrency,
-        platformCommissionPercentSnapshot: financeRules.platformCommissionPercent,
-        trialPlatformPercentSnapshot: financeRules.trialPlatformPercent,
-        professionalIdSnapshot: params.professionalIdSnapshot,
-        packagePriceUsdCentsSnapshot: fxSnapshot.packagePriceUsdCentsSnapshot,
-        fxArsPerUsdSnapshot: fxSnapshot.fxArsPerUsdSnapshot,
-        fxProviderSnapshot: fxSnapshot.fxProviderSnapshot,
-        fxFetchedAt: fxSnapshot.fxFetchedAt,
-        paymentProviderSnapshot: params.paymentProviderSnapshot
+    await prisma.$transaction(async (tx) => {
+      const existingPurchase = await tx.patientPackagePurchase.findUnique({
+        where: { stripeCheckoutSessionId: params.checkoutSessionId }
+      });
+      if (existingPurchase) {
+        purchaseIdForEmail = existingPurchase.id;
+        return;
       }
-    });
 
-    purchaseIdForEmail = purchase.id;
-
-    await tx.creditLedger.create({
-      data: {
-        patientId: patient.id,
-        bookingId: null,
-        type: "PACKAGE_PURCHASE",
-        amount: sessionPackage.credits,
-        note: `${params.paymentProviderSnapshot} checkout ${params.checkoutSessionId}`
+      const patient = await tx.patientProfile.findUnique({
+        where: { id: params.patientId },
+        select: { id: true }
+      });
+      if (!patient) {
+        throw new Error("Patient profile not found for checkout");
       }
-    });
 
-    await tx.outboxEvent.create({
-      data: {
-        dedupeKey: `billing:package_purchase:${purchase.id}`,
-        eventType: "billing.package_purchase_recorded",
-        aggregateType: "patientPackagePurchase",
-        aggregateId: purchase.id,
-        payload: {
-          purchaseId: purchase.id,
+      const sessionPackage = await tx.sessionPackage.findUnique({
+        where: { id: params.packageId }
+      });
+      if (!sessionPackage || !sessionPackage.active) {
+        throw new Error("Session package not found or inactive");
+      }
+
+      /** Cada compra mantiene su saldo; al reservar se consume FIFO (más antigua primero). */
+      const purchaseCurrency = params.billingCurrency.toLowerCase();
+      const fxSnapshot = await computeFxSnapshot({
+        priceCents: params.pricing.priceCents,
+        currency: purchaseCurrency
+      });
+
+      const purchase = await tx.patientPackagePurchase.create({
+        data: {
           patientId: patient.id,
           packageId: sessionPackage.id,
-          checkoutSessionId: params.checkoutSessionId
-        } satisfies Prisma.InputJsonObject
-      }
-    });
-  });
+          stripeCheckoutSessionId: params.checkoutSessionId,
+          totalCredits: sessionPackage.credits,
+          remainingCredits: sessionPackage.credits,
+          packageNameSnapshot: sessionPackage.name,
+          packageCreditsSnapshot: sessionPackage.credits,
+          packageListPriceCentsSnapshot: params.pricing.listPriceCents,
+          packagePriceCentsSnapshot: params.pricing.priceCents,
+          packageDiscountPercentSnapshot: params.pricing.discountPercent,
+          packageCurrencySnapshot: purchaseCurrency,
+          platformCommissionPercentSnapshot: financeRules.platformCommissionPercent,
+          trialPlatformPercentSnapshot: financeRules.trialPlatformPercent,
+          professionalIdSnapshot: params.professionalIdSnapshot,
+          packagePriceUsdCentsSnapshot: fxSnapshot.packagePriceUsdCentsSnapshot,
+          fxArsPerUsdSnapshot: fxSnapshot.fxArsPerUsdSnapshot,
+          fxProviderSnapshot: fxSnapshot.fxProviderSnapshot,
+          fxFetchedAt: fxSnapshot.fxFetchedAt,
+          paymentProviderSnapshot: params.paymentProviderSnapshot
+        }
+      });
 
-  return purchaseIdForEmail;
+      purchaseIdForEmail = purchase.id;
+
+      await tx.creditLedger.create({
+        data: {
+          patientId: patient.id,
+          bookingId: null,
+          type: "PACKAGE_PURCHASE",
+          amount: sessionPackage.credits,
+          note: `${params.paymentProviderSnapshot} checkout ${params.checkoutSessionId}`
+        }
+      });
+
+      await tx.outboxEvent.create({
+        data: {
+          dedupeKey: `billing:package_purchase:${purchase.id}`,
+          eventType: "billing.package_purchase_recorded",
+          aggregateType: "patientPackagePurchase",
+          aggregateId: purchase.id,
+          payload: {
+            purchaseId: purchase.id,
+            patientId: patient.id,
+            packageId: sessionPackage.id,
+            checkoutSessionId: params.checkoutSessionId
+          } satisfies Prisma.InputJsonObject
+        }
+      });
+    });
+
+    return purchaseIdForEmail;
+  });
 }
 
 export async function fulfillPaidIndividualSessionsPurchase(params: {
@@ -122,84 +160,91 @@ export async function fulfillPaidIndividualSessionsPurchase(params: {
   billingCurrency: string;
   paymentProviderSnapshot: string;
 }): Promise<string | null> {
-  const financeRules = await getFinanceRules();
-  let purchaseIdForEmail: string | null = null;
+  const existingId = await findPurchaseIdByCheckoutSession(params.checkoutSessionId);
+  if (existingId) {
+    return existingId;
+  }
 
-  await prisma.$transaction(async (tx) => {
-    const existingPurchase = await tx.patientPackagePurchase.findUnique({
-      where: { stripeCheckoutSessionId: params.checkoutSessionId }
-    });
-    if (existingPurchase) {
-      purchaseIdForEmail = existingPurchase.id;
-      return;
-    }
+  return withCheckoutSessionIdempotency(params.checkoutSessionId, async () => {
+    const financeRules = await getFinanceRules();
+    let purchaseIdForEmail: string | null = null;
 
-    const patient = await tx.patientProfile.findUnique({
-      where: { id: params.patientId },
-      select: { id: true }
-    });
-    if (!patient) {
-      throw new Error("Patient profile not found for checkout");
-    }
-
-    /** Cada compra mantiene su saldo; al reservar se consume FIFO (más antigua primero). */
-    const purchaseCurrency = params.billingCurrency.toLowerCase();
-    const fxSnapshot = await computeFxSnapshot({
-      priceCents: params.pricing.priceCents,
-      currency: purchaseCurrency
-    });
-
-    const purchase = await tx.patientPackagePurchase.create({
-      data: {
-        patientId: patient.id,
-        packageId: params.packageId,
-        stripeCheckoutSessionId: params.checkoutSessionId,
-        totalCredits: params.sessionCount,
-        remainingCredits: params.sessionCount,
-        packageNameSnapshot: params.displayName,
-        packageCreditsSnapshot: params.sessionCount,
-        packageListPriceCentsSnapshot: params.pricing.listPriceCents,
-        packagePriceCentsSnapshot: params.pricing.priceCents,
-        packageDiscountPercentSnapshot: params.pricing.discountPercent,
-        packageCurrencySnapshot: purchaseCurrency,
-        platformCommissionPercentSnapshot: financeRules.platformCommissionPercent,
-        trialPlatformPercentSnapshot: financeRules.trialPlatformPercent,
-        professionalIdSnapshot: params.professionalIdSnapshot,
-        packagePriceUsdCentsSnapshot: fxSnapshot.packagePriceUsdCentsSnapshot,
-        fxArsPerUsdSnapshot: fxSnapshot.fxArsPerUsdSnapshot,
-        fxProviderSnapshot: fxSnapshot.fxProviderSnapshot,
-        fxFetchedAt: fxSnapshot.fxFetchedAt,
-        paymentProviderSnapshot: params.paymentProviderSnapshot
+    await prisma.$transaction(async (tx) => {
+      const existingPurchase = await tx.patientPackagePurchase.findUnique({
+        where: { stripeCheckoutSessionId: params.checkoutSessionId }
+      });
+      if (existingPurchase) {
+        purchaseIdForEmail = existingPurchase.id;
+        return;
       }
-    });
 
-    purchaseIdForEmail = purchase.id;
-
-    await tx.creditLedger.create({
-      data: {
-        patientId: patient.id,
-        bookingId: null,
-        type: "PACKAGE_PURCHASE",
-        amount: params.sessionCount,
-        note: `${params.paymentProviderSnapshot} individual checkout ${params.checkoutSessionId}`
+      const patient = await tx.patientProfile.findUnique({
+        where: { id: params.patientId },
+        select: { id: true }
+      });
+      if (!patient) {
+        throw new Error("Patient profile not found for checkout");
       }
-    });
 
-    await tx.outboxEvent.create({
-      data: {
-        dedupeKey: `billing:package_purchase:${purchase.id}`,
-        eventType: "billing.package_purchase_recorded",
-        aggregateType: "patientPackagePurchase",
-        aggregateId: purchase.id,
-        payload: {
-          purchaseId: purchase.id,
+      /** Cada compra mantiene su saldo; al reservar se consume FIFO (más antigua primero). */
+      const purchaseCurrency = params.billingCurrency.toLowerCase();
+      const fxSnapshot = await computeFxSnapshot({
+        priceCents: params.pricing.priceCents,
+        currency: purchaseCurrency
+      });
+
+      const purchase = await tx.patientPackagePurchase.create({
+        data: {
           patientId: patient.id,
           packageId: params.packageId,
-          checkoutSessionId: params.checkoutSessionId
-        } satisfies Prisma.InputJsonObject
-      }
-    });
-  });
+          stripeCheckoutSessionId: params.checkoutSessionId,
+          totalCredits: params.sessionCount,
+          remainingCredits: params.sessionCount,
+          packageNameSnapshot: params.displayName,
+          packageCreditsSnapshot: params.sessionCount,
+          packageListPriceCentsSnapshot: params.pricing.listPriceCents,
+          packagePriceCentsSnapshot: params.pricing.priceCents,
+          packageDiscountPercentSnapshot: params.pricing.discountPercent,
+          packageCurrencySnapshot: purchaseCurrency,
+          platformCommissionPercentSnapshot: financeRules.platformCommissionPercent,
+          trialPlatformPercentSnapshot: financeRules.trialPlatformPercent,
+          professionalIdSnapshot: params.professionalIdSnapshot,
+          packagePriceUsdCentsSnapshot: fxSnapshot.packagePriceUsdCentsSnapshot,
+          fxArsPerUsdSnapshot: fxSnapshot.fxArsPerUsdSnapshot,
+          fxProviderSnapshot: fxSnapshot.fxProviderSnapshot,
+          fxFetchedAt: fxSnapshot.fxFetchedAt,
+          paymentProviderSnapshot: params.paymentProviderSnapshot
+        }
+      });
 
-  return purchaseIdForEmail;
+      purchaseIdForEmail = purchase.id;
+
+      await tx.creditLedger.create({
+        data: {
+          patientId: patient.id,
+          bookingId: null,
+          type: "PACKAGE_PURCHASE",
+          amount: params.sessionCount,
+          note: `${params.paymentProviderSnapshot} individual checkout ${params.checkoutSessionId}`
+        }
+      });
+
+      await tx.outboxEvent.create({
+        data: {
+          dedupeKey: `billing:package_purchase:${purchase.id}`,
+          eventType: "billing.package_purchase_recorded",
+          aggregateType: "patientPackagePurchase",
+          aggregateId: purchase.id,
+          payload: {
+            purchaseId: purchase.id,
+            patientId: patient.id,
+            packageId: params.packageId,
+            checkoutSessionId: params.checkoutSessionId
+          } satisfies Prisma.InputJsonObject
+        }
+      });
+    });
+
+    return purchaseIdForEmail;
+  });
 }

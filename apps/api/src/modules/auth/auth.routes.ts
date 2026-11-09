@@ -384,7 +384,8 @@ function resolveDefaultCalendarReturnPathForRole(role: "PATIENT" | "PROFESSIONAL
     return "/";
   }
   if (role === "PATIENT") {
-    return "/profile";
+    /** Post-intake / post-login: home. Perfil solo si el connect pidió `/profile` explícito. */
+    return "/";
   }
   return "/";
 }
@@ -395,7 +396,7 @@ function isAllowedCalendarReturnPath(role: "PATIENT" | "PROFESSIONAL" | "ADMIN",
   }
 
   if (role === "PATIENT") {
-    return path === "/profile" || path === "/onboarding/final/matching";
+    return path === "/" || path === "/profile" || path === "/onboarding/final/matching";
   }
   if (role === "PROFESSIONAL") {
     return path === "/" || path === "/ajustes";
