@@ -1015,11 +1015,11 @@
     color: var(--brand) !important;
   }
   .portal-mobile-nav .mobile-nav-link.active .mobile-nav-icon {
-    color: var(--brand);
+    color: inherit;
   }
   .portal-mobile-nav .mobile-nav-link.active .mobile-nav-label {
-    color: var(--brand);
-    font-weight: 600;
+    color: inherit;
+    font-weight: 800;
   }
   .portal-mobile-nav .mobile-nav-label {
     font-size: 14.5px;

@@ -1357,6 +1357,7 @@ body:has(.calm-match) .treatment-chat-fab__icon svg {
     max(6px, env(safe-area-inset-left, 0px)) !important;
 }
 
+/* nav-tel del DS: inactivo tenue; activo = pastilla salvia + ícono y label bosque. */
 .portal-mobile-nav.portal-mobile-nav--app .mobile-nav-link {
   color: #8a958f !important;
   font-size: 11.5px;
@@ -1364,15 +1365,21 @@ body:has(.calm-match) .treatment-chat-fab__icon svg {
   gap: 4px;
 }
 
-.portal-mobile-nav.portal-mobile-nav--app .mobile-nav-link.active,
-.portal-mobile-nav.portal-mobile-nav--app .mobile-nav-link.active .mobile-nav-label,
-.portal-mobile-nav.portal-mobile-nav--app .mobile-nav-link.active .mobile-nav-icon {
+.portal-mobile-nav.portal-mobile-nav--app .mobile-nav-label {
+  font-size: 11.5px;
+  font-weight: 700 !important;
+  color: inherit !important;
+  letter-spacing: 0;
+}
+
+.portal-mobile-nav.portal-mobile-nav--app .mobile-nav-link.active {
   color: #1e4033 !important;
 }
 
-.portal-mobile-nav.portal-mobile-nav--app .mobile-nav-label {
-  font-size: 11.5px;
-  font-weight: 700;
+.portal-mobile-nav.portal-mobile-nav--app .mobile-nav-link.active .mobile-nav-label,
+.portal-mobile-nav.portal-mobile-nav--app .mobile-nav-link.active .mobile-nav-icon {
+  color: #1e4033 !important;
+  font-weight: 800 !important;
 }
 
 .portal-mobile-nav.portal-mobile-nav--app .mobile-nav-pill {
@@ -1391,6 +1398,7 @@ body:has(.calm-match) .treatment-chat-fab__icon svg {
 .portal-mobile-nav.portal-mobile-nav--app .mobile-nav-icon {
   width: 24px;
   height: 24px;
+  color: inherit;
 }
 
 .portal-mobile-nav.portal-mobile-nav--app .mobile-nav-badge {

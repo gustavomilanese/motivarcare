@@ -1,13 +1,26 @@
 /* Diario · layout teléfono (no “web achicado”). */
 
 @media (max-width: 1080px) {
-  .diary-page.diary-calm {
-    padding: 8px 10px 96px;
+  /* Un poco más de aire izq/der: título, logo, Volver y el cuerpo dejan de pegarse. */
+  .portal-main .diary-page.diary-calm,
+  .portal-main .diary-page--records.diary-records-calm,
+  .diary-page.diary-calm,
+  .diary-page--records.diary-records-calm {
+    padding: 8px 16px 96px;
     box-sizing: border-box;
   }
 
-  .diary-calm > .calm-toolbar-row {
+  .portal-main .diary-page--records.diary-records-calm > .diary-calm-columns,
+  .diary-page--records.diary-records-calm > .diary-calm-columns {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .diary-calm > .calm-toolbar-row,
+  .diary-records-calm > .calm-toolbar-row {
     margin-bottom: 10px;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .diary-calm-columns {
@@ -161,6 +174,10 @@
   }
 
   /* Registros */
+  .diary-records-calm .diary-records-back {
+    margin-bottom: 14px;
+  }
+
   .diary-records-calm .diary-records-head h1 {
     font-size: 32px;
   }
