@@ -3,6 +3,8 @@
   flex-direction: column;
   gap: 16px;
   padding: 24px;
+  height: auto;
+  flex: none;
 }
 
 .calm-side-pro-row {
@@ -73,10 +75,12 @@
 }
 
 .calm-side-pro-actions {
+  /* Mock `.pro .botones`: juntos a la izquierda, no space-between. */
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .calm-side-pro-actions .calm-btn,

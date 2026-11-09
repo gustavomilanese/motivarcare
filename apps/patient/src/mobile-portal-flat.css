@@ -99,14 +99,6 @@
     max-width: 100% !important;
     min-width: 0 !important;
     box-sizing: border-box !important;
-    margin-top: 0 !important;
-    background: var(--mobile-canvas, #f4f4f5) !important;
-    border-top: 1px solid var(--mobile-divider, rgba(0, 0, 0, 0.08));
-    /*
-     * El aire post-Música lo da solo el padding-bottom del surface.
-     * Sin padding-top acá: evitaba un 2.º gris “pegado” al footer.
-     */
-    padding-top: 0 !important;
   }
 
   /* Home ML: mismo canvas hasta el footer (nada de #ebebeb / blanco intercalado) */

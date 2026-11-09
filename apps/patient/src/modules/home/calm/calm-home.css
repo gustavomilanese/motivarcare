@@ -262,10 +262,12 @@
 }
 
 .calm-side {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  /* Como `.columna` del mock app-usuario: apila fichas a altura natural. */
+  display: flex;
+  flex-direction: column;
   gap: 20px;
-  min-height: 100%;
+  min-width: 0;
+  align-self: start;
 }
 
 .calm-card {
@@ -297,7 +299,9 @@
   pointer-events: none;
 }
 
+.calm-session-top,
 .calm-chip,
+.calm-session-credits,
 .calm-session-when,
 .calm-session-clock,
 .calm-session-meta,
@@ -305,6 +309,45 @@
 .calm-session-actions {
   position: relative;
   z-index: 1;
+}
+
+.calm-session-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.calm-session-top-spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.calm-session-credits {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  padding: 7px 11px;
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--bosque);
+  white-space: nowrap;
+  flex: none;
+}
+
+.calm-session-credits b {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.calm-session-credits span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tinta-suave);
 }
 
 .calm-session--empty .calm-session-blob {
@@ -405,6 +448,7 @@
   border: 0;
   background: none;
   text-align: left;
+  justify-content: flex-start; /* pisa button global con justify-content: center */
   font: inherit;
   color: inherit;
   cursor: pointer;
@@ -865,8 +909,9 @@
 }
 
 .calm-breath {
-  background: #f2f5e0;
-  border-color: transparent;
+  /* lima DS: contraste claro sobre crema (lima-suave se fundía con el fondo). */
+  background: var(--lima, #e6edc4);
+  border: 1px solid color-mix(in srgb, var(--bosque) 12%, transparent);
 }
 
 .calm-week h3,
@@ -1102,11 +1147,6 @@ body:has(.calm-home) #root {
   box-shadow: none;
 }
 
-.portal-shell:has(.calm-home) .portal-site-footer,
-.portal-shell:has(.calm-sidebar) .portal-site-footer {
-  display: none;
-}
-
 body:has(.calm-home) .treatment-chat-fab,
 body:has(.calm-match) .treatment-chat-fab {
   right: 40px;
@@ -1121,6 +1161,14 @@ body:has(.calm-match) .treatment-chat-fab {
   box-shadow: 0 30px 60px -28px rgba(20, 41, 31, 0.45);
   font-weight: 700;
   font-size: 14.5px;
+  z-index: 40;
+}
+
+/* Con pie de sitio visible, el FAB no se monta arriba del texto del footer. */
+@media (min-width: 1081px) {
+  body:has(.portal-site-footer) .treatment-chat-fab {
+    bottom: 28px;
+  }
 }
 
 body:has(.calm-home) .treatment-chat-fab:hover,

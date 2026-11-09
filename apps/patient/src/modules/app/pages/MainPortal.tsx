@@ -283,7 +283,8 @@ export function MainPortal(props: {
     pathname: location.pathname
   });
   const hideSidebar = isOnboardingMatchingView || isBookTrialView || homeMlChrome;
-  const showSiteFooter = !isOnboardingMatchingView && !isBookTrialView;
+  const isChatView = location.pathname === "/chat" || location.pathname.startsWith("/chat/");
+  const showSiteFooter = !isOnboardingMatchingView && !isBookTrialView && !isChatView;
   const needsInitialTherapistSelection =
     !props.state.therapistSelectionCompleted
     && !props.state.assignedProfessionalId?.trim()

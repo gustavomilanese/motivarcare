@@ -30,6 +30,7 @@
   min-width: 0;
 }
 .portal-shell.portal-shell--site-footer > .portal-site-footer {
+  /* Bajo el main, no debajo del sidebar sticky. */
   grid-column: 2;
   grid-row: 2;
   width: 100%;
@@ -590,40 +591,13 @@
   width: 100%;
   margin: 0;
   border-radius: 0;
-  background: #f4f4f5;
-  border-top: 1px solid rgba(15, 23, 42, 0.08);
   position: relative;
-  /* Como el top bar: full-bleed por debajo del rail (z-index 70) */
   z-index: 1;
-}
-@media (max-width: 1080px) {
-  .portal-shell.portal-shell--home-ml.portal-shell--site-footer > .portal-site-footer,
-  .portal-shell.portal-shell--site-footer > .portal-site-footer {
-    margin-top: 0;
-    background: #f4f4f5;
-  }
-  .portal-shell.portal-shell--home-ml.portal-shell--site-footer > .portal-site-footer {
-    /* Un solo gris post-Música (el del surface); no sumar padding-top del pie */
-    padding-top: 0;
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
-    padding-right: max(16px, env(safe-area-inset-right, 0px));
-  }
 }
 
 @media (min-width: 1081px) {
   .portal-shell.portal-shell--home-ml.portal-shell--site-footer > .portal-site-footer {
-    /* Mismo offset que .portal-home-ml-bar: el fondo pasa bajo el rail */
-    padding-left: calc(var(--portal-home-ml-rail-collapsed, 58px) + 12px);
-    padding-right: clamp(16px, 3vw, 28px);
     box-sizing: border-box;
-  }
-  .portal-shell.portal-shell--home-ml.portal-shell--site-footer > .portal-site-footer .portal-site-footer-inner {
-    max-width: 1200px;
-    margin-inline: auto;
-  }
-  .portal-shell.portal-shell--home-ml.portal-shell--site-footer > .portal-site-footer .portal-site-footer-copy {
-    max-width: 1200px;
-    margin-inline: auto;
   }
 }
 

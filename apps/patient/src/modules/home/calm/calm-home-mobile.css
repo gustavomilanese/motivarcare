@@ -85,8 +85,28 @@
     display: none;
   }
 
+  /* Ritmo entre bloques: suficiente para separar “próxima” del resto. */
+  .calm-home[data-calm-case="upcoming"] .calm-top,
+  .calm-home[data-calm-case="assigned"] .calm-top {
+    margin-bottom: 4px;
+  }
+
+  .calm-home .calm-mobile-follow {
+    margin-top: 20px;
+    gap: 32px;
+  }
+
+  .calm-between--phone-compact {
+    margin-top: 22px;
+  }
+
   .calm-between--phone-compact .calm-between-grid {
     grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .calm-between--phone-compact .calm-mood {
+    margin: 0;
   }
 
   .calm-first-session__chip,
@@ -152,8 +172,13 @@
     justify-content: center;
   }
 
+  /* El pie + tab bar ya dan el aire inferior; no sumar ~96px vacíos tras el mood. */
   .calm-home {
-    padding: 8px 10px 96px;
+    padding: 8px 10px 6px;
+  }
+
+  .portal-shell.portal-shell--site-footer:has(.calm-home) > .portal-site-footer {
+    margin-top: 9px;
   }
 
   .calm-toolbar-row {

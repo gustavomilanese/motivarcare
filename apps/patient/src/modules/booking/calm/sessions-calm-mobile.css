@@ -1,30 +1,124 @@
 @media (max-width: 1080px) {
   .sessions-calm {
-    gap: 16px;
-    padding: 8px 0 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    width: 100%;
+    min-width: 0;
+    padding: 4px 0 12px;
+  }
+
+  .sessions-calm-head {
+    width: 100%;
   }
 
   .sessions-calm-head h1 {
-    font-size: 30px;
+    font-size: 28px;
   }
 
+  .sessions-calm-kicker {
+    margin-bottom: 4px;
+    font-size: 11px;
+  }
+
+  /* Franja de créditos: no compite con la card de próxima. */
   .sessions-calm-balance-mobile .sessions-calm-balance {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr;
     gap: 12px;
-    padding: 14px 16px;
+    padding: 12px 14px;
     border-radius: 12px;
+    background: var(--menta);
+    border: 0;
+  }
+
+  .sessions-calm-balance-mobile .sessions-calm-balance-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
   }
 
   .sessions-calm-balance-mobile .sessions-calm-count {
-    font-size: 36px;
+    font-size: 28px;
+  }
+
+  .sessions-calm-balance-mobile .sessions-calm-balance-copy {
+    min-width: 0;
+  }
+
+  .sessions-calm-balance-mobile .sessions-calm-balance-copy b {
+    font-size: 14px;
+  }
+
+  .sessions-calm-balance-mobile .sessions-calm-balance-copy > span:not(.sessions-calm-dots) {
+    display: block;
+    font-size: 12.5px;
+    line-height: 1.3;
+  }
+
+  .sessions-calm-balance-mobile .sessions-calm-dots {
+    display: none;
   }
 
   .sessions-calm-balance-mobile .sessions-calm-balance-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
     width: 100%;
-    margin-left: 0;
+    margin: 0;
   }
 
   .sessions-calm-balance-mobile .sessions-calm-book {
     width: 100%;
+    height: 44px;
+  }
+
+  .sessions-calm-balance-mobile .sessions-calm-buy {
+    align-self: center;
+    min-height: 36px;
+    padding: 6px 8px;
+  }
+
+  /* Próxima: acciones en columna limpia. */
+  .sessions-calm-next-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sessions-calm-next a.sessions-calm-join,
+  .sessions-calm-next button.sessions-calm-join {
+    width: 100%;
+    flex: none;
+  }
+
+  .sessions-calm-next button.sessions-calm-reschedule {
+    align-self: flex-start;
+  }
+
+  /* Después: fila izquierda + acción a la derecha, sin “centrar” el bloque. */
+  .sessions-calm-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  .sessions-calm-row-main {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .sessions-calm-row-main img {
+    width: 40px;
+    height: 40px;
+  }
+
+  .sessions-side-card {
+    border-radius: 12px;
   }
 }

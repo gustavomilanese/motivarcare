@@ -65,9 +65,17 @@
   align-items: center;
   gap: 18px;
   padding: 18px 22px;
-  border-radius: 24px;
+  border-radius: 12px;
   background: var(--superficie);
   border: 1px solid var(--linea);
+}
+
+.sessions-calm-balance-info {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+  flex: 1;
 }
 
 .sessions-calm-balance .sessions-calm-count {
@@ -76,6 +84,11 @@
   font-size: 44px;
   line-height: 1;
   color: var(--bosque);
+  flex: none;
+}
+
+.sessions-calm-balance-copy {
+  min-width: 0;
 }
 
 .sessions-calm-balance b {

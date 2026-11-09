@@ -1,0 +1,206 @@
+/* Pie de sitio MotivarCare · premium, quieto, no compite con el contenido.
+   Tokens DS: superficie, linea, tinta-suave, tinta-tenue. */
+
+.portal-shell.portal-shell--site-footer > .portal-site-footer,
+.portal-shell.portal-shell--home-ml.portal-shell--site-footer > .portal-site-footer {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1081px) {
+  /* Classic: alineado al main, fuera del sidebar sticky. */
+  .portal-shell.portal-shell--site-footer:not(.portal-shell--home-ml) > .portal-site-footer {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  /* Home ML: ancho del canvas; el padding-left evita el rail fijo. */
+  .portal-shell.portal-shell--home-ml.portal-shell--site-footer > .portal-site-footer {
+    grid-column: 1;
+    grid-row: 2;
+  }
+}
+
+.portal-site-footer {
+  margin-top: 28px;
+  padding: 20px 20px calc(16px + var(--portal-tab-clear, 0px));
+  border: none;
+  border-top: 1px solid #e2dfd3;
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: none;
+  box-sizing: border-box;
+  color: #5d6a63;
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+@media (min-width: 1081px) {
+  .portal-site-footer {
+    margin-top: 40px;
+    /* Hueco derecho amplio: el chip “Hablar con Maca” es ~220px. */
+    padding: 22px max(240px, clamp(20px, 3vw, 40px)) 28px clamp(20px, 3vw, 40px);
+  }
+
+  .portal-shell.portal-shell--home-ml.portal-shell--site-footer > .portal-site-footer {
+    padding-left: calc(var(--portal-home-ml-rail-collapsed, 58px) + 24px);
+    padding-right: max(240px, clamp(20px, 3vw, 40px));
+  }
+}
+
+.portal-site-footer-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+}
+
+.portal-site-footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 0;
+}
+
+.portal-site-footer-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 2px 0;
+  margin: 0;
+  border-radius: 0;
+  background: none;
+  color: #5d6a63;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  line-height: 1.3;
+}
+
+.portal-site-footer-link:not(:last-child)::after {
+  content: "·";
+  margin: 0 10px;
+  color: #c4cbc6;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.portal-site-footer-link:hover,
+.portal-site-footer-link:focus-visible {
+  background: none;
+  color: #1b2a23;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  outline: none;
+}
+
+.portal-site-footer-emergency {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #8a958f;
+}
+
+.portal-site-footer-emergency-label {
+  font-weight: 600;
+  color: #5d6a63;
+}
+
+.portal-site-footer-emergency-item {
+  font-weight: 500;
+}
+
+.portal-site-footer-emergency-more {
+  margin-left: 0;
+  color: #5d6a63;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.portal-site-footer-emergency-more:hover,
+.portal-site-footer-emergency-more:focus-visible {
+  color: #1b2a23;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.portal-site-footer-copy {
+  margin: 2px 0 0;
+  padding: 0;
+  border: 0;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #8a958f;
+  text-align: left;
+}
+
+@media (min-width: 1081px) {
+  .portal-site-footer-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    /* El © no va a la derecha: Maca lo tapaba. */
+    max-width: calc(100% - 8px);
+  }
+
+  .portal-site-footer-copy {
+    margin: 2px 0 0;
+    text-align: left;
+  }
+
+  .portal-site-footer-link {
+    font-size: 13px;
+    min-height: 30px;
+  }
+
+  .portal-site-footer-emergency {
+    font-size: 12.5px;
+  }
+
+  .portal-site-footer-emergency-more {
+    margin-left: 4px;
+  }
+}
+
+@media (max-width: 1080px) {
+  .portal-shell.portal-shell--site-footer > .portal-site-footer,
+  .portal-shell.portal-shell--home-ml.portal-shell--site-footer > .portal-site-footer {
+    margin-top: 20px;
+    padding-top: 16px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    /* Hueco derecho para el FAB circular sobre el tab bar. */
+    padding-right: max(72px, env(safe-area-inset-right, 0px));
+    padding-bottom: calc(14px + var(--portal-tab-clear, 0px));
+    background: #ffffff;
+    border-top: 1px solid #e2dfd3;
+  }
+
+  .portal-site-footer-link:not(:last-child)::after {
+    margin: 0 8px;
+  }
+
+  .portal-site-footer-emergency {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+}
+
+/* Chat: el composer es el pie. */
+.portal-shell:has(.portal-main--chat) > .portal-site-footer {
+  display: none !important;
+}

@@ -247,13 +247,30 @@
   .sessions-calm-columns {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 16px 16px 32px;
+    align-items: stretch; /* pisa el align-items: start del grid desktop */
+    gap: 14px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 12px 16px 28px;
   }
 
   .sessions-calm-side {
     display: contents;
     padding-top: 0;
+  }
+
+  .sessions-calm-main,
+  .sessions-calm-columns .sessions-calm,
+  .sessions-calm-balance-mobile,
+  .sessions-calm-list,
+  .sessions-calm-next,
+  .sessions-side-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .sessions-calm-main {
@@ -262,7 +279,7 @@
     padding: 0;
   }
 
-  /* Créditos viven arriba en el main (mobile). El host del rail se oculta. */
+  /* Créditos viven en el main (mobile). El host del rail se oculta. */
   .sessions-calm-balance-host {
     display: none !important;
   }
@@ -270,15 +287,13 @@
   .sessions-side-card {
     order: 1;
   }
+
+  .sessions-calm-balance-mobile {
+    display: block;
+  }
 }
 
 /* Slot de créditos solo en mobile (desktop usa el rail). */
 .sessions-calm-balance-mobile {
   display: none;
-}
-
-@media (max-width: 1080px) {
-  .sessions-calm-balance-mobile {
-    display: block;
-  }
 }

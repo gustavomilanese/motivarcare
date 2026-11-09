@@ -20,24 +20,30 @@ export function SessionsCalmBalance(props: {
 
   return (
     <section className="sessions-calm-balance">
-      <span className="sessions-calm-count">{props.available}</span>
-      <div>
-        <b>
-          {props.available === 1
-            ? t(props.language, { es: "sesión disponible", en: "session available", pt: "sessão disponível" })
-            : t(props.language, { es: "sesiones disponibles", en: "sessions available", pt: "sessões disponíveis" })}
-        </b>
-        {props.packageName ? <span>{props.packageName}</span> : null}
-        {dots > 0 ? (
-          <span className="sessions-calm-dots" aria-hidden="true">
-            {Array.from({ length: dots }, (_, index) => (
-              <i key={index} className={index < used ? "is-used" : ""} />
-            ))}
-          </span>
-        ) : null}
+      <div className="sessions-calm-balance-info">
+        <span className="sessions-calm-count">{props.available}</span>
+        <div className="sessions-calm-balance-copy">
+          <b>
+            {props.available === 1
+              ? t(props.language, { es: "sesión disponible", en: "session available", pt: "sessão disponível" })
+              : t(props.language, { es: "sesiones disponibles", en: "sessions available", pt: "sessões disponíveis" })}
+          </b>
+          {props.packageName ? <span>{props.packageName}</span> : null}
+          {dots > 0 ? (
+            <span className="sessions-calm-dots" aria-hidden="true">
+              {Array.from({ length: dots }, (_, index) => (
+                <i key={index} className={index < used ? "is-used" : ""} />
+              ))}
+            </span>
+          ) : null}
+        </div>
       </div>
       <div className="sessions-calm-balance-actions">
-        <button type="button" className={props.bookPrimary ? "sessions-calm-book" : "sessions-calm-book is-outline"} onClick={props.onBook}>
+        <button
+          type="button"
+          className={props.bookPrimary ? "sessions-calm-book" : "sessions-calm-book is-outline"}
+          onClick={props.onBook}
+        >
           {props.bookingOpen
             ? t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })
             : t(props.language, { es: "Reservar", en: "Book", pt: "Reservar" })}

@@ -122,6 +122,7 @@ export function CalmHome(props: {
             currency={props.currency}
             fxRates={props.fxRates}
             residencyCountry={props.residencyCountry}
+            availableSessions={props.availableSessions}
             onImageFallback={props.onImageFallback}
             onBook={() => props.onGoToBooking(bookingProfessional.id)}
             canRequestChange={props.canSelfChangeProfessional}
@@ -136,6 +137,7 @@ export function CalmHome(props: {
             booking={props.nextBooking}
             professional={bookingProfessional}
             photoUrl={photoFor(bookingProfessional)}
+            availableSessions={props.availableSessions}
             showJoinTour={Boolean(props.firstMeetBookingId && props.nextBooking && props.firstMeetBookingId === props.nextBooking.id)}
             onImageFallback={props.onImageFallback}
             onOpenBookingDetail={props.onOpenBookingDetail}

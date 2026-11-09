@@ -96,11 +96,13 @@
   font-size: 13.5px;
 }
 
-/* Créditos: variante compacta para no competir con Entrar / Reprogramar. */
+/* Créditos mobile: DS degrade-claro (diagonal abajo-izq → arriba-der). Web usa .calm-balance plano. */
 .calm-balance--follow {
   margin: 0;
   padding: 16px 18px;
   gap: 14px;
+  border-color: transparent;
+  background: linear-gradient(to top right, #bfdcc9 0%, #dcebdf 50%, #e9f0c8 100%);
 }
 
 .calm-balance--follow .calm-balance-number {

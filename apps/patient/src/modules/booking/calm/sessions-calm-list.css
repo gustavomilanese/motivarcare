@@ -20,11 +20,12 @@
 }
 
 .sessions-calm-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 18px;
+  border-radius: 12px;
   background: var(--superficie);
   border: 1px solid var(--linea);
   min-width: 0;

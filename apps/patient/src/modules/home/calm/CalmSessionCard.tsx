@@ -10,6 +10,7 @@ import {
 import { professionalAccessibleName, professionalFirstName } from "../../app/lib/professionalDisplayName";
 import type { Booking, Professional } from "../../app/types";
 import { CalmPersonHit } from "./CalmPersonHit";
+import { CalmSessionCreditsBadge } from "./CalmSessionCreditsBadge";
 import {
   formatClock,
   formatWeekday,
@@ -34,6 +35,7 @@ export function CalmSessionCard(props: {
   booking: Booking | null;
   professional: Professional | null;
   photoUrl: string | null;
+  availableSessions: number;
   showJoinTour: boolean;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onOpenBookingDetail: (bookingId: string) => void;
@@ -49,6 +51,10 @@ export function CalmSessionCard(props: {
   if (!booking || !professional) {
     return (
       <article className="calm-card calm-session calm-session--empty">
+        <div className="calm-session-top">
+          <span className="calm-session-top-spacer" aria-hidden="true" />
+          <CalmSessionCreditsBadge language={language} available={props.availableSessions} />
+        </div>
         <h2>
           {professional
             ? t(language, {
@@ -99,10 +105,13 @@ export function CalmSessionCard(props: {
         <path d="M438.7 372.7 C410.4 424.2 340.8 463.3 284.5 475.3 C228.1 487.3 140.1 482.6 100.4 444.8 C60.7 407.0 42.8 312.5 46.0 248.6 C49.2 184.7 76.7 94.1 119.7 61.4 C162.7 28.6 248.1 34.5 303.8 52.0 C359.6 69.4 431.7 112.8 454.2 166.3 C476.7 219.7 467.0 321.2 438.7 372.7Z" fill="#E7F1EA" />
         <circle cx="380" cy="150" r="14" fill="#F5C33B" />
       </svg>
-      <p className={`calm-chip${timing.kind === "live" || timing.kind === "soon" ? " calm-chip--live" : ""}`}>
-        <span className="calm-chip-dot" aria-hidden="true" />
-        {sessionChipLabel(timing, language)}
-      </p>
+      <div className="calm-session-top">
+        <p className={`calm-chip${timing.kind === "live" || timing.kind === "soon" ? " calm-chip--live" : ""}`}>
+          <span className="calm-chip-dot" aria-hidden="true" />
+          {sessionChipLabel(timing, language)}
+        </p>
+        <CalmSessionCreditsBadge language={language} available={props.availableSessions} />
+      </div>
       <div>
         <h2 className="calm-session-when">
           {sameDay

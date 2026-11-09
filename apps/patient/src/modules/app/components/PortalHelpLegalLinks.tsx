@@ -23,85 +23,54 @@ export interface PortalHelpLegalLinksProps {
   onOpenSupport?: () => void;
 }
 
+/** Pie compacto: links esenciales + emergencia breve + ©. */
 export function PortalHelpLegalFooter(props: PortalHelpLegalLinksProps) {
   const emergency = getEmergencyResources(resolveCountryCode(props.residencyCountry, props.patientMarket));
+  const topPhones = emergency?.resources.slice(0, 2) ?? [];
 
   return (
     <>
       <div className="portal-site-footer-inner">
-        <section className="portal-site-footer-block">
-          <h2 className="portal-site-footer-heading">
+        <nav
+          className="portal-site-footer-nav"
+          aria-label={t(props.language, { es: "Ayuda y legal", en: "Help and legal", pt: "Ajuda e legal" })}
+        >
+          <a className="portal-site-footer-link" href={`mailto:${PATIENT_SUPPORT_EMAIL}`}>
             {t(props.language, { es: "Soporte", en: "Support", pt: "Suporte" })}
-          </h2>
-          <p className="portal-site-footer-lead">
-            {t(props.language, {
-              es: "¿Necesitás ayuda con el portal? Escribinos.",
-              en: "Need help with the portal? Contact us.",
-              pt: "Precisa de ajuda com o portal? Fale conosco."
-            })}
-          </p>
-          <a className="portal-site-footer-email" href={`mailto:${PATIENT_SUPPORT_EMAIL}`}>
-            {PATIENT_SUPPORT_EMAIL}
           </a>
-        </section>
+          <Link className="portal-site-footer-link" to="/ayuda/preguntas-frecuentes">
+            {t(props.language, { es: "Preguntas frecuentes", en: "FAQ", pt: "Perguntas frequentes" })}
+          </Link>
+          <Link className="portal-site-footer-link" to="/ayuda/manual">
+            {t(props.language, { es: "Manual", en: "Manual", pt: "Manual" })}
+          </Link>
+          <a className="portal-site-footer-link" href="/docs/terms.html" target="_blank" rel="noopener noreferrer">
+            {t(props.language, { es: "Términos", en: "Terms", pt: "Termos" })}
+          </a>
+          <a className="portal-site-footer-link" href="/docs/privacy.html" target="_blank" rel="noopener noreferrer">
+            {t(props.language, { es: "Privacidad", en: "Privacy", pt: "Privacidade" })}
+          </a>
+          <a className="portal-site-footer-link" href="/docs/crisis.html" target="_blank" rel="noopener noreferrer">
+            {t(props.language, { es: "Líneas de apoyo", en: "Crisis lines", pt: "Linhas de apoio" })}
+          </a>
+        </nav>
 
-        <section className="portal-site-footer-block">
-          <h2 className="portal-site-footer-heading">
-            {t(props.language, { es: "Ayuda", en: "Help", pt: "Ajuda" })}
-          </h2>
-          <nav className="portal-site-footer-links" aria-label={t(props.language, { es: "Ayuda", en: "Help", pt: "Ajuda" })}>
-            <Link to="/ayuda/preguntas-frecuentes">
-              {t(props.language, { es: "Preguntas frecuentes", en: "FAQ", pt: "Perguntas frequentes" })}
-            </Link>
-            <Link to="/ayuda/manual">
-              {t(props.language, { es: "Manual de usuario", en: "User manual", pt: "Manual do usuário" })}
-            </Link>
-          </nav>
-        </section>
-
-        <section className="portal-site-footer-block">
-          <h2 className="portal-site-footer-heading">
-            {t(props.language, { es: "Legal", en: "Legal", pt: "Legal" })}
-          </h2>
-          <nav className="portal-site-footer-links" aria-label={t(props.language, { es: "Legal", en: "Legal", pt: "Legal" })}>
-            <a href="/docs/terms.html" target="_blank" rel="noopener noreferrer">
-              {t(props.language, { es: "Términos y condiciones", en: "Terms and conditions", pt: "Termos e condições" })}
+        {emergency && topPhones.length > 0 ? (
+          <p className="portal-site-footer-emergency">
+            <span className="portal-site-footer-emergency-label">
+              {t(props.language, { es: "Urgencias", en: "Emergency", pt: "Emergências" })}
+              {" · "}
+              {emergency.countryName}
+            </span>
+            {topPhones.map((resource) => (
+              <span key={`${resource.label}-${resource.contact}`} className="portal-site-footer-emergency-item">
+                {resource.label}: {resource.contact}
+              </span>
+            ))}
+            <a className="portal-site-footer-emergency-more" href="/docs/crisis.html" target="_blank" rel="noopener noreferrer">
+              {t(props.language, { es: "Ver todas", en: "See all", pt: "Ver todas" })}
             </a>
-            <a href="/docs/privacy.html" target="_blank" rel="noopener noreferrer">
-              {t(props.language, { es: "Política de privacidad", en: "Privacy policy", pt: "Política de privacidade" })}
-            </a>
-            <a href="/docs/crisis.html" target="_blank" rel="noopener noreferrer">
-              {t(props.language, { es: "Líneas de apoyo", en: "Crisis lines", pt: "Linhas de apoio" })}
-            </a>
-          </nav>
-        </section>
-
-        {emergency ? (
-          <section className="portal-site-footer-block portal-site-footer-block--phones">
-            <h2 className="portal-site-footer-heading">
-              {t(props.language, {
-                es: "Teléfonos útiles",
-                en: "Useful numbers",
-                pt: "Telefones úteis"
-              })}
-              <span className="portal-site-footer-country"> — {emergency.countryName}</span>
-            </h2>
-            <ul className="portal-site-footer-phones">
-              {emergency.resources.map((resource) => (
-                <li key={`${resource.label}-${resource.contact}`}>
-                  <span className="portal-site-footer-phone-label">{resource.label}</span>
-                  <span className="portal-site-footer-phone-contact">{resource.contact}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="portal-site-footer-crisis-note">
-              {t(props.language, {
-                es: "Si estás en peligro inmediato, llamá a emergencias de tu país.",
-                en: "If you are in immediate danger, call your local emergency number.",
-                pt: "Se estiver em perigo imediato, ligue para emergências do seu país."
-              })}
-            </p>
-          </section>
+          </p>
         ) : null}
       </div>
       <p className="portal-site-footer-copy">© {new Date().getFullYear()} MotivarCare</p>

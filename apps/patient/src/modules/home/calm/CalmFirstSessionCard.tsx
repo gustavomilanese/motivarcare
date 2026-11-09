@@ -11,6 +11,7 @@ import type { Professional } from "../../app/types";
 import { formatSessionListMajorPrice } from "../../matching/lib/sessionListPrice";
 import { upcomingProfessionalSlots } from "./calmHomeCase";
 import { CalmPersonHit } from "./CalmPersonHit";
+import { CalmSessionCreditsBadge } from "./CalmSessionCreditsBadge";
 import { formatClock, formatShortDate, timezoneCaption } from "./calmHomeFormat";
 import { IconSesiones } from "./calmIcons";
 
@@ -66,9 +67,12 @@ export function CalmFirstSessionCard(props: {
         <circle cx="380" cy="150" r="14" fill="#F5C33B" />
       </svg>
       <p className="calm-chip calm-first-session__chip">
-        {t(props.language, { es: "Tu próximo paso", en: "Your next step", pt: "Seu próximo passo" })}
-      </p>
-      <div className="calm-first-session__copy">
+      <div className="calm-session-top">
+        <p className="calm-chip calm-first-session__chip">
+          {t(props.language, { es: "Tu próximo paso", en: "Your next step", pt: "Seu próximo passo" })}
+        </p>
+        <CalmSessionCreditsBadge language={props.language} available={props.availableSessions} />
+      </div>
         <h2 className="calm-session-when">
           {t(props.language, {
             es: "Reservá tu primera sesión",

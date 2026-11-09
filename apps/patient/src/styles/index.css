@@ -13,6 +13,7 @@
 /* Tokens + resto no particionado. Pantallas nuevas: su propio .css, no acá. */
 @import "./legacy.css";
 @import "../modules/app/styles/portal-shell.css";
+@import "../modules/app/styles/portal-site-footer.css";
 @import "../modules/app/styles/portal-nav.css";
 @import "../modules/app/styles/portal-notifications.css";
 @import "../modules/auth/auth.css";

@@ -31,6 +31,18 @@ export function SessionsCalmPage(props: {
   return (
     <div className="sessions-calm">
       <SessionsCalmHead language={props.language} timeZone={props.timeZone} now={props.now} />
+      {next ? (
+        <SessionsCalmNext
+          booking={next}
+          language={props.language}
+          timeZone={props.timeZone}
+          now={props.now}
+          professionals={props.professionals}
+          photoUrl={props.photoMap[next.professionalId] ?? null}
+          onImageFallback={props.onImageFallback}
+          onReschedule={props.onReschedule}
+        />
+      ) : null}
       <div className="sessions-calm-balance-mobile">
         <SessionsCalmBalance
           language={props.language}
@@ -44,18 +56,6 @@ export function SessionsCalmPage(props: {
           onBuy={props.onBuy}
         />
       </div>
-      {next ? (
-        <SessionsCalmNext
-          booking={next}
-          language={props.language}
-          timeZone={props.timeZone}
-          now={props.now}
-          professionals={props.professionals}
-          photoUrl={props.photoMap[next.professionalId] ?? null}
-          onImageFallback={props.onImageFallback}
-          onReschedule={props.onReschedule}
-        />
-      ) : null}
       <SessionsCalmList
         language={props.language}
         timeZone={props.timeZone}
