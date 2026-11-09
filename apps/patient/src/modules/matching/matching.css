@@ -34,23 +34,27 @@
   position: absolute;
   top: 14px;
   right: 14px;
+  display: grid;
+  place-items: center;
   width: 36px;
   height: 36px;
   min-width: 36px;
   min-height: 36px;
-  border-radius: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.07);
-  background: rgba(255, 255, 255, 0.82);
-  color: #64748b;
-  font-size: 20px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid #e2dfd3;
+  background: #fff;
+  color: #1e4033;
+  font-size: 0;
   line-height: 1;
+  box-shadow: none;
   transition:
     background 0.15s ease,
     color 0.15s ease;
 }
 .no-sessions-available-close.matching-flow-close:hover {
-  background: rgba(241, 245, 249, 0.98);
-  color: #0f172a;
+  background: #f5f3eb;
+  color: #1e4033;
 }
 .matching-flow-backdrop {
   position: fixed;
@@ -299,22 +303,24 @@
   place-items: center;
   margin: 4px 0 18px;
 }
-.no-sessions-available-visual-ring {
+.no-sessions-available-mancha {
+  position: relative;
+  width: 72px;
+  height: 72px;
   display: grid;
   place-items: center;
-  width: 104px;
-  height: 104px;
-  border-radius: 32px;
-  color: #5f44eb;
-  background:
-    linear-gradient(160deg, rgba(95, 68, 235, 0.14) 0%, rgba(52, 131, 250, 0.1) 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    0 12px 28px rgba(95, 68, 235, 0.14);
+  color: #f5f3eb;
 }
-.no-sessions-available-visual-svg {
-  width: 68px;
-  height: 68px;
+.no-sessions-available-mancha-blob {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.no-sessions-available-mancha svg:last-child {
+  position: relative;
+  z-index: 1;
+  color: #f5f3eb;
 }
 .no-sessions-available-copy {
   display: grid;
@@ -328,7 +334,7 @@
   font-weight: 750;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #5f44eb;
+  color: #2f6b51;
 }
 .no-sessions-available-title {
   margin: 0;

@@ -118,6 +118,7 @@
   .portal-shell:has(.portal-main--dashboard-home),
   .portal-shell:has(.portal-main--diary-home),
   .portal-shell:has(.portal-main--sessions-home),
+  .portal-shell:has(.portal-main--exercises-home),
   .portal-shell:has(.portal-main--wellbeing-relax),
   .portal-shell:has(.portal-main--home-ml),
   .portal-shell:has(.portal-main--chat) {

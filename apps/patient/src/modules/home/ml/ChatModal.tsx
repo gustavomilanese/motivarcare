@@ -2,6 +2,7 @@ import { useEffect, type SyntheticEvent } from "react";
 import { textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
 import { ChatPage } from "../../app/pages/ChatPage";
 import type { PatientAppState, Professional } from "../../app/types";
+import { IconCerrar } from "../calm/calmIcons";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -75,8 +76,13 @@ export function DashboardHomeChatModal(props: {
                 pt: "Abrir chat completo"
               })}
             </button>
-            <button type="button" className="dashboard-home-chat-close" onClick={props.onClose}>
-              {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+            <button
+              type="button"
+              className="dashboard-home-chat-close"
+              onClick={props.onClose}
+              aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+            >
+              <IconCerrar />
             </button>
           </div>
         </header>

@@ -1,4 +1,4 @@
-import { FormEvent, SyntheticEvent, useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 const PATIENT_AUTH_REMEMBER_KEY = "motivarcare_patient_auth_remember";
@@ -53,6 +53,7 @@ import {
   McTextButton
 } from "@therapy/ui";
 import { inferPatientPortalResidencyIso2 } from "@therapy/types";
+import { AuthBrand } from "../../auth/AuthBrand";
 import { friendlyAuthSurfaceMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest } from "../services/api";
 import type { AuthApiResponse, SessionUser } from "../types";
@@ -63,8 +64,6 @@ function t(language: AppLanguage, values: LocalizedText): string {
 
 export function AuthScreen(props: {
   language: AppLanguage;
-  heroImage: string;
-  onHeroFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onLogin: (params: {
     user: SessionUser;
     token: string | null;
@@ -241,46 +240,41 @@ export function AuthScreen(props: {
     }
   };
 
+  const title = t(props.language, {
+    es: "Tu sesión online empieza",
+    en: "Your online session starts",
+    pt: "Sua sessao online comeca"
+  });
+  const titleMark = t(props.language, { es: "acá", en: "here", pt: "aqui" });
+  const lead =
+    mode === "login"
+      ? t(props.language, {
+          es: "Ingresá con tu correo para continuar.",
+          en: "Sign in with your email to continue.",
+          pt: "Entre com seu e-mail para continuar."
+        })
+      : t(props.language, {
+          es: "Creá tu cuenta con tu correo.",
+          en: "Create your account with your email.",
+          pt: "Crie sua conta com seu e-mail."
+        });
+
   return (
     <div className="auth-shell">
       <section className="auth-card">
-        <div className="auth-hero-stack">
-          <div className="auth-brand-mark auth-brand-mark--above-hero">
-            <img
-              className="auth-brand-lockup"
-              src="/brand/motivarcare-logo-full.png"
-              alt="MotivarCare"
-              width={708}
-              height={148}
-            />
-          </div>
-          <div className="auth-media">
-            <div className="visual-hero">
-              <img
-                src={props.heroImage}
-                alt={t(props.language, {
-                  es: "Paciente en una sesión online",
-                  en: "Patient in an online session",
-                  pt: "Paciente em uma sessao online"
-                })}
-                onError={props.onHeroFallback}
-              />
-            </div>
-          </div>
-        </div>
-        <div className="auth-form-panel">
-          <div className="auth-header-copy">
-            <div className="auth-brand-mark auth-brand-mark--in-form">
-              <img
-                className="auth-brand-lockup"
-                src="/brand/motivarcare-logo-full.png"
-                alt="MotivarCare"
-                width={708}
-                height={148}
-              />
-            </div>
-            <h1>{t(props.language, { es: "Tu sesión online empieza acá", en: "Your online session starts here", pt: "Sua sessao online comeca aqui" })}</h1>
-          </div>
+        <AuthBrand />
+        <header className="auth-header-copy">
+          <h1>
+            {title}{" "}
+            <em className="auth-mark">
+              {titleMark}
+              <svg className="auth-wave" viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M3 12 C 30 3, 50 3, 70 10 S 110 18, 130 10 S 170 3, 197 9" />
+              </svg>
+            </em>
+          </h1>
+          <p className="auth-lead">{lead}</p>
+        </header>
 
           {emailVerifiedFromEmailLink ? (
             <div className="auth-email-verified-banner" role="status">
@@ -299,14 +293,6 @@ export function AuthScreen(props: {
               })}
             </div>
           ) : null}
-
-          <div className="auth-divider" aria-hidden="true">
-            <span />
-            <span className="auth-divider-label">
-              {t(props.language, { es: "Continuar con email", en: "Continue with email", pt: "Continuar com email" })}
-            </span>
-            <span />
-          </div>
 
           <form className="stack auth-form" onSubmit={handleSubmit}>
             {mode === "register" ? (
@@ -464,7 +450,6 @@ export function AuthScreen(props: {
               </p>
             )}
           </footer>
-        </div>
       </section>
     </div>
   );

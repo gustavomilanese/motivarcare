@@ -1,0 +1,191 @@
+/* Menú de cuenta — tokens DS 0.1 (superficie blanca, bosque, Manrope). */
+
+.menu-dropdown {
+  background: #fff;
+  border: 1px solid #e2dfd3;
+  border-radius: 24px;
+  box-shadow: 0 30px 60px -28px rgba(30, 64, 51, 0.45);
+  color: #1b2a23;
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.menu-dropdown-backdrop.menu-dropdown-backdrop--portaled,
+.menu-dropdown-backdrop.menu-dropdown-backdrop--home-ml {
+  background: rgba(30, 64, 51, 0.28);
+}
+
+.menu-dropdown-backdrop.menu-dropdown-backdrop--portaled:hover,
+.menu-dropdown-backdrop.menu-dropdown-backdrop--portaled:focus,
+.menu-dropdown-backdrop.menu-dropdown-backdrop--portaled:active,
+.menu-dropdown-backdrop.menu-dropdown-backdrop--home-ml:hover,
+.menu-dropdown-backdrop.menu-dropdown-backdrop--home-ml:focus,
+.menu-dropdown-backdrop.menu-dropdown-backdrop--home-ml:active {
+  background: rgba(30, 64, 51, 0.28);
+}
+
+.menu-panel-head {
+  background: #fff;
+  border-bottom: 1px solid #e2dfd3;
+  padding: 16px 16px 14px;
+}
+
+.menu-panel-head strong {
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  color: #1e4033;
+}
+
+.menu-panel-head span {
+  color: #5d6a63;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.menu-dropdown-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #5d6a63;
+  font-size: 22px;
+}
+
+.menu-dropdown-close:hover,
+.menu-dropdown-close:focus-visible {
+  background: #e7f1ea;
+  color: #1e4033;
+}
+
+.menu-dropdown .menu-dropdown-group {
+  border-bottom: 1px solid #e2dfd3;
+}
+
+.menu-dropdown .menu-dropdown-section-label,
+.menu-dropdown-section-label {
+  color: #2f6b51;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.menu-dropdown-section-country {
+  color: #5d6a63;
+}
+
+.menu-item {
+  color: #1b2a23;
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.menu-item--sub {
+  color: #5d6a63;
+}
+
+.menu-dropdown .menu-item:hover,
+.menu-dropdown .menu-item--help:hover,
+.menu-item--sub:hover {
+  background: #e7f1ea;
+  color: #1e4033;
+}
+
+.menu-dropdown .menu-item:active,
+.menu-dropdown .menu-item--help:active {
+  background: #d6e7dc;
+}
+
+.menu-item--value small {
+  color: #8a958f;
+}
+
+.menu-dropdown a.menu-item,
+.menu-dropdown a.menu-item--help,
+.menu-dropdown .menu-item--help {
+  color: #1e4033;
+  text-decoration: none;
+}
+
+.menu-dropdown a.menu-item:visited,
+.menu-dropdown a.menu-item--help:visited {
+  color: #1e4033;
+}
+
+.menu-item--help-email small {
+  color: #2f6b51;
+}
+
+.menu-item--danger,
+.menu-item.danger {
+  color: #8a3a32;
+}
+
+.menu-item--danger:hover,
+.menu-item.danger:hover {
+  background: #f5f3eb;
+  color: #8a3a32;
+}
+
+.menu-item--dev-home {
+  color: #8a958f;
+}
+
+.menu-item--dev-home:hover {
+  color: #5d6a63;
+  background: #f5f3eb;
+}
+
+.menu-dropdown-phones-title,
+.menu-dropdown-phones-title span {
+  color: #5d6a63;
+}
+
+.menu-dropdown-phones-list strong {
+  color: #1e4033;
+}
+
+.menu-dropdown-phones-list span {
+  color: #5d6a63;
+}
+
+.menu-dropdown-phones-note {
+  color: #8a958f;
+}
+
+.menu-dropdown > .menu-item--danger {
+  border-top: 1px solid #e2dfd3;
+}
+
+@media (max-width: 1080px) {
+  .menu-dropdown-backdrop {
+    background: rgba(30, 64, 51, 0.36);
+  }
+
+  .menu-dropdown-backdrop:hover,
+  .menu-dropdown-backdrop:focus,
+  .menu-dropdown-backdrop:active {
+    background: rgba(30, 64, 51, 0.36);
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet {
+    border-left: 1px solid #e2dfd3;
+    background: #fff;
+    box-shadow: -14px 0 48px rgba(30, 64, 51, 0.18);
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet::before {
+    background: #e2dfd3;
+    height: 1px;
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet .menu-panel-head {
+    background: rgba(255, 255, 255, 0.96);
+    border-bottom: 1px solid #e2dfd3;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}

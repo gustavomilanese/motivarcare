@@ -919,6 +919,12 @@ export function App() {
         email={user.email}
         emailDeliveryConfigured={emailDeliveryConfigured}
         onLogout={handleLogout}
+        onVerified={() => {
+          if (!user) {
+            return;
+          }
+          handleUserChange({ ...user, emailVerified: true });
+        }}
       />
     );
   }

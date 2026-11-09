@@ -1,0 +1,619 @@
+/* Lo que flota en el portal del paciente.
+   Tokens del design system 0.1: menta en el panel, sombra de ventana, pastillas y Fraunces / Manrope.
+   Fraunces y Manrope ya están declaradas en calm-home.css. */
+
+.session-modal-backdrop,
+.matching-flow-backdrop,
+.mc-modal-backdrop,
+.notifications-dropdown-backdrop {
+  background: rgba(30, 64, 51, 0.36);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* Pantalla completa de confirmación de pago: crema del DS, no el violeta/gris viejo. */
+.checkout-return-loader-overlay {
+  background: #f5f3eb;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.session-modal,
+.matching-flow-modal,
+.mc-modal,
+.portal-mobile-more-sheet,
+.sessions-calendar-popover,
+.patient-sort-sheet,
+.patient-guided-tour-popover.driver-popover,
+.treatment-chat-panel {
+  background: #e7f1ea;
+  border: 1px solid #e2dfd3;
+  border-radius: 24px;
+  box-shadow: 0 30px 60px -28px rgba(30, 64, 51, 0.45);
+  color: #1b2a23;
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+/* Ventanas flotantes de cuenta / notificaciones: superficie blanca del DS. */
+.menu-dropdown,
+.notifications-dropdown {
+  background: #fff;
+  border: 1px solid #e2dfd3;
+  border-radius: 24px;
+  box-shadow: 0 30px 60px -28px rgba(30, 64, 51, 0.45);
+  color: #1b2a23;
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.treatment-chat-panel {
+  border: 1.5px dashed #1e4033;
+}
+
+.portal-mobile-more-sheet,
+.menu-dropdown.menu-dropdown--account-sheet {
+  border-radius: 24px 24px 0 0;
+  border-top-color: #e2dfd3;
+}
+
+.session-modal h2,
+.session-modal h3,
+.matching-flow-modal h2,
+.matching-flow-modal h3,
+.matching-flow-header h3,
+.mc-modal__title,
+.notifications-head strong,
+.patient-guided-tour-popover .driver-popover-title,
+.patient-tour-welcome-h,
+.sessions-calendar-popover-title,
+.patient-sort-sheet h4,
+.treatment-chat-panel__header-text strong {
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: #1e4033;
+}
+
+.session-modal p,
+.matching-flow-modal p,
+.matching-flow-header p,
+.mc-modal__body,
+.mc-modal__body > p,
+.patient-guided-tour-popover .driver-popover-description,
+.patient-tour-maca-hero__hi,
+.patient-tour-maca-hero__lead,
+.sessions-calendar-popover,
+.treatment-chat-panel__header-text span,
+.treatment-chat-panel__hint,
+.treatment-chat-panel__disclaimer {
+  color: #5d6a63;
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.patient-tour-maca-hero__hi strong,
+.patient-tour-sidebar-intro strong,
+.session-modal a,
+.matching-flow-modal a {
+  color: #1e4033;
+}
+
+.patient-tour-maca-hero__fine,
+.patient-guided-tour-popover .driver-popover-progress-text {
+  color: #8a958f;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.session-modal button[class*="primary"],
+.session-modal a.session-meet-primary,
+.session-modal button[class*="secondary"],
+.session-modal button[class*="ghost"],
+.session-modal button[class*="danger"],
+.session-modal button.primary,
+.session-modal button.ghost,
+.matching-flow-modal button[class*="primary"],
+.matching-flow-modal button[class*="secondary"],
+.matching-flow-modal button[class*="ghost"],
+.mc-modal .mc-btn,
+.sessions-calendar-popover-action,
+.treatment-chat-panel__send,
+.patient-guided-tour-popover .driver-popover-footer button {
+  height: 44px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  box-shadow: none;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* Tercero: contorno. Blanco, borde linea, texto bosque. */
+.session-modal button.ghost,
+.session-modal button[class*="ghost"],
+.matching-flow-modal button[class*="ghost"],
+.mc-modal .mc-btn--ghost,
+.sessions-calendar-popover-action.ghost,
+.sessions-calendar-popover-action.danger-ghost {
+  border: 1px solid #e2dfd3;
+  background: #fff;
+  color: #1e4033;
+}
+
+.session-modal button.ghost:hover,
+.session-modal button[class*="ghost"]:hover,
+.matching-flow-modal button[class*="ghost"]:hover,
+.mc-modal .mc-btn--ghost:hover:not(:disabled),
+.sessions-calendar-popover-action.ghost:hover,
+.sessions-calendar-popover-action.danger-ghost:hover {
+  background: #f5f3eb;
+  color: #1e4033;
+}
+
+/* Segundo: bosque con texto bosque-claro. */
+.session-modal button[class*="secondary"],
+.session-modal button[class*="danger"],
+.matching-flow-modal button[class*="secondary"],
+.mc-modal .mc-btn--secondary,
+.sessions-calendar-popover-action.danger,
+.patient-guided-tour-popover .driver-popover-footer .driver-popover-prev-btn {
+  border: 0;
+  background: #1e4033;
+  color: #eaf1ec;
+}
+
+.session-modal button[class*="secondary"]:hover,
+.session-modal button[class*="danger"]:hover,
+.matching-flow-modal button[class*="secondary"]:hover,
+.mc-modal .mc-btn--secondary:hover:not(:disabled),
+.sessions-calendar-popover-action.danger:hover:not(:disabled),
+.patient-guided-tour-popover .driver-popover-footer .driver-popover-prev-btn:hover:not(.driver-popover-btn-disabled) {
+  background: #2a5543;
+  color: #eaf1ec;
+}
+
+/* Primero: amarillo con texto bosque. Uno por ventana. */
+.session-modal button.primary,
+.session-modal button[class*="primary"],
+.session-modal a.session-meet-primary,
+.session-modal a.session-meet-primary:hover,
+.session-modal a.session-meet-primary:active,
+.matching-flow-modal button[class*="primary"],
+.mc-modal .mc-btn--primary,
+.sessions-calendar-popover-action.primary,
+.treatment-chat-panel__send,
+.patient-guided-tour-popover .driver-popover-footer .driver-popover-next-btn {
+  border: 0;
+  background: #f5c33b;
+  color: #1e4033;
+  box-shadow: none;
+}
+
+.session-modal button.primary:hover,
+.session-modal button[class*="primary"]:hover,
+.session-modal a.session-meet-primary:hover,
+.matching-flow-modal button[class*="primary"]:hover:not(:disabled),
+.mc-modal .mc-btn--primary:hover:not(:disabled),
+.sessions-calendar-popover-action.primary:hover:not(:disabled),
+.treatment-chat-panel__send:hover:not(:disabled),
+.patient-guided-tour-popover .driver-popover-footer .driver-popover-next-btn:hover {
+  background: #f5c33b;
+  color: #1e4033;
+}
+
+.session-modal button[class*="primary"]:disabled,
+.matching-flow-modal button[class*="primary"]:disabled,
+.mc-modal .mc-btn--primary:disabled,
+.treatment-chat-panel__send:disabled,
+.sessions-calendar-popover-action.primary:disabled {
+  background: #fbe9b0;
+  color: #1e4033;
+  opacity: 1;
+}
+
+.session-modal [class*="close"],
+.matching-flow-modal [class*="close"],
+.mc-modal .mc-icon-btn,
+.sessions-calendar-popover-close,
+.treatment-chat-panel__close,
+.patient-guided-tour-popover .driver-popover-close-btn {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  border: 0;
+  background: #fff;
+  color: #1e4033;
+  box-shadow: none;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.session-modal input,
+.session-modal select,
+.session-modal textarea,
+.matching-flow-modal input,
+.matching-flow-modal select,
+.matching-flow-modal textarea,
+.mc-modal input,
+.mc-modal select,
+.mc-modal textarea,
+.treatment-chat-panel textarea {
+  border: 1px solid #e2dfd3;
+  border-radius: 10px;
+  background: #fff;
+  color: #1b2a23;
+  font-family: "Manrope", system-ui, sans-serif;
+  box-shadow: none;
+}
+
+.session-modal input:focus,
+.session-modal select:focus,
+.session-modal textarea:focus,
+.matching-flow-modal input:focus,
+.matching-flow-modal select:focus,
+.matching-flow-modal textarea:focus,
+.mc-modal input:focus,
+.mc-modal select:focus,
+.mc-modal textarea:focus,
+.treatment-chat-panel textarea:focus {
+  border-color: #1e4033;
+  outline: none;
+  box-shadow: none;
+}
+
+.patient-guided-tour-popover.driver-popover {
+  padding: 22px 24px 20px;
+  max-width: min(440px, calc(100vw - 28px));
+}
+
+.patient-guided-tour-popover.driver-popover::before,
+.patient-tour-cinematic-hero {
+  display: none;
+}
+
+.patient-guided-tour-popover--welcome-cinematic.driver-popover {
+  padding: 22px 24px 20px;
+  overflow: visible;
+}
+
+.patient-tour-welcome-body {
+  padding: 0;
+}
+
+.patient-tour-eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  justify-self: start;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #e6edc4;
+  color: #1e4033;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.patient-tour-eyebrow::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f5c33b;
+  flex: none;
+}
+
+.patient-tour-maca-img {
+  display: block;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: #e7f1ea;
+  padding: 4px;
+}
+
+.patient-tour-maca-img--large {
+  width: 64px;
+  height: 64px;
+}
+
+.patient-tour-maca-img--small {
+  width: 40px;
+  height: 40px;
+}
+
+.patient-tour-maca-hero__avatar,
+.patient-tour-maca-mini {
+  filter: none;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+.patient-guided-tour-popover .driver-popover-footer button {
+  text-shadow: none;
+}
+
+.patient-guided-tour-popover .driver-popover-navigation-btns {
+  gap: 8px;
+}
+
+.portal-sidebar-tour {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 14px 0 8px;
+  border: 1.5px dashed #1e4033;
+  border-radius: 999px;
+  background: #fff;
+  color: #1e4033;
+  box-shadow: none;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.portal-sidebar-tour img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e7f1ea;
+  padding: 2px;
+  box-sizing: border-box;
+}
+
+.portal-sidebar-tour:hover {
+  background: #f5f3eb;
+  border-color: #1e4033;
+  color: #1e4033;
+  box-shadow: none;
+}
+
+.treatment-chat-panel__header {
+  background: transparent;
+  border-bottom: 1px solid #e2dfd3;
+  color: #1e4033;
+}
+
+.treatment-chat-panel__message--assistant {
+  background: #f5f3eb;
+  color: #1b2a23;
+  border: 1px solid #e2dfd3;
+  border-radius: 16px;
+  border-bottom-left-radius: 6px;
+}
+
+.treatment-chat-panel__message--user {
+  background: #d6e7dc;
+  color: #1e4033;
+  border-radius: 16px;
+  border-bottom-right-radius: 6px;
+}
+
+.notifications-dropdown-backdrop:hover,
+.notifications-dropdown-backdrop:focus,
+.notifications-dropdown-backdrop:active {
+  background: rgba(30, 64, 51, 0.36);
+}
+
+@media (min-width: 768px) {
+  .patient-guided-tour-popover.driver-popover,
+  .patient-guided-tour-popover--welcome-cinematic.driver-popover {
+    max-width: min(520px, calc(100vw - 48px));
+    min-width: 0;
+    padding: 22px 24px 20px;
+  }
+}
+
+/* Detalle de sesión: misma tarjeta que la home. Dos botones y el resto en texto. */
+.session-detail-modal.session-modal {
+  --superficie: #fff;
+  --salvia: #d6e7dc;
+  --menta: #e7f1ea;
+  --bosque: #1e4033;
+  --bosque-2: #2a5543;
+  --verde-medio: #2f6b51;
+  --tinta-suave: #5d6a63;
+  --amarillo: #f5c33b;
+  --serif: "Fraunces", Georgia, serif;
+  --sans: "Manrope", system-ui, sans-serif;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: min(560px, calc(100vw - 32px));
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 30px 32px;
+  border: 0;
+  border-radius: 24px;
+  background: #d6e7dc;
+  box-shadow: 0 30px 60px -28px rgba(20, 41, 31, 0.45);
+  color: #1b2a23;
+  font-family: "Manrope", system-ui, sans-serif;
+  overflow: hidden;
+}
+
+.session-detail-modal .calm-session-blob {
+  right: -150px;
+  top: -80px;
+}
+
+.session-detail-modal .calm-session-when {
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  color: #1e4033;
+}
+
+.session-detail-modal .session-detail-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #1e4033;
+  box-shadow: none;
+}
+
+.session-detail-modal .session-detail-close:hover,
+.session-detail-modal .session-detail-close:focus-visible {
+  background: #e7f1ea;
+  color: #1e4033;
+}
+
+.session-detail-modal .session-detail-name,
+.session-detail-modal .session-detail-name:hover,
+.session-detail-modal .session-detail-name:focus-visible {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #1e4033;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.session-detail-modal .session-detail-name:hover,
+.session-detail-modal .session-detail-name:focus-visible {
+  color: #2a5543;
+}
+
+.session-detail-modal .calm-session-actions {
+  flex-wrap: wrap;
+  margin-top: 0;
+}
+
+.session-detail-modal .session-detail-footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.session-detail-modal .session-detail-cancel-link,
+.session-detail-modal .session-detail-cancel-link:hover:not(:disabled),
+.session-detail-modal .session-detail-cancel-link:disabled,
+.session-detail-modal .session-detail-av-link,
+.session-detail-modal .session-detail-av-link:hover,
+.session-detail-modal .session-detail-av-link:focus-visible {
+  align-self: center;
+  height: auto;
+  min-height: 0;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.session-detail-modal .session-detail-cancel-link {
+  color: #2f6b51;
+  text-decoration: none;
+}
+
+.session-detail-modal .session-detail-av-link {
+  color: #5d6a63;
+  text-decoration: underline;
+  text-decoration-color: #e2dfd3;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.session-detail-modal .session-detail-cancel-link:hover:not(:disabled) {
+  background: transparent;
+  color: #2f6b51;
+  text-decoration: underline;
+  text-decoration-color: #f5c33b;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.session-detail-modal .session-detail-av-link:hover,
+.session-detail-modal .session-detail-av-link:focus-visible {
+  background: transparent;
+  color: #1e4033;
+  text-decoration-color: #f5c33b;
+  text-decoration-thickness: 2px;
+}
+
+.session-detail-modal--cancel .calm-session-blob,
+.session-detail-modal:has(.session-detail-cancel-confirm) .calm-session-blob {
+  display: none;
+}
+
+.session-detail-modal .session-detail-cancel-confirm {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 12px;
+}
+
+.session-detail-modal .session-detail-cancel-title {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  font-size: 32px;
+  line-height: 1.1;
+  color: #1e4033;
+}
+
+.session-detail-modal .session-detail-cancel-copy {
+  margin: 0;
+  color: #5d6a63;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.session-detail-modal .session-detail-cancel-reason textarea {
+  border: 1px solid #e2dfd3;
+  border-radius: 10px;
+  background: #fff;
+  color: #1b2a23;
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.session-detail-modal .session-detail-cancel-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.session-detail-modal .session-detail-cancel-link:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.session-detail-modal .calm-chip,
+.session-detail-modal .calm-text-link {
+  color: #2f6b51;
+}
+
+.session-detail-modal .calm-chip {
+  color: #1e4033;
+}

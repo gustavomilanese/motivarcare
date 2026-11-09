@@ -152,7 +152,7 @@
   position: relative;
 }
 .wellbeing-relax-page-ml-toolbar.wellbeing-relax-toolbar-mount {
-  top: 12px;
+  top: var(--portal-chrome-top, 26px);
   right: 12px;
 }
 .wellbeing-relax-page-ml-actions {

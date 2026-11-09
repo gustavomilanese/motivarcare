@@ -1,0 +1,32 @@
+/* Paso del tour del menú: mismos tokens que Inicio y Sesiones. */
+
+.patient-guided-tour-popover .patient-tour-sidebar-intro {
+  color: #5d6a63;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.patient-guided-tour-popover .patient-tour-menu-hints {
+  color: #1b2a23;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+.patient-guided-tour-popover .patient-tour-menu-hints li::marker {
+  color: #2f6b51;
+}
+
+.patient-guided-tour-popover .patient-tour-menu-hints strong {
+  color: #2f6b51;
+  font-weight: 800;
+}
+
+.patient-guided-tour-popover .patient-tour-maca-mini {
+  padding: 3px;
+  border: 0;
+  border-radius: 50%;
+  background: #e7f1ea;
+  box-shadow: none;
+}

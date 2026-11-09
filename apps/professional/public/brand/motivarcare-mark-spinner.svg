@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" aria-hidden="true">
   <defs>
     <linearGradient id="mc-mark-grad" x1="8%" y1="92%" x2="92%" y2="8%">
-      <stop offset="0%" stop-color="#55aee8" />
-      <stop offset="100%" stop-color="#3ecfb5" />
+      <stop offset="0%" stop-color="#1E4033" />
+      <stop offset="50%" stop-color="#2F6B51" />
+      <stop offset="100%" stop-color="#7FB394" />
     </linearGradient>
   </defs>
   <path

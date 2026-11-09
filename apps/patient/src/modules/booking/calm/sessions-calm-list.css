@@ -1,0 +1,64 @@
+.sessions-calm-list h2,
+.sessions-calm-week h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 19px;
+  color: var(--bosque);
+}
+
+.sessions-calm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sessions-calm-empty {
+  margin: 0;
+  color: var(--tinta-suave);
+}
+
+.sessions-calm-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--superficie);
+  border: 1px solid var(--linea);
+}
+
+.sessions-calm-row.is-today {
+  background: var(--salvia);
+  border-color: transparent;
+}
+
+.sessions-calm-row img {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.sessions-calm-row b {
+  display: block;
+  color: var(--bosque);
+}
+
+.sessions-calm-row span {
+  color: var(--tinta-suave);
+  font-size: 14px;
+}
+
+.sessions-calm-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.sessions-calm-list-more {
+  align-self: flex-start;
+  margin-top: 4px;
+}

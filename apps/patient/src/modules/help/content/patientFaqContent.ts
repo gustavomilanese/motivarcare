@@ -7,9 +7,9 @@ export const PATIENT_FAQ_SECTIONS: HelpFaqSection[] = [
       {
         question: { es: "¿Cómo reservo una sesión?", en: "How do I book a session?", pt: "Como reservo uma sessão?" },
         answer: {
-          es: "Andá a Sesiones y tocá «Reservar sesión». Elegí fecha y horario disponible con tu profesional activo. También podés iniciar desde Inicio si tenés créditos o una sesión de prueba pendiente.",
-          en: "Go to Sessions and tap «Book session». Pick an available date and time with your active therapist. You can also start from Home if you have credits or a pending trial session.",
-          pt: "Vá em Sessões e toque em «Reservar sessão». Escolha data e horário disponíveis com seu profissional ativo. Também pode começar em Início se tiver créditos ou sessão de teste pendente."
+          es: "Andá a Sesiones («Tus sesiones») y tocá Reservar / Reservar sesión. Elegí un horario disponible. También podés empezar desde la card de Inicio si tenés créditos o una sesión de prueba pendiente.",
+          en: "Go to Sessions («Your sessions») and tap Book / Book session. Pick an available time. You can also start from the Home card if you have credits or a pending trial session.",
+          pt: "Vá em Sessões («Suas sessões») e toque Reservar / Reservar sessão. Escolha um horário disponível. Também pode começar pelo card de Início se tiver créditos ou sessão de teste pendente."
         }
       },
       {
@@ -31,17 +31,17 @@ export const PATIENT_FAQ_SECTIONS: HelpFaqSection[] = [
       {
         question: { es: "¿Puedo reprogramar o cancelar?", en: "Can I reschedule or cancel?", pt: "Posso reagendar ou cancelar?" },
         answer: {
-          es: "Sí, en Sesiones → Próximas reservas. Cada acción muestra las condiciones de anticipación. Si cancelás tarde o no asistís, pueden aplicarse penalidades según la política indicada en pantalla.",
-          en: "Yes, in Sessions → Upcoming bookings. Each action shows notice requirements. Late cancellation or no-show may incur penalties per the on-screen policy.",
-          pt: "Sim, em Sessões → Próximas reservas. Cada ação mostra as condições de antecedência. Cancelamento tardio ou falta podem gerar penalidades conforme a política na tela."
+          es: "Sí, en Sesiones → Próximas sesiones (o Ver detalle en la card). Cada acción muestra las condiciones de anticipación. Si cancelás tarde o no asistís, pueden aplicarse penalidades según la política en pantalla.",
+          en: "Yes, in Sessions → Upcoming sessions (or View details on the card). Each action shows notice requirements. Late cancellation or no-show may incur penalties per the on-screen policy.",
+          pt: "Sim, em Sessões → Próximas sessões (ou Ver detalhe no card). Cada ação mostra as condições de antecedência. Cancelamento tardio ou falta podem gerar penalidades conforme a política na tela."
         }
       },
       {
         question: { es: "¿Dónde está el enlace de videollamada?", en: "Where is the video call link?", pt: "Onde está o link da videochamada?" },
         answer: {
-          es: "Aparece en Próximas reservas cuando la sesión está reservada y próxima. También podés abrir el detalle de la sesión desde Inicio o el calendario en Sesiones.",
-          en: "It appears under Upcoming bookings when the session is booked and near. You can also open session details from Home or the calendar in Sessions.",
-          pt: "Aparece em Próximas reservas quando a sessão está reservada e próxima. Também pode abrir o detalhe da sessão em Início ou no calendário em Sessões."
+          es: "Usá Entrar a la sesión en la card de Inicio o en Sesiones cuando la cita está próxima. También está en Ver detalle de la sesión.",
+          en: "Use Join session on the Home or Sessions card when the appointment is near. It is also in View details.",
+          pt: "Use Entrar na sessão no card de Início ou Sessões quando a consulta estiver próxima. Também está em Ver detalhe."
         }
       },
       {
@@ -60,41 +60,41 @@ export const PATIENT_FAQ_SECTIONS: HelpFaqSection[] = [
       {
         question: { es: "¿Cómo elijo mi profesional?", en: "How do I choose my therapist?", pt: "Como escolho meu profissional?" },
         answer: {
-          es: "En el onboarding o en Profesionales podés explorar el equipo, ver fichas y marcar favoritos. La primera asignación puede hacerse al reservar sesión de prueba o según matching del cuestionario inicial.",
-          en: "During onboarding or in Professionals you can explore the team, view profiles and mark favorites. First assignment may happen when booking a trial or via initial questionnaire matching.",
-          pt: "No onboarding ou em Profissionais você pode explorar a equipe, ver fichas e marcar favoritos. A primeira atribuição pode ocorrer ao reservar teste ou via matching do questionário inicial."
+          es: "En el onboarding y desde Inicio (Elegir profesional / Sesión de prueba) seguís el matching según el cuestionario. La primera asignación suele cerrarse al reservar la sesión de prueba o al completar el matching.",
+          en: "During onboarding and from Home (Choose therapist / Trial session) you follow matching from the questionnaire. First assignment usually completes when you book the trial or finish matching.",
+          pt: "No onboarding e em Início (Escolher profissional / Sessão de teste) você segue o matching do questionário. A primeira atribuição costuma fechar ao reservar o teste ou concluir o matching."
         }
       },
       {
         question: { es: "¿Cómo hablo con mi profesional?", en: "How do I talk to my therapist?", pt: "Como falo com meu profissional?" },
         answer: {
-          es: "Usá Chat en el menú lateral o el botón Chat en la tarjeta de profesional activo en Inicio. Los mensajes son entre vos y tu profesional asignado, no un chat grupal.",
-          en: "Use Chat in the sidebar or the Chat button on the active professional card on Home. Messages are between you and your assigned therapist, not a group chat.",
-          pt: "Use Chat no menu lateral ou o botão Chat no cartão do profissional ativo em Início. As mensagens são entre você e seu profissional atribuído, não um chat em grupo."
+          es: "Abrí Mensajes en el menú (o Escribile / Responder en Inicio). Es un chat escrito entre vos y tu profesional asignado, no grupal ni con Maca.",
+          en: "Open Messages in the menu (or Message them / Reply on Home). It is a written chat between you and your assigned therapist — not group chat and not Maca.",
+          pt: "Abra Mensagens no menu (ou Escreva / Responder em Início). É um chat escrito entre você e seu profissional — não é grupo nem a Maca."
         }
       },
       {
         question: { es: "¿Qué es Maca?", en: "What is Maca?", pt: "O que é a Maca?" },
         answer: {
-          es: "Maca es la asistente flotante (botón redondo en la esquina). Ofrece orientación general sobre el portal y bienestar; no reemplaza el chat clínico con tu profesional ni atiende emergencias.",
-          en: "Maca is the floating assistant (round button in the corner). She offers general guidance about the portal and wellbeing; she does not replace clinical chat with your therapist or handle emergencies.",
-          pt: "A Maca é a assistente flutuante (botão redondo no canto). Oferece orientação geral sobre o portal e bem-estar; não substitui o chat clínico com seu profissional nem atende emergências."
+          es: "Maca es la asistente del portal (botón Hablar con Maca). Orienta en funciones y bienestar; no reemplaza Mensajes con tu profesional ni atiende emergencias. También podés hacer el Tour con Maca desde el menú lateral.",
+          en: "Maca is the portal assistant (Talk to Maca button). She helps with features and wellbeing; she does not replace Messages with your therapist or handle emergencies. You can also take Tour with Maca from the sidebar.",
+          pt: "A Maca é a assistente do portal (botão Falar com a Maca). Orienta funções e bem-estar; não substitui Mensagens com seu profissional nem atende emergências. Também pode fazer o Tour com a Maca no menu lateral."
         }
       },
       {
         question: { es: "¿Puedo cambiar de profesional?", en: "Can I change therapist?", pt: "Posso trocar de profissional?" },
         answer: {
-          es: "Sí. Andá a Perfil → pestaña Soporte → «Solicitar cambio de profesional». El equipo te contacta por email; el cambio se gestiona manualmente.",
-          en: "Yes. Go to Profile → Support tab → «Request therapist change». The team contacts you by email; the change is handled manually.",
-          pt: "Sim. Vá em Perfil → aba Suporte → «Solicitar troca de profissional». A equipe entra em contato por e-mail; a troca é feita manualmente."
+          es: "Sí. Menú de cuenta (tu nombre) → Soporte → Solicitar cambio de profesional. Si no tenés créditos ni reservas, a veces también podés cambiar desde Inicio. El equipo te guía por email cuando hace falta.",
+          en: "Yes. Account menu (your name) → Support → Request a therapist change. If you have no credits or bookings, you can sometimes also change from Home. The team guides you by email when needed.",
+          pt: "Sim. Menu da conta (seu nome) → Suporte → Solicitar troca de profissional. Sem créditos nem reservas, às vezes também pode trocar em Início. A equipe orienta por e-mail quando preciso."
         }
       },
       {
-        question: { es: "¿Para qué sirven los favoritos?", en: "What are favorites for?", pt: "Para que servem os favoritos?" },
+        question: { es: "¿Dónde veo el perfil de mi profesional?", en: "Where do I see my therapist’s profile?", pt: "Onde vejo o perfil do meu profissional?" },
         answer: {
-          es: "Marcá profesionales con el corazón (icono arriba a la derecha o en su ficha) para encontrarlos rápido en la sección de favoritos y comparar opciones.",
-          en: "Mark therapists with the heart (top-right icon or on their profile) to find them quickly in favorites and compare options.",
-          pt: "Marque profissionais com o coração (ícone no canto superior direito ou na ficha) para encontrá-los rápido nos favoritos e comparar opções."
+          es: "En Inicio, en el panel Tu profesional → Ver perfil. Desde Mensajes también tenés Ver perfil en el lateral.",
+          en: "On Home, in Your therapist → View profile. From Messages you also have View profile in the side panel.",
+          pt: "Em Início, no painel Seu profissional → Ver perfil. Em Mensagens também há Ver perfil no lateral."
         }
       }
     ]
@@ -105,9 +105,9 @@ export const PATIENT_FAQ_SECTIONS: HelpFaqSection[] = [
       {
         question: { es: "¿Cómo compro un paquete de sesiones?", en: "How do I buy a session package?", pt: "Como compro um pacote de sessões?" },
         answer: {
-          es: "Desde Inicio o Sesiones, en la sección de paquetes, elegí el plan y completá el pago seguro (Stripe o Mercado Pago según tu país). Los créditos se acreditan en tu cuenta.",
-          en: "From Home or Sessions, in the packages section, pick a plan and complete secure checkout (Stripe or Mercado Pago depending on your country). Credits are added to your account.",
-          pt: "Em Início ou Sessões, na seção de pacotes, escolha o plano e conclua o pagamento seguro (Stripe ou Mercado Pago conforme seu país). Os créditos são creditados na conta."
+          es: "En Sesiones tocá Comprar sesiones / Comprar más. En Elegí cómo pagar seleccioná una sesión o un paquete (precio en moneda local cuando aplica) y Continuar al pago. Completás el checkout con DLocal; al volver se acreditan los créditos.",
+          en: "In Sessions tap Buy sessions / Buy more. In Choose how to pay pick one session or a package (local currency when applicable) and Continue to payment. Complete DLocal checkout; credits appear when you return.",
+          pt: "Em Sessões toque Comprar sessões / Comprar mais. Em Escolha como pagar selecione uma sessão ou um pacote (moeda local quando aplicável) e Continuar para o pagamento. Conclua o checkout DLocal; os créditos aparecem ao voltar."
         }
       },
       {
@@ -121,38 +121,38 @@ export const PATIENT_FAQ_SECTIONS: HelpFaqSection[] = [
       {
         question: { es: "¿Por qué el precio está en otra moneda?", en: "Why is the price in another currency?", pt: "Por que o preço está em outra moeda?" },
         answer: {
-          es: "La moneda depende de tu mercado o país de residencia (ARS, USD, BRL, EUR, etc.). Podés revisar idioma y moneda en el menú ☰ → Preferencias.",
-          en: "Currency depends on your market or country of residence (ARS, USD, BRL, EUR, etc.). Check language and currency in menu ☰ → Preferences.",
-          pt: "A moeda depende do seu mercado ou país de residência (ARS, USD, BRL, EUR, etc.). Verifique idioma e moeda no menu ☰ → Preferências."
+          es: "Los precios se muestran según tu país de residencia (moneda local cuando hay cobertura de pago). Idioma y moneda de preferencia: menú de cuenta → Idioma y moneda.",
+          en: "Prices follow your country of residence (local currency when payment coverage applies). Language and preferred currency: account menu → Language and currency.",
+          pt: "Os preços seguem seu país de residência (moeda local quando há cobertura de pagamento). Idioma e moeda: menu da conta → Idioma e moeda."
         }
       }
     ]
   },
   {
-    title: { es: "Diario emocional", en: "Emotional diary", pt: "Diário emocional" },
+    title: { es: "Diario", en: "Diary", pt: "Diário" },
     items: [
       {
-        question: { es: "¿Qué es el diario emocional?", en: "What is the emotional diary?", pt: "O que é o diário emocional?" },
+        question: { es: "¿Qué es el diario?", en: "What is the diary?", pt: "O que é o diário?" },
         answer: {
-          es: "Un registro privado para anotar cómo te sentís, qué pasó y qué emociones notaste. Podés ver historial, filtrar por estado y abrir el detalle de cada entrada.",
-          en: "A private log to note how you feel, what happened and which emotions you noticed. You can view history, filter by mood and open each entry's detail.",
-          pt: "Um registro privado para anotar como você se sente, o que aconteceu e quais emoções notou. Pode ver histórico, filtrar por estado e abrir o detalhe de cada entrada."
+          es: "En Diario («Tu diario») registrás cómo está tu día (climas), qué pasó y qué sentiste. Ves Últimas entradas y podés crear una Nueva entrada.",
+          en: "In Diary («Your diary») you log how your day is (climates), what happened and what you felt. You see Recent entries and can create a New entry.",
+          pt: "Em Diário («Seu diário») você registra como está o dia (climas), o que aconteceu e o que sentiu. Vê Últimas entradas e pode criar uma Nova entrada."
         }
       },
       {
         question: { es: "¿Mi profesional ve el diario?", en: "Can my therapist see the diary?", pt: "Meu profissional vê o diário?" },
         answer: {
-          es: "Tu profesional asignado puede ver entradas que compartís en el contexto terapéutico según las reglas de la plataforma. Usalo como apoyo; no sustituye una sesión ni una consulta de urgencia.",
-          en: "Your assigned therapist may see entries shared in the therapeutic context per platform rules. Use it as support; it does not replace a session or urgent care.",
-          pt: "Seu profissional atribuído pode ver entradas compartilhadas no contexto terapêutico conforme as regras da plataforma. Use como apoio; não substitui sessão nem atendimento de urgência."
+          es: "Al guardar elegís Solo yo o Para mi psicólogo/a. También podés compartir una entrada desde Mensajes (Compartir del diario). No sustituye una sesión ni una urgencia.",
+          en: "When saving you choose Only me or For my therapist. You can also share an entry from Messages (Share from diary). It does not replace a session or urgent care.",
+          pt: "Ao salvar você escolhe Só eu ou Para meu psicólogo/a. Também pode compartilhar uma entrada em Mensagens. Não substitui sessão nem urgência."
         }
       },
       {
         question: { es: "¿Hay límite de texto por entrada?", en: "Is there a text limit per entry?", pt: "Há limite de texto por entrada?" },
         answer: {
-          es: "Sí, hay un máximo de caracteres en «¿Qué pasó?» para mantener entradas claras y legibles. El contador te muestra cuánto escribiste.",
-          en: "Yes, there is a maximum character count for «What happened?» to keep entries clear. The counter shows how much you've written.",
-          pt: "Sim, há um máximo de caracteres em «O que aconteceu?» para manter entradas claras. O contador mostra quanto você escreveu."
+          es: "Sí, hay un máximo de caracteres en ¿Qué pasó hoy? para mantener entradas claras. El contador te muestra cuánto escribiste.",
+          en: "Yes, there is a maximum character count for What happened today? to keep entries clear. The counter shows how much you've written.",
+          pt: "Sim, há um máximo de caracteres em O que aconteceu hoje? para manter entradas claras. O contador mostra quanto você escreveu."
         }
       }
     ]
@@ -171,9 +171,9 @@ export const PATIENT_FAQ_SECTIONS: HelpFaqSection[] = [
       {
         question: { es: "¿Qué son los ejercicios?", en: "What are the exercises?", pt: "O que são os exercícios?" },
         answer: {
-          es: "Actividades guiadas (respiración, grounding, etc.) para practicar entre sesiones. Encontrálos en Ejercicios del menú; cada uno tiene instrucciones paso a paso.",
-          en: "Guided activities (breathing, grounding, etc.) to practice between sessions. Find them under Exercises in the menu; each has step-by-step instructions.",
-          pt: "Atividades guiadas (respiração, grounding, etc.) para praticar entre sessões. Encontre-os em Exercícios no menu; cada um tem instruções passo a passo."
+          es: "Prácticas guiadas (respiración, anclaje, etc.) entre sesiones. Están en Bienestar, con filtros por tipo; cada tarjeta tiene pasos. También hay rutinas en el panel lateral.",
+          en: "Guided practices (breath, grounding, etc.) between sessions. They live in Wellbeing, with type filters; each card has steps. Routines are also in the side panel.",
+          pt: "Práticas guiadas (respiração, ancoragem, etc.) entre sessões. Ficam em Bem-estar, com filtros por tipo; cada card tem passos. Também há rotinas no painel lateral."
         }
       },
       {
@@ -192,9 +192,9 @@ export const PATIENT_FAQ_SECTIONS: HelpFaqSection[] = [
       {
         question: { es: "¿Cómo cambio idioma o zona horaria?", en: "How do I change language or timezone?", pt: "Como altero idioma ou fuso horário?" },
         answer: {
-          es: "Menú ☰ → Preferencias. Ahí ajustás idioma (español, inglés, portugués), moneda de visualización y zona horaria para que los horarios de sesión coincidan con tu reloj.",
-          en: "Menu ☰ → Preferences. Adjust language (Spanish, English, Portuguese), display currency and timezone so session times match your clock.",
-          pt: "Menu ☰ → Preferências. Ajuste idioma (espanhol, inglês, português), moeda de exibição e fuso horário para que os horários de sessão coincidam com seu relógio."
+          es: "Menú de cuenta (tu nombre) → Idioma y moneda para idioma y moneda. La zona horaria se edita en Datos personales. Así los horarios de sesión coinciden con tu reloj.",
+          en: "Account menu (your name) → Language and currency for language and currency. Time zone is edited in Personal details. That keeps session times aligned with your clock.",
+          pt: "Menu da conta (seu nome) → Idioma e moeda para idioma e moeda. O fuso horário se edita em Dados pessoais. Assim os horários de sessão batem com seu relógio."
         }
       },
       {
@@ -221,9 +221,9 @@ export const PATIENT_FAQ_SECTIONS: HelpFaqSection[] = [
       {
         question: { es: "¿A quién contacto si algo falla?", en: "Who do I contact if something fails?", pt: "Quem contato se algo falhar?" },
         answer: {
-          es: "Escribí a soporte@motivarcare.com (enlace en el pie de página o Perfil → Soporte). Indicá tu email de cuenta, qué intentabas hacer y captura de pantalla si podés.",
-          en: "Email soporte@motivarcare.com (link in footer or Profile → Support). Include your account email, what you tried to do and a screenshot if possible.",
-          pt: "Envie e-mail para soporte@motivarcare.com (link no rodapé ou Perfil → Suporte). Informe seu e-mail da conta, o que tentou fazer e captura de tela se possível."
+          es: "Escribí a soporte@motivarcare.com (pie de página o menú de cuenta → Soporte / Contactar soporte). Indicá tu email de cuenta, qué intentabas hacer y una captura si podés.",
+          en: "Email soporte@motivarcare.com (footer or account menu → Support / Contact support). Include your account email, what you tried and a screenshot if you can.",
+          pt: "Envie e-mail para soporte@motivarcare.com (rodapé ou menu da conta → Suporte / Contactar suporte). Informe seu e-mail, o que tentou fazer e uma captura se puder."
         }
       },
       {

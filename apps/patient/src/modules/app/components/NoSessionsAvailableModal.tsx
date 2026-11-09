@@ -1,32 +1,9 @@
 import { useEffect } from "react";
 import { textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
+import { IconCerrar, IconSesiones } from "../../home/calm/calmIcons";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
-}
-
-function EmptySessionsVisual() {
-  return (
-    <svg className="no-sessions-available-visual-svg" viewBox="0 0 88 88" fill="none" aria-hidden>
-      <rect x="14" y="18" width="60" height="52" rx="14" fill="currentColor" opacity="0.1" />
-      <rect x="14" y="18" width="60" height="16" rx="14" fill="currentColor" opacity="0.18" />
-      <rect x="14" y="26" width="60" height="8" fill="currentColor" opacity="0.18" />
-      <circle cx="28" cy="26" r="3.2" fill="#fff" opacity="0.95" />
-      <circle cx="60" cy="26" r="3.2" fill="#fff" opacity="0.95" />
-      <rect x="28" y="44" width="12" height="10" rx="3" fill="currentColor" opacity="0.22" />
-      <rect x="46" y="44" width="12" height="10" rx="3" fill="currentColor" opacity="0.12" />
-      <circle cx="58" cy="60" r="13" fill="#fff" />
-      <circle cx="58" cy="60" r="12" stroke="currentColor" strokeWidth="2.4" strokeOpacity="0.55" />
-      <path
-        d="M58 54.5v6.2l4.4 2.5"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeOpacity="0.78"
-      />
-    </svg>
-  );
 }
 
 /** Aviso al intentar reservar sin créditos: luego se abre el catálogo de paquetes. */
@@ -64,12 +41,19 @@ export function NoSessionsAvailableModal(props: {
           onClick={props.onClose}
           aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
         >
-          ×
+          <IconCerrar size={18} />
         </button>
 
         <div className="no-sessions-available-visual" aria-hidden>
-          <span className="no-sessions-available-visual-ring">
-            <EmptySessionsVisual />
+          <span className="no-sessions-available-mancha">
+            <svg className="no-sessions-available-mancha-blob" viewBox="0 0 100 100">
+              <path
+                d="M82 64c-6 18-26 28-44 24S8 68 10 48 28 12 50 12s38 34 32 52z"
+                fill="#2F6B51"
+                opacity="0.85"
+              />
+            </svg>
+            <IconSesiones size={26} />
           </span>
         </div>
 

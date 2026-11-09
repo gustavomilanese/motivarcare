@@ -1,0 +1,108 @@
+.sessions-calm-next {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--salvia);
+}
+
+.sessions-calm-next img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+  background: var(--superficie);
+}
+
+.sessions-calm-next-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.sessions-calm-next-copy strong {
+  display: block;
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 22px;
+  line-height: 1.15;
+  color: var(--bosque);
+}
+
+.sessions-calm-next-copy span {
+  display: block;
+  margin-top: 4px;
+  color: var(--tinta-suave);
+  font-size: 13.5px;
+}
+
+.sessions-calm-next-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.sessions-calm a.sessions-calm-join.is-outline,
+.sessions-calm button.sessions-calm-book.is-outline {
+  background: var(--superficie);
+  color: var(--bosque);
+  border: 1px solid var(--linea);
+}
+
+.sessions-calm a.sessions-calm-join.is-outline:hover,
+.sessions-calm a.sessions-calm-join.is-outline:focus-visible,
+.sessions-calm button.sessions-calm-book.is-outline:hover,
+.sessions-calm button.sessions-calm-book.is-outline:focus-visible {
+  background: var(--menta);
+  color: var(--bosque);
+}
+
+.sessions-calm-row a.sessions-calm-join,
+.sessions-calm-row button.sessions-calm-link,
+.sessions-calm-next a.sessions-calm-join,
+.sessions-calm-next button.sessions-calm-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 99px;
+  border: 1px solid var(--linea);
+  background: var(--superficie);
+  color: var(--bosque);
+  font: 700 14px/1 var(--sans);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sessions-calm-row a.sessions-calm-join:hover,
+.sessions-calm-row a.sessions-calm-join:focus-visible,
+.sessions-calm-row button.sessions-calm-link:hover,
+.sessions-calm-row button.sessions-calm-link:focus-visible,
+.sessions-calm-next a.sessions-calm-join:hover,
+.sessions-calm-next a.sessions-calm-join:focus-visible,
+.sessions-calm-next button.sessions-calm-link:hover,
+.sessions-calm-next button.sessions-calm-link:focus-visible {
+  background: var(--menta);
+  color: var(--bosque);
+  text-decoration: none;
+}
+
+.sessions-calm-row a.sessions-calm-join,
+.sessions-calm-next a.sessions-calm-join:not(.is-outline) {
+  border-color: transparent;
+  background: var(--amarillo);
+}
+
+.sessions-calm-row a.sessions-calm-join:hover,
+.sessions-calm-row a.sessions-calm-join:focus-visible,
+.sessions-calm-next a.sessions-calm-join:not(.is-outline):hover,
+.sessions-calm-next a.sessions-calm-join:not(.is-outline):focus-visible {
+  background: #f0b81f;
+  color: var(--bosque);
+}

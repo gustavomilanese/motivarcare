@@ -51,7 +51,12 @@ import { DashboardHomePurchaseModal } from "../ml/PurchaseModal";
 import { DashboardHomeChatModal } from "../ml/ChatModal";
 import { DashboardHomeProfessionalProfileModal } from "../ml/ProfessionalProfileModal";
 import { DashboardNextActionHome } from "../ml/NextActionHome";
-import { ClassicHome } from "../classic/ClassicHome";
+import { friendlyChatSurfaceMessage } from "../../app/lib/friendlyPatientMessages";
+import { postPatientProfessionalMessage } from "../../chat/lib/postPatientProfessionalMessage";
+import { CalmHome } from "../calm/CalmHome";
+import { HomeBookingDialog } from "../calm/HomeBookingDialog";
+import { calmHomeSurface } from "../calm/calmHomeCase";
+import { HomeProfessionalPick } from "../calm/HomeProfessionalPick";
 import type {
   Booking,
   PackagePlan,
@@ -127,6 +132,12 @@ export function HomePage(props: {
   onGoToReservations: () => void;
   onRescheduleBooking: (bookingId: string) => void;
   onGoToBooking: (professionalId: string) => void;
+  onConfirmBooking: (
+    professionalId: string,
+    slot: TimeSlot,
+    useTrialSession: boolean,
+    holdId?: string
+  ) => Promise<{ ok: boolean; error?: string }>;
   onGoToProfessional: (professionalId: string) => void;
   onGoToChat: (professionalId: string) => void;
   onSetActiveChatProfessional: (professionalId: string) => void;
@@ -148,8 +159,11 @@ export function HomePage(props: {
   onNavigateToBookTrial: () => void;
   /** Reagendar prueba ya pagada: va a Sesiones (profesional asignado), no al matching. */
   onNavigateToRebookTrial: () => void;
-  /** Sin profesional asignado: volver al matching del onboarding para elegir uno. */
-  onNavigateToAssignProfessional: () => void;
+  /** Sin profesional asignado: abre la selección. Si viene un id, lo deja marcado. */
+  onNavigateToAssignProfessional: (professionalId?: string) => void;
+  onAssignProfessional: (payload: { professionalId: string; professionalName: string }) => void | Promise<void>;
+  onSelectListedProfessional: (professionalId: string) => void;
+  onToggleFavoriteProfessional: (professionalId: string) => void;
   /** Cambio self-serve (solo visible con 0 créditos y sin reservas). */
   onNavigateToChangeProfessional: () => void;
   /** El usuario eligió «Lo hago después» en el modal de Calendar: CTA para reabrir OAuth. */
@@ -216,6 +230,16 @@ export function HomePage(props: {
   const [noSessionsRedirectModalOpen, setNoSessionsRedirectModalOpen] = useState(false);
   const [homeChatModalOpen, setHomeChatModalOpen] = useState(false);
   const [homeProfileModalOpen, setHomeProfileModalOpen] = useState(false);
+  const [professionalPickOpen, setProfessionalPickOpen] = useState(false);
+  const [homeBookingProfessionalId, setHomeBookingProfessionalId] = useState<string | null>(null);
+  const openHomeBooking = useCallback((professionalId: string) => {
+    const id = professionalId.trim();
+    if (!id) return;
+    setHomeBookingProfessionalId(id);
+  }, []);
+  const homeBookingProfessional = homeBookingProfessionalId
+    ? findProfessionalById(homeBookingProfessionalId, props.professionals)
+    : null;
   const [assignProModalOpen, setAssignProModalOpen] = useState(false);
   const openHomeChat = useCallback(
     (professionalId: string) => {
@@ -230,6 +254,19 @@ export function HomePage(props: {
     },
     [isMobilePortal, props.onGoToChat, props.onSetActiveChatProfessional]
   );
+  const sendHomeChatMessage = async (professionalId: string, text: string) => {
+    if (!props.authToken) {
+      props.onSendChatMessage(professionalId, text);
+      return;
+    }
+    try {
+      await postPatientProfessionalMessage(props.authToken, professionalId, text);
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : "";
+      throw new Error(friendlyChatSurfaceMessage("send", raw, props.language));
+    }
+    openHomeChat(professionalId);
+  };
   const dashboardSpotlightBlockersRef = useRef(false);
   dashboardSpotlightBlockersRef.current =
     assignProModalOpen ||
@@ -493,10 +530,10 @@ export function HomePage(props: {
     let active = true;
 
     if (!hasPricingProfessional) {
-      setPackagePlans([]);
-      setFeaturedPackageId(null);
-      setPackageCatalogFromApi(false);
-      setPackagesLoading(false);
+      setPackagePlans((current) => (current.length === 0 ? current : []));
+      setFeaturedPackageId((current) => (current === null ? current : null));
+      setPackageCatalogFromApi((current) => (current ? false : current));
+      setPackagesLoading((current) => (current ? false : current));
       return () => {
         active = false;
       };
@@ -534,18 +571,18 @@ export function HomePage(props: {
       } catch {
         // ignore
       }
-      setAssignProModalOpen(false);
+      setAssignProModalOpen((open) => (open ? false : open));
       return;
     }
     try {
       if (window.sessionStorage.getItem(ASSIGN_PRO_MODAL_DISMISS_KEY) === "1") {
-        setAssignProModalOpen(false);
+        setAssignProModalOpen((open) => (open ? false : open));
         return;
       }
     } catch {
       // ignore
     }
-    setAssignProModalOpen(true);
+    setAssignProModalOpen((open) => (open ? open : true));
   }, [hasPricingProfessional]);
 
   const usesDlocalCheckout = useMemo(
@@ -634,7 +671,7 @@ export function HomePage(props: {
       },
       onOpenNewBookingPanel: () => {
         if (pricingProfessionalId) {
-          props.onGoToBooking(pricingProfessionalId);
+          openHomeBooking(pricingProfessionalId);
         }
       }
     }),
@@ -644,7 +681,7 @@ export function HomePage(props: {
       homeVariant,
       pricingReady,
       pricingProfessionalId,
-      props.onGoToBooking,
+      openHomeBooking,
       props.onNavigateToIndividualSessions,
       props.onNavigateToSessionsCheckout
     ]
@@ -795,10 +832,46 @@ export function HomePage(props: {
     en: "Book sessions, explore wellness, and chat with Maca.",
     pt: "Reserve sessões, explore bem-estar e fale com a Maca."
   });
+  const homeSurface = calmHomeSurface({
+    hasProfessional: hasAssignedProfessional,
+    pickOpen: professionalPickOpen
+  });
+
+  /** Avisa al chrome del portal: al pasar a matching el mount de campana/menú cambia y hay que re-portar. */
+  useEffect(() => {
+    document.body.dataset.patientHome = homeSurface;
+    window.dispatchEvent(new Event("mc-patient-home-surface"));
+    return () => {
+      delete document.body.dataset.patientHome;
+      window.dispatchEvent(new Event("mc-patient-home-surface"));
+    };
+  }, [homeSurface]);
 
   return (
     <div className="page-stack sessions-page-layout patient-dashboard-home session-rn-root">
-      {resolveHomeView(homeVariant) === "ml" ? (
+      {homeSurface === "pick" ? (
+        <HomeProfessionalPick
+          language={props.language}
+          patientMarket={props.state.patientMarket}
+          residencyCountry={props.state.profileResidencyCountry}
+          displayCurrency={props.currency}
+          fxRates={props.fxRates}
+          authToken={props.authToken}
+          intakeAnswers={props.state.intake?.answers ?? {}}
+          favoriteProfessionalIds={props.state.favoriteProfessionalIds}
+          selectedProfessionalId={props.state.selectedProfessionalId}
+          onSelectProfessional={props.onSelectListedProfessional}
+          onToggleFavorite={props.onToggleFavoriteProfessional}
+          onAssign={async (payload) => {
+            await props.onAssignProfessional(payload);
+            setProfessionalPickOpen(false);
+          }}
+          onBack={() => setProfessionalPickOpen(false)}
+          onImageFallback={props.onImageFallback}
+          onChat={props.onGoToChat}
+          onReserve={openHomeBooking}
+        />
+      ) : resolveHomeView(homeVariant) === "ml" ? (
         <DashboardNextActionHome
           language={props.language}
           timezone={props.state.profile.timezone}
@@ -821,7 +894,7 @@ export function HomePage(props: {
           onNavigateToRebookTrial={props.onNavigateToRebookTrial}
           onNavigateToBookTrial={props.onNavigateToBookTrial}
           trialStatus={trialStatus}
-          onGoToBooking={props.onGoToBooking}
+          onGoToBooking={openHomeBooking}
           onBuySessions={() => setHomePurchaseModalOpen(true)}
           onBookWithoutCredits={() => setNoSessionsRedirectModalOpen(true)}
           onOpenBookingDetail={props.onOpenBookingDetail}
@@ -839,63 +912,45 @@ export function HomePage(props: {
           upcomingSpotlightRing={upcomingSpotlightRing}
         />
       ) : (
-        <ClassicHome
+        <CalmHome
           language={props.language}
-          currency={props.currency}
-          fxRates={props.fxRates}
-          timezone={props.state.profile.timezone}
+          timeZone={props.state.profile.timezone}
           state={props.state}
           professionals={props.professionals}
           professionalPhotoMap={props.professionalPhotoMap}
-          landingPatientHeroImage={landingPatientHeroImage}
-          dashboardIntroTitle={dashboardIntroTitle}
-          dashboardIntroBody={dashboardIntroBody}
-          trialStatus={trialStatus}
-          activeTrialBooking={activeTrialBooking}
-          completedTrialBooking={completedTrialBooking}
-          hasTrialPlanned={hasTrialPlanned}
-          trialCardClickable={trialCardClickable}
-          upcomingConfirmedBookings={upcomingConfirmedBookings}
-          upcomingSpotlightRing={upcomingSpotlightRing}
-          nextConfirmedBooking={nextConfirmedBooking}
           nextBooking={nextBooking}
-          availableSessions={availableSessions}
           activeProfessional={activeProfessional}
-          canSelfChangeProfessional={canSelfChangeProfessional}
-          showGoogleCalendarCta={showGoogleCalendarCta}
-          googleCalendarCtaPulse={googleCalendarCtaPulse}
+          availableSessions={availableSessions}
           firstMeetBookingId={firstMeetBookingId}
-          meetJoinHighlight={meetJoinHighlight}
-          sessionRnLayout={sessionRnLayout}
-          isMobilePortal={isMobilePortal}
-          showPackageSection={showPackageSection}
-          defaultPackagePlan={defaultPackagePlan}
-          showChooseProfessionalCta={showChooseProfessionalCta}
-          pricingReady={pricingReady}
-          packagesLoadingHint={packagesLoadingHint}
-          canIndividualCtaHome={canIndividualCtaHome}
-          displayPackagePlans={displayPackagePlans}
-          displayFeaturedPackageId={displayFeaturedPackageId}
-          packageCheckoutLoading={packageCheckoutLoading}
-          packageCheckoutError={packageCheckoutError}
-          onHeroFallback={props.onHeroFallback}
           onImageFallback={props.onImageFallback}
-          onGoToReservations={props.onGoToReservations}
-          onGoToBooking={props.onGoToBooking}
           onOpenBookingDetail={props.onOpenBookingDetail}
-          onRescheduleBooking={props.onRescheduleBooking}
-          onNavigateToBookTrial={props.onNavigateToBookTrial}
-          onNavigateToRebookTrial={props.onNavigateToRebookTrial}
-          onNavigateToChangeProfessional={props.onNavigateToChangeProfessional}
-          onNavigateToIndividualSessions={props.onNavigateToIndividualSessions}
-          onOpenPatientGoogleCalendarConnect={props.onOpenPatientGoogleCalendarConnect}
-          onOpenTrialModal={openTrialModal}
-          onOpenProfileModal={() => setHomeProfileModalOpen(true)}
+          onGoToBooking={openHomeBooking}
+          currency={props.currency}
+          fxRates={props.fxRates}
+          residencyCountry={props.state.profileResidencyCountry}
+          onChooseProfessional={(professionalId) => {
+            if (typeof professionalId === "string" && professionalId.trim()) {
+              props.onSelectListedProfessional(professionalId);
+            }
+            setProfessionalPickOpen(true);
+          }}
+          canSelfChangeProfessional={canSelfChangeProfessional}
+          onRequestProfessionalChange={props.onNavigateToChangeProfessional}
+          onBookTrial={props.onNavigateToBookTrial}
           onOpenChat={openHomeChat}
-          onChooseProfessional={openChooseProfessional}
-          onAcquireSessions={dispatchAcquireSessions}
-          onStartPackagePurchase={handleStartPackagePurchase}
-          onNavigateToAssignProfessional={props.onNavigateToAssignProfessional}
+          onOpenProfile={() => setHomeProfileModalOpen(true)}
+          onSendChatMessage={sendHomeChatMessage}
+          onReserveAnother={() => {
+            if (!hasAssignedProfessional) {
+              setProfessionalPickOpen(true);
+              return;
+            }
+            if (pricingProfessionalId && availableSessions > 0) {
+              openHomeBooking(pricingProfessionalId);
+              return;
+            }
+            dispatchAcquireSessions("book_without_credits");
+          }}
         />
       )}
 
@@ -957,7 +1012,7 @@ export function HomePage(props: {
                     return;
                   }
                   if (pricingProfessionalId) {
-                    props.onGoToBooking(pricingProfessionalId);
+                    openHomeBooking(pricingProfessionalId);
                     return;
                   }
                   if (trialStatus === "pending") {
@@ -1300,6 +1355,9 @@ export function HomePage(props: {
           paymentError={packageCheckoutError || undefined}
           needsResidencyConfirm={!usesDlocalCheckout}
           residencySaving={residencySaving}
+          professionalName={pricingProfessional?.fullName ?? null}
+          professionalFirstName={pricingProfessional?.firstName ?? null}
+          professionalLastName={pricingProfessional?.lastName ?? null}
           onConfirmResidency={async (iso) => {
             if (!props.onConfirmResidency) {
               return;
@@ -1394,6 +1452,20 @@ export function HomePage(props: {
         />
       ) : null}
 
+      <HomeBookingDialog
+        open={Boolean(homeBookingProfessionalId)}
+        language={props.language}
+        timeZone={props.state.profile.timezone}
+        authToken={props.authToken}
+        professional={homeBookingProfessional}
+        photoUrl={homeBookingProfessional ? props.professionalPhotoMap[homeBookingProfessional.id] ?? null : null}
+        creditsRemaining={props.state.subscription.creditsRemaining}
+        bookings={props.state.bookings}
+        onClose={() => setHomeBookingProfessionalId(null)}
+        onConfirm={props.onConfirmBooking}
+        onImageFallback={props.onImageFallback}
+      />
+
       <DashboardGuidedTour
         language={props.language}
         sessionUserId={props.state.session?.id ?? null}
@@ -1404,7 +1476,8 @@ export function HomePage(props: {
           noSessionsRedirectModalOpen ||
           homeChatModalOpen ||
           homeProfileModalOpen ||
-          trialModalOpen
+          trialModalOpen ||
+          Boolean(homeBookingProfessionalId)
         }
         bookingContext={dashboardTourBookingContext}
       />

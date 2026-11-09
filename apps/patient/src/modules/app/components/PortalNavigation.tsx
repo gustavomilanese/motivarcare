@@ -9,15 +9,12 @@ import { type ChangeEvent, type ReactNode, type SyntheticEvent, useEffect, useId
 import { createPortal } from "react-dom";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useDiaryPortalToolbarMountElement } from "../../emotional-diary/context/DiaryPortalToolbarMount";
-import { useInAppBack } from "../hooks/useInAppBack";
 import { PortalHelpLegalMenuSection } from "./PortalHelpLegalLinks";
 import { PATIENT_FAVORITES_ENABLED } from "../constants";
 import { useMobilePortal } from "../hooks/useMobilePortal";
-import { kindLabel } from "../notifications/buildPortalNotifications";
-import { notificationKindVisual } from "../notifications/notificationKindVisual";
 import type { PortalNotificationItem } from "../notifications/portalNotificationTypes";
 import type { ProfileTab } from "../types";
-import { NotificationItemActionsMenu } from "./NotificationItemActionsMenu";
+import { NotificationsBackdrop, NotificationsDropdown } from "./NotificationsDropdown";
 import { requestPatientDashboardTour } from "../../home/components/GuidedTour";
 import type { Market } from "@therapy/types";
 import {
@@ -26,6 +23,8 @@ import {
   setPatientHomeVariant,
   type PatientHomeVariant
 } from "../../home/lib/patientHomeVariant";
+import { CalmSidebar } from "../../home/calm/CalmSidebar";
+import { CalmSupportNote } from "../../home/calm/CalmSupportNote";
 
 /** Showcase «Profesionales» en sidebar y sheet mobile (reactivar cuando esté listo). */
 const PATIENT_PROFESSIONALS_NAV_ENABLED = false;
@@ -51,7 +50,7 @@ function scrollPortalToTop(behavior: ScrollBehavior = "smooth") {
 function IconHome(props: { className?: string }) {
   return (
     <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3 9.5 12 4l9 5.5V20a1 1 0 0 1-1 1h-5v-8H9v8H4a1 1 0 0 1-1-1V9.5Z" />
+      <path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-6h-6v6H5.5A1.5 1.5 0 0 1 4 19z" />
     </svg>
   );
 }
@@ -59,8 +58,9 @@ function IconHome(props: { className?: string }) {
 function IconSessions(props: { className?: string }) {
   return (
     <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="5" width="18" height="16" rx="2" />
-      <path d="M16 3v4M8 3v4M3 11h18" />
+      <rect x="3.5" y="5" width="17" height="15.5" rx="3" />
+      <path d="M8 3v4M16 3v4M3.5 10h17" />
+      <circle cx="12" cy="15" r="1.6" />
     </svg>
   );
 }
@@ -68,7 +68,7 @@ function IconSessions(props: { className?: string }) {
 function IconChat(props: { className?: string }) {
   return (
     <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M21 12a7 7 0 0 1-7 7H8l-5 3v-3a7 7 0 1 1 18-7Z" />
+      <path d="M4.5 5.5h15v10h-9l-4.5 4v-4H4.5z" />
     </svg>
   );
 }
@@ -104,8 +104,17 @@ function IconProfessionals(props: { className?: string }) {
 function IconNotes(props: { className?: string }) {
   return (
     <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M5 4.5A1.5 1.5 0 0 1 6.5 3h11A1.5 1.5 0 0 1 19 4.5V20l-3-2-3 2-3-2-3 2V4.5Z" />
-      <path d="M9 8h6M9 12h6M9 16h4" />
+      <path d="M6 3.5h10.5A2.5 2.5 0 0 1 19 6v14.5H7.5A2.5 2.5 0 0 1 5 18V4.5a1 1 0 0 1 1-1z" />
+      <path d="M5 18a2.5 2.5 0 0 1 2.5-2.5H19M9 8h6M9 11.5h4" />
+    </svg>
+  );
+}
+
+function IconLeaf(props: { className?: string }) {
+  return (
+    <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 19c0-8 5-13.5 14-14-.3 9-5.8 14-14 14z" />
+      <path d="M5 19c3-3.5 6-6 9.5-8" />
     </svg>
   );
 }
@@ -214,13 +223,13 @@ export function PortalNavigation(props: {
   const avatarInputId = useId();
   const location = useLocation();
   const navigate = useNavigate();
-  const { canGoBack, goBack } = useInAppBack();
   const diaryImmersive = location.pathname.startsWith("/diario") && !props.homeMlChrome;
   const diaryHomeImmersive = location.pathname === "/diario" && !props.homeMlChrome;
   const diarySubpageImmersive = diaryImmersive && !diaryHomeImmersive;
   const dashboardHomeImmersive = location.pathname === "/" && !props.homeMlChrome;
   const homeMlFloatingToolbar = Boolean(props.homeMlChrome) && location.pathname === "/";
   const sessionsHomeImmersive = location.pathname === "/sessions" && !props.homeMlChrome;
+  const exercisesHomeImmersive = location.pathname.startsWith("/ejercicios") && !props.homeMlChrome;
   const wellbeingRelaxImmersive = location.pathname === "/bienestar/musica" && !props.homeMlChrome;
   const chatImmersive = location.pathname === "/chat";
   const immersivePortalHome =
@@ -228,6 +237,7 @@ export function PortalNavigation(props: {
     dashboardHomeImmersive ||
     homeMlFloatingToolbar ||
     sessionsHomeImmersive ||
+    exercisesHomeImmersive ||
     wellbeingRelaxImmersive ||
     chatImmersive ||
     Boolean(props.homeMlChrome);
@@ -235,8 +245,10 @@ export function PortalNavigation(props: {
   const diaryPortalToolbarMount = useDiaryPortalToolbarMountElement();
   const [dashboardHeroToolbarMount, setDashboardHeroToolbarMount] = useState<HTMLElement | null>(null);
   const [dashboardHomeChromeEpoch, setDashboardHomeChromeEpoch] = useState(0);
+  const [calmPickNav, setCalmPickNav] = useState(() => document.body.dataset.patientHome === "pick");
   const [sessionsHeroToolbarMount, setSessionsHeroToolbarMount] = useState<HTMLElement | null>(null);
   const [wellbeingRelaxToolbarMount, setWellbeingRelaxToolbarMount] = useState<HTMLElement | null>(null);
+  const [wellbeingHeroToolbarMount, setWellbeingHeroToolbarMount] = useState<HTMLElement | null>(null);
   const [chatHeroToolbarMount, setChatHeroToolbarMount] = useState<HTMLElement | null>(null);
   const [homeMlRailNavLocked, setHomeMlRailNavLocked] = useState(false);
   const [homeVariant, setHomeVariant] = useState<PatientHomeVariant>(() => readPatientHomeVariant());
@@ -245,6 +257,7 @@ export function PortalNavigation(props: {
     window.addEventListener(PATIENT_HOME_VARIANT_EVENT, sync);
     return () => window.removeEventListener(PATIENT_HOME_VARIANT_EVENT, sync);
   }, []);
+  const calmAppNav = homeVariant === "classic" && !props.homeMlChrome && !calmPickNav;
 
   useEffect(() => {
     if (location.pathname !== "/") {
@@ -281,7 +294,7 @@ export function PortalNavigation(props: {
   }
 
   useLayoutEffect(() => {
-    if (!diaryHomeImmersive) {
+    if (!diaryImmersive) {
       setDiaryHeroToolbarMount(null);
       return;
     }
@@ -303,16 +316,27 @@ export function PortalNavigation(props: {
     return () => {
       cancelled = true;
     };
-  }, [diaryHomeImmersive, location.pathname]);
+  }, [diaryImmersive, location.pathname]);
 
   useEffect(() => {
-    if (!dashboardHomeImmersive) {
+    if (!dashboardHomeImmersive && !homeMlFloatingToolbar) {
       return undefined;
     }
     const bump = () => setDashboardHomeChromeEpoch((current) => current + 1);
     window.addEventListener(PATIENT_HOME_VARIANT_EVENT, bump);
-    return () => window.removeEventListener(PATIENT_HOME_VARIANT_EVENT, bump);
-  }, [dashboardHomeImmersive]);
+    window.addEventListener("mc-patient-home-surface", bump);
+    return () => {
+      window.removeEventListener(PATIENT_HOME_VARIANT_EVENT, bump);
+      window.removeEventListener("mc-patient-home-surface", bump);
+    };
+  }, [dashboardHomeImmersive, homeMlFloatingToolbar]);
+
+  useEffect(() => {
+    const sync = () => setCalmPickNav(document.body.dataset.patientHome === "pick");
+    sync();
+    window.addEventListener("mc-patient-home-surface", sync);
+    return () => window.removeEventListener("mc-patient-home-surface", sync);
+  }, []);
 
   useLayoutEffect(() => {
     if (!dashboardHomeImmersive && !homeMlFloatingToolbar) {
@@ -324,20 +348,23 @@ export function PortalNavigation(props: {
     const resolveMount = () => {
       if (cancelled) return;
       const mount = document.getElementById("dashboard-hero-toolbar-mount");
-      if (mount) {
+      if (mount && mount.isConnected) {
         setDashboardHeroToolbarMount(mount);
         return;
       }
       if (frames < 40) {
         frames += 1;
         requestAnimationFrame(resolveMount);
+      } else {
+        setDashboardHeroToolbarMount(null);
       }
     };
+    setDashboardHeroToolbarMount(null);
     resolveMount();
     return () => {
       cancelled = true;
     };
-  }, [dashboardHomeImmersive, homeMlFloatingToolbar, location.pathname, dashboardHomeChromeEpoch]);
+  }, [dashboardHomeImmersive, homeMlFloatingToolbar, location.pathname, dashboardHomeChromeEpoch, calmPickNav]);
 
   useLayoutEffect(() => {
     if (!sessionsHomeImmersive) {
@@ -388,6 +415,31 @@ export function PortalNavigation(props: {
       cancelled = true;
     };
   }, [wellbeingRelaxImmersive, location.pathname]);
+
+  useLayoutEffect(() => {
+    if (!exercisesHomeImmersive) {
+      setWellbeingHeroToolbarMount(null);
+      return;
+    }
+    let cancelled = false;
+    let frames = 0;
+    const resolveMount = () => {
+      if (cancelled) return;
+      const mount = document.getElementById("wellbeing-hero-toolbar-mount");
+      if (mount) {
+        setWellbeingHeroToolbarMount(mount);
+        return;
+      }
+      if (frames < 40) {
+        frames += 1;
+        requestAnimationFrame(resolveMount);
+      }
+    };
+    resolveMount();
+    return () => {
+      cancelled = true;
+    };
+  }, [exercisesHomeImmersive, location.pathname]);
 
   useLayoutEffect(() => {
     if (!chatImmersive) {
@@ -452,13 +504,6 @@ export function PortalNavigation(props: {
 
   const isMobilePortal = useMobilePortal();
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
-  const [openNotificationMenuId, setOpenNotificationMenuId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!props.notificationsOpen) {
-      setOpenNotificationMenuId(null);
-    }
-  }, [props.notificationsOpen]);
 
   useEffect(() => {
     if (!mobileMoreOpen) {
@@ -573,16 +618,16 @@ export function PortalNavigation(props: {
               navigate("/", { replace: true });
             }}
           >
-            {homeVariant === "next"
+            {homeVariant === "classic"
               ? t(props.language, {
-                  es: "Inicio clásica",
-                  en: "Classic Home",
-                  pt: "Inicio classica"
+                  es: "Inicio marketplace",
+                  en: "Marketplace home",
+                  pt: "Início marketplace"
                 })
               : t(props.language, {
-                  es: "Inicio ML",
-                  en: "ML Home",
-                  pt: "Inicio ML"
+                  es: "Volver al inicio",
+                  en: "Back to home",
+                  pt: "Voltar ao início"
                 })}
           </button>
 
@@ -595,166 +640,31 @@ export function PortalNavigation(props: {
     );
   }
 
-  function renderNotificationsDropdown() {
-    const unreadInList = props.notifications.filter((item) => item.unread).length;
-
+  function renderNotificationsPortal() {
+    if (!props.notificationsOpen) {
+      return null;
+    }
     return (
-      <div
-        className={`notifications-dropdown${isMobilePortal ? " notifications-dropdown--mobile-sheet" : " notifications-dropdown--portaled"}`}
-        role="dialog"
-        aria-modal={isMobilePortal ? "true" : undefined}
-        aria-label={t(props.language, { es: "Notificaciones", en: "Notifications", pt: "Notificacoes" })}
-      >
-        <div className="notifications-head">
-          <div className="notifications-head-copy">
-            <span className="notifications-head-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M12 3a5 5 0 0 0-5 5v2.7c0 .9-.3 1.8-.8 2.5L4.8 15a1 1 0 0 0 .8 1.6h12.8a1 1 0 0 0 .8-1.6l-1.4-1.8c-.6-.7-.8-1.6-.8-2.5V8a5 5 0 0 0-5-5Z"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path d="M10 18a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
-            </span>
-            <div className="notifications-head-text">
-              <strong>{t(props.language, { es: "Notificaciones", en: "Notifications", pt: "Notificacoes" })}</strong>
-              <span className="notifications-head-sub">
-                {unreadInList > 0
-                  ? t(props.language, {
-                      es: `${unreadInList} sin leer`,
-                      en: `${unreadInList} unread`,
-                      pt: `${unreadInList} não lidas`
-                    })
-                  : t(props.language, {
-                      es: "Estás al día",
-                      en: "You're all caught up",
-                      pt: "Você está em dia"
-                    })}
-              </span>
-            </div>
-          </div>
-          <div className="notifications-head-actions">
-            <button
-              type="button"
-              className="notifications-head-settings"
-              aria-label={t(props.language, {
-                es: "Ajustes de notificaciones",
-                en: "Notification settings",
-                pt: "Configuracoes de notificacoes"
-              })}
-              onClick={props.onOpenNotificationSettings}
-            >
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M12 8.25a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Z"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                />
-                <path
-                  d="M19.4 13.5a7.4 7.4 0 0 0 .1-3l1.5-1.2-1.5-2.6-1.8.5a7.5 7.5 0 0 0-2.6-1.5l-.5-1.8H9.5l-.5 1.8a7.5 7.5 0 0 0-2.6 1.5l-1.8-.5L2.1 9.3l1.5 1.2a7.4 7.4 0 0 0 0 3L2.1 14.7l1.5 2.6 1.8-.5a7.5 7.5 0 0 0 2.6 1.5l.5 1.8h5l.5-1.8a7.5 7.5 0 0 0 2.6-1.5l1.8.5 1.5-2.6-1.5-1.2Z"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-            <button
-              type="button"
-              className="notifications-head-close"
-              aria-label={t(props.language, { es: "Cerrar notificaciones", en: "Close notifications", pt: "Fechar notificacoes" })}
-              onClick={props.onCloseNotifications}
-            >
-              ×
-            </button>
-          </div>
-        </div>
-
-        <div className="notifications-body">
-          {props.notifications.length === 0 ? (
-            <div className="notifications-empty-box" role="status">
-              <span className="notifications-empty-icon" aria-hidden="true">
-                ✨
-              </span>
-              <p className="notifications-empty-title">
-                {t(props.language, { es: "Sin novedades por ahora", en: "No updates for now", pt: "Sem novidades por agora" })}
-              </p>
-              <p className="notifications-empty">
-                {t(props.language, {
-                  es: "Te avisamos acá cuando haya algo importante.",
-                  en: "We'll notify you here when something important happens.",
-                  pt: "Avisaremos aqui quando houver algo importante."
-                })}
-              </p>
-            </div>
-          ) : (
-            <ul className="notifications-list">
-              {props.notifications.slice(0, 12).map((item) => {
-                const visual = notificationKindVisual(item.kind);
-                return (
-                  <li key={item.id} className="notification-row">
-                    <div className="notification-row-layout">
-                      <span
-                        className={`notification-unread-marker${item.unread ? " is-unread" : ""}`}
-                        aria-hidden="true"
-                      />
-                      <button
-                        type="button"
-                        className={`notification-item ${item.unread ? "unread" : ""}`}
-                        onClick={() => props.onOpenNotification(item)}
-                        style={
-                          {
-                            "--notification-kind": visual.accent,
-                            "--notification-kind-soft": visual.accentSoft
-                          } as React.CSSProperties
-                        }
-                      >
-                        <span className="notification-item-icon" aria-hidden="true">
-                          {visual.icon}
-                        </span>
-                        <span className="notification-item-content">
-                          <span className="notification-item-top">
-                            <span className="notification-item-kind">{kindLabel(props.language, item.kind)}</span>
-                            {item.meta ? <small className="notification-item-meta">{item.meta}</small> : null}
-                          </span>
-                          <strong className="notification-item-title">{item.title}</strong>
-                          {item.body ? <em className="notification-item-body">{item.body}</em> : null}
-                          {item.detail ? <em className="notification-item-detail">{item.detail}</em> : null}
-                        </span>
-                      </button>
-                      <NotificationItemActionsMenu
-                        language={props.language}
-                        item={item}
-                        open={openNotificationMenuId === item.id}
-                        onToggle={() =>
-                          setOpenNotificationMenuId((current) => (current === item.id ? null : item.id))
-                        }
-                        onClose={() => setOpenNotificationMenuId(null)}
-                        onDismiss={() => props.onDismissNotification(item)}
-                        onMuteKind={() => props.onMuteNotificationKind(item)}
-                        onDisableSessionReminders={props.onDisableSessionReminders}
-                      />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  function renderNotificationsBackdrop() {
-    return (
-      <button
-        type="button"
-        className="notifications-dropdown-backdrop"
-        aria-label={t(props.language, { es: "Cerrar notificaciones", en: "Close notifications", pt: "Fechar notificacoes" })}
-        onClick={props.onCloseNotifications}
-      />
+      <>
+        {createPortal(
+          <NotificationsBackdrop language={props.language} onClose={props.onCloseNotifications} />,
+          document.body
+        )}
+        {createPortal(
+          <NotificationsDropdown
+            language={props.language}
+            isMobileSheet={isMobilePortal}
+            notifications={props.notifications}
+            onClose={props.onCloseNotifications}
+            onOpenNotification={props.onOpenNotification}
+            onDismissNotification={props.onDismissNotification}
+            onMuteNotificationKind={props.onMuteNotificationKind}
+            onDisableSessionReminders={props.onDisableSessionReminders}
+            onOpenNotificationSettings={props.onOpenNotificationSettings}
+          />,
+          document.body
+        )}
+      </>
     );
   }
 
@@ -768,7 +678,7 @@ export function PortalNavigation(props: {
 
     return (
       <div
-        className={`header-actions${onImmersiveToolbar ? " header-actions--immersive-toolbar" : ""}${onImmersiveToolbar && !showDashboardHomeGreeting ? " header-actions--toolbar-only" : ""}`}
+        className={`header-actions${calmAppNav || calmPickNav ? " portal-account-tools" : ""}${onImmersiveToolbar ? " header-actions--immersive-toolbar" : ""}${onImmersiveToolbar && !showDashboardHomeGreeting ? " header-actions--toolbar-only" : ""}`}
       >
         {showDashboardHomeGreeting ? renderDashboardHomeGreeting() : null}
         <div className="header-actions-cluster">
@@ -791,18 +701,13 @@ export function PortalNavigation(props: {
               aria-label={t(props.language, { es: "Ver notificaciones", en: "View notifications", pt: "Ver notificacoes" })}
               onClick={props.onToggleNotifications}
             >
-              <svg className="header-bell-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 3a5 5 0 0 0-5 5v2.7c0 .9-.3 1.8-.8 2.5L4.8 15a1 1 0 0 0 .8 1.6h12.8a1 1 0 0 0 .8-1.6l-1.4-1.8c-.6-.7-.8-1.6-.8-2.5V8a5 5 0 0 0-5-5Z" />
-                <path d="M10 18a2 2 0 0 0 4 0" />
+              <svg className="header-bell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z" />
+                <path d="M10 20.5a2 2 0 0 0 4 0" />
               </svg>
               {props.notificationsUnreadCount > 0 ? <small>{props.notificationsUnreadCount > 99 ? "99+" : props.notificationsUnreadCount}</small> : null}
             </button>
-            {props.notificationsOpen ? (
-              <>
-                {createPortal(renderNotificationsBackdrop(), document.body)}
-                {createPortal(renderNotificationsDropdown(), document.body)}
-              </>
-            ) : null}
+            {renderNotificationsPortal()}
           </div>
         </div>
         <div className="menu-wrap">
@@ -812,7 +717,19 @@ export function PortalNavigation(props: {
             type="button"
             onClick={props.onToggleMenu}
           >
-            <IconMenu className="menu-toggle-icon" />
+            {calmAppNav ? (
+              <>
+                <span className="calm-user-mark" aria-hidden="true">
+                  {(mobileAvatarInitials || mobileFirstName || "?").slice(0, 1)}
+                </span>
+                {mobileFirstName ? <span className="calm-user-name">{mobileFirstName}</span> : null}
+                <svg className="calm-user-caret" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="m7 10 5 5 5-5" />
+                </svg>
+              </>
+            ) : (
+              <IconMenu className="menu-toggle-icon" />
+            )}
           </button>
           {props.menuOpen
             ? isMobilePortal || onImmersiveToolbar
@@ -977,11 +894,6 @@ export function PortalNavigation(props: {
 
         <header className="portal-home-ml-bar" data-tour="patient-tour-home-ml-chrome">
           <div className="portal-home-ml-lead">
-            {canGoBack ? (
-              <button type="button" className="in-app-back" onClick={goBack}>
-                ← {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
-              </button>
-            ) : null}
             <NavLink to="/" className="portal-home-ml-brand" end onClick={goHomeToTop}>
             <img
               className="portal-home-ml-brand-mark"
@@ -1047,12 +959,7 @@ export function PortalNavigation(props: {
                   <small>{props.notificationsUnreadCount > 99 ? "99+" : props.notificationsUnreadCount}</small>
                 ) : null}
               </button>
-              {props.notificationsOpen ? (
-                <>
-                  {createPortal(renderNotificationsBackdrop(), document.body)}
-                  {createPortal(renderNotificationsDropdown(), document.body)}
-                </>
-              ) : null}
+              {renderNotificationsPortal()}
             </div>
             <button
               type="button"
@@ -1077,7 +984,9 @@ export function PortalNavigation(props: {
 
   return (
     <>
-      {!props.hideSidebar ? (
+      {!props.hideSidebar && calmAppNav && !isMobilePortal ? (
+        <CalmSidebar language={props.language} unreadMessagesCount={props.unreadMessagesCount} />
+      ) : !props.hideSidebar ? (
         <aside className="portal-sidebar">
           <div className="portal-brand">
             <img
@@ -1135,6 +1044,9 @@ export function PortalNavigation(props: {
           </nav>
 
           <div className="portal-sidebar-foot">
+            {location.pathname === "/" && !props.homeMlChrome ? (
+              <CalmSupportNote language={props.language} />
+            ) : null}
             <button
               type="button"
               className="portal-sidebar-tour"
@@ -1149,6 +1061,7 @@ export function PortalNavigation(props: {
                 );
               }}
             >
+              <img src="/brand/ds/maca.svg" alt="" width="28" height="28" />
               <span className="portal-sidebar-tour-label">
                 {t(props.language, {
                   es: "Tour con Maca",
@@ -1170,14 +1083,9 @@ export function PortalNavigation(props: {
       ) : null}
 
       <div
-        className={`portal-main${diaryHomeImmersive ? " portal-main--diary-home" : ""}${dashboardHomeImmersive ? " portal-main--dashboard-home" : ""}${props.homeMlChrome ? " portal-main--home-ml" : ""}${sessionsHomeImmersive ? " portal-main--sessions-home" : ""}${wellbeingRelaxImmersive ? " portal-main--wellbeing-relax" : ""}${chatImmersive ? " portal-main--chat" : ""}`}
+        className={`portal-main${diaryHomeImmersive ? " portal-main--diary-home" : ""}${dashboardHomeImmersive ? " portal-main--dashboard-home" : ""}${props.homeMlChrome ? " portal-main--home-ml" : ""}${sessionsHomeImmersive ? " portal-main--sessions-home" : ""}${exercisesHomeImmersive ? " portal-main--exercises-home" : ""}${wellbeingRelaxImmersive ? " portal-main--wellbeing-relax" : ""}${chatImmersive ? " portal-main--chat" : ""}`}
       >
         {props.homeMlChrome ? renderHomeMlChrome() : null}
-        {canGoBack ? (
-          <button type="button" className="in-app-back in-app-back--main" onClick={goBack}>
-            ← {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
-          </button>
-        ) : null}
         {!immersivePortalHome ? (
           <header className="portal-header">
             <div
@@ -1299,13 +1207,64 @@ export function PortalNavigation(props: {
               </nav>
             </div>
             <nav
-              className="portal-mobile-nav"
+              className={`portal-mobile-nav${calmPickNav ? " portal-mobile-nav--calm" : ""}${calmAppNav ? " portal-mobile-nav--app" : ""}`}
               aria-label={t(props.language, {
                 es: "Navegación principal",
                 en: "Main navigation",
                 pt: "Navegacao principal"
               })}
             >
+              {calmPickNav ? (
+                <>
+                  <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/sessions" onClick={goSessionsToTop}>
+                    <IconSessions className="mobile-nav-icon" />
+                    <span className="mobile-nav-label">{t(props.language, { es: "Agenda", en: "Schedule", pt: "Agenda" })}</span>
+                  </NavLink>
+                  <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} end to="/" onClick={goHomeToTop}>
+                    <IconAccount className="mobile-nav-icon" />
+                    <span className="mobile-nav-label">{t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</span>
+                  </NavLink>
+                  <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/diario" end={false} onClick={() => goPathToTop("/diario", { prefix: true })}>
+                    <IconNotes className="mobile-nav-icon" />
+                    <span className="mobile-nav-label">{t(props.language, { es: "Diario", en: "Diary", pt: "Diário" })}</span>
+                  </NavLink>
+                  <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/ejercicios" onClick={() => goPathToTop("/ejercicios", { prefix: true })}>
+                    <IconLeaf className="mobile-nav-icon" />
+                    <span className="mobile-nav-label">{t(props.language, { es: "Bienestar", en: "Wellbeing", pt: "Bem-estar" })}</span>
+                  </NavLink>
+                </>
+              ) : calmAppNav ? (
+                <>
+                  <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} end to="/" onClick={goHomeToTop}>
+                    <span className="mobile-nav-pill"><IconHome className="mobile-nav-icon" /></span>
+                    <span className="mobile-nav-label">{t(props.language, { es: "Inicio", en: "Home", pt: "Início" })}</span>
+                  </NavLink>
+                  <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/chat" onClick={() => goPathToTop("/chat")}>
+                    <span className="mobile-nav-pill">
+                      <IconChat className="mobile-nav-icon" />
+                      {props.unreadMessagesCount > 0 ? (
+                        <span className="mobile-nav-badge" aria-label={t(props.language, { es: "Mensajes nuevos", en: "New messages", pt: "Novas mensagens" })}>
+                          {props.unreadMessagesCount > 99 ? "99+" : props.unreadMessagesCount}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="mobile-nav-label">{t(props.language, { es: "Mensajes", en: "Messages", pt: "Mensagens" })}</span>
+                  </NavLink>
+                  <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/sessions" onClick={goSessionsToTop}>
+                    <span className="mobile-nav-pill"><IconSessions className="mobile-nav-icon" /></span>
+                    <span className="mobile-nav-label">{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessões" })}</span>
+                  </NavLink>
+                  <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/diario" end={false} onClick={() => goPathToTop("/diario", { prefix: true })}>
+                    <span className="mobile-nav-pill"><IconNotes className="mobile-nav-icon" /></span>
+                    <span className="mobile-nav-label">{t(props.language, { es: "Diario", en: "Diary", pt: "Diário" })}</span>
+                  </NavLink>
+                  <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/ejercicios" onClick={() => goPathToTop("/ejercicios", { prefix: true })}>
+                    <span className="mobile-nav-pill"><IconLeaf className="mobile-nav-icon" /></span>
+                    <span className="mobile-nav-label">{t(props.language, { es: "Bienestar", en: "Wellbeing", pt: "Bem-estar" })}</span>
+                  </NavLink>
+                </>
+              ) : (
+                <>
               <NavLink
                 className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`}
                 end
@@ -1357,14 +1316,16 @@ export function PortalNavigation(props: {
                 <IconMore className="mobile-nav-icon" />
                 <span className="mobile-nav-label">{t(props.language, { es: "Más", en: "More", pt: "Mais" })}</span>
               </button>
+                </>
+              )}
             </nav>
           </>
         ) : null}
         {props.children}
-        {diaryHomeImmersive && diaryHeroToolbarMount
+        {diaryImmersive && diaryHeroToolbarMount
           ? createPortal(renderHeaderActions(true), diaryHeroToolbarMount)
           : null}
-        {diarySubpageImmersive && diaryPortalToolbarMount
+        {diarySubpageImmersive && !diaryHeroToolbarMount && diaryPortalToolbarMount
           ? createPortal(renderHeaderActions(true), diaryPortalToolbarMount)
           : null}
         {dashboardHomeImmersive && dashboardHeroToolbarMount
@@ -1375,6 +1336,9 @@ export function PortalNavigation(props: {
           : null}
         {sessionsHomeImmersive && sessionsHeroToolbarMount
           ? createPortal(renderHeaderActions(true), sessionsHeroToolbarMount)
+          : null}
+        {exercisesHomeImmersive && wellbeingHeroToolbarMount
+          ? createPortal(renderHeaderActions(true), wellbeingHeroToolbarMount)
           : null}
         {wellbeingRelaxImmersive && wellbeingRelaxToolbarMount
           ? createPortal(renderHeaderActions(true), wellbeingRelaxToolbarMount)

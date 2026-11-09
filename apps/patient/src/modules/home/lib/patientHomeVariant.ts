@@ -2,14 +2,14 @@ export type PatientHomeVariant = "next" | "classic";
 
 export type PatientHomeView = "ml" | "classic";
 
-/** v2: corte a Inicio ML por defecto; la clásica queda solo como escape hatch. */
-export const PATIENT_HOME_VARIANT_STORAGE_KEY = "mc.patient.homeVariant.v2";
+/** v3: la home calma (sobre la versión original) es la principal. ML queda como escape hatch. */
+export const PATIENT_HOME_VARIANT_STORAGE_KEY = "mc.patient.homeVariant.v3";
 
 export const PATIENT_HOME_VARIANT_EVENT = "mc-patient-home-variant";
 
 export function readPatientHomeVariant(): PatientHomeVariant {
   if (typeof window === "undefined") {
-    return "next";
+    return "classic";
   }
   try {
     const raw = window.localStorage.getItem(PATIENT_HOME_VARIANT_STORAGE_KEY);
@@ -19,7 +19,7 @@ export function readPatientHomeVariant(): PatientHomeVariant {
   } catch {
     // ignore
   }
-  return "next";
+  return "classic";
 }
 
 export function writePatientHomeVariant(variant: PatientHomeVariant): void {
@@ -44,9 +44,9 @@ export function resolveHomeView(variant: PatientHomeVariant): PatientHomeView {
   return variant === "classic" ? "classic" : "ml";
 }
 
-/** Inicio RN-web (≤680px) solo con variant classic; ML muestra NextActionHome en todos los viewports. */
-export function shouldMountDashboardRnHome(view: PatientHomeView): boolean {
-  return view === "classic";
+/** La home calma es un solo layout. El bloque RN de la clásica ya no se monta. */
+export function shouldMountDashboardRnHome(_view: PatientHomeView): boolean {
+  return false;
 }
 
 /** Rutas del portal que usan el mismo chrome que Inicio next (rail + top bar + footer). */

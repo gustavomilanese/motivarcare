@@ -1,9 +1,13 @@
 import { useMemo } from "react";
-import type { AppLanguage } from "@therapy/i18n-config";
+import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import type { Market } from "@therapy/types";
 import { filterSlotsByBookingNotice } from "@therapy/types";
 import { effectiveSessionListMajorUnits } from "../lib/sessionListPrice";
 import type { MatchCardProfessional, SortMode } from "../types";
+
+function t(language: AppLanguage, values: LocalizedText): string {
+  return textByLanguage(language, values);
+}
 
 function normalize(value: string): string {
   return value
@@ -40,16 +44,26 @@ export function useProfessionalMatching(params: {
   isFirstSelectionRequired: boolean;
 }) {
   const ranked = useMemo(
-    () => params.professionals.map((professional) => ({
-      professional,
-      score: Math.max(1, Math.min(99, Math.round(professional.matchScore ?? professional.compatibilityBase ?? 50))),
-      reasons: (professional.matchReasons ?? []).length > 0 ? (professional.matchReasons ?? []) : ["Perfil compatible por disponibilidad y perfil clínico."],
-      matchedTopics: professional.matchedTopics ?? [],
-      suggestedSlots: sortBookableSlots(
-        ((professional.suggestedSlots ?? []).length > 0 ? (professional.suggestedSlots ?? []) : professional.slots).slice(0, 12)
-      ).slice(0, 6)
-    })),
-    [params.professionals]
+    () =>
+      params.professionals.map((professional) => ({
+        professional,
+        score: Math.max(1, Math.min(99, Math.round(professional.matchScore ?? professional.compatibilityBase ?? 50))),
+        reasons:
+          (professional.matchReasons ?? []).length > 0
+            ? (professional.matchReasons ?? [])
+            : [
+                t(params.language, {
+                  es: "Perfil compatible por disponibilidad y perfil clínico.",
+                  en: "Compatible profile based on availability and clinical fit.",
+                  pt: "Perfil compativel por disponibilidade e perfil clinico."
+                })
+              ],
+        matchedTopics: professional.matchedTopics ?? [],
+        suggestedSlots: sortBookableSlots(
+          ((professional.suggestedSlots ?? []).length > 0 ? (professional.suggestedSlots ?? []) : professional.slots).slice(0, 12)
+        ).slice(0, 6)
+      })),
+    [params.professionals, params.language]
   );
 
   const specialties = useMemo(() => {

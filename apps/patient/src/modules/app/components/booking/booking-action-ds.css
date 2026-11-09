@@ -1,0 +1,199 @@
+/* Reprogramar / reservar: misma tarjeta salvia que el detalle de sesión. */
+
+.session-booking-modal.session-modal {
+  --superficie: #fff;
+  --salvia: #d6e7dc;
+  --menta: #e7f1ea;
+  --bosque: #1e4033;
+  --verde-medio: #2f6b51;
+  --tinta: #1b2a23;
+  --tinta-suave: #5d6a63;
+  --tinta-tenue: #8a958f;
+  --linea: #e2dfd3;
+  --lima: #e6edc4;
+  --amarillo: #f5c33b;
+  --serif: "Fraunces", Georgia, serif;
+  --sans: "Manrope", system-ui, sans-serif;
+  position: relative;
+  width: min(520px, calc(100vw - 32px));
+  padding: 28px 28px 22px;
+  border: 0;
+  border-radius: 24px;
+  background: #d6e7dc;
+  box-shadow: 0 30px 60px -28px rgba(20, 41, 31, 0.45);
+  color: var(--tinta);
+  font-family: var(--sans);
+}
+
+.session-booking-modal .session-booking-header {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  margin: 0;
+}
+
+.session-booking-modal button.session-booking-close {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--bosque);
+  box-shadow: none;
+  font-size: 0;
+}
+
+.session-booking-modal button.session-booking-close:hover,
+.session-booking-modal button.session-booking-close:focus-visible {
+  background: var(--menta);
+  color: var(--bosque);
+}
+
+.session-booking-modal .session-booking-copy {
+  margin-top: 0;
+  padding-right: 36px;
+}
+
+.session-booking-modal .session-booking-title {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 32px;
+  color: var(--bosque);
+}
+
+.session-booking-modal .session-booking-card {
+  background: var(--superficie);
+  border: 1px solid var(--linea);
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+.session-booking-modal .session-booking-prof img {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.session-booking-modal .session-booking-prof-label,
+.session-booking-modal .session-booking-slot-label {
+  color: var(--verde-medio);
+  letter-spacing: 0.14em;
+}
+
+.session-booking-modal .session-booking-prof strong {
+  color: var(--bosque);
+}
+
+.session-booking-modal .session-booking-day-label {
+  background: var(--superficie);
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 18px;
+  color: var(--bosque);
+}
+
+.session-booking-modal button.session-booking-slot {
+  height: auto;
+  min-height: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1.5px dashed var(--bosque);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--bosque);
+  font-weight: 800;
+  box-shadow: none;
+}
+
+.session-booking-modal button.session-booking-slot:hover:not(:disabled),
+.session-booking-modal button.session-booking-slot:focus-visible:not(:disabled) {
+  background: #fff;
+  border-color: var(--bosque);
+  color: var(--bosque);
+}
+
+.session-booking-modal .session-booking-slot-preview {
+  border-radius: 18px;
+  border: 2px solid var(--bosque);
+  box-shadow: 0 0 0 4px var(--menta);
+  background: var(--superficie);
+}
+
+.session-booking-modal .session-booking-credits-pill {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border-top: 1px solid var(--linea);
+  padding-top: 12px;
+}
+
+.session-booking-modal .session-booking-credits-pill span {
+  color: var(--tinta-suave);
+  font-weight: 700;
+}
+
+.session-booking-modal .session-booking-credits-pill strong {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 32px;
+  color: var(--bosque);
+}
+
+.session-booking-modal button.session-booking-primary {
+  width: 100%;
+  height: 48px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--amarillo);
+  color: var(--bosque);
+  box-shadow: none;
+}
+
+.session-booking-modal button.session-booking-primary:hover:not(:disabled),
+.session-booking-modal button.session-booking-primary:focus-visible:not(:disabled) {
+  background: #f0b81f;
+  color: var(--bosque);
+}
+
+.session-booking-modal button.session-booking-primary:disabled {
+  background: #fbe9b0;
+  color: var(--bosque);
+}
+
+.session-booking-modal button.session-booking-dismiss,
+.session-booking-modal button.session-booking-dismiss:hover:not(:disabled),
+.session-booking-modal button.session-booking-change-slot,
+.session-booking-modal button.session-booking-change-slot:hover:not(:disabled) {
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--verde-medio);
+}
+
+.session-booking-modal button.session-booking-dismiss:hover:not(:disabled),
+.session-booking-modal button.session-booking-change-slot:hover:not(:disabled) {
+  color: var(--verde-medio);
+  text-decoration: underline;
+  text-decoration-color: var(--amarillo);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 680px) {
+  .session-booking-modal.session-modal {
+    width: calc(100vw - 24px);
+    padding: 22px 16px 16px;
+  }
+
+  .session-booking-modal .session-booking-title {
+    font-size: 28px;
+  }
+}

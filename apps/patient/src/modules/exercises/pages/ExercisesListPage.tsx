@@ -1,24 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 import { type AppLanguage } from "@therapy/i18n-config";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
+import { PortalAccountToolsMount } from "../../app/components/PortalAccountToolsMount";
 import { useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
-import { ExercisesBannerGlyph, ExercisesBannerIcon } from "../../home/ml/HomeBannerGlyphs";
-import { fetchPublishedExercisesContent, type ExerciseCategory, type ExercisePost, type ExerciseRoutine } from "../services/exercisesApi";
-import {
-  ALL_CATEGORIES,
-  categoryAccent,
-  categoryLabel,
-  difficultyLabel,
-  durationLabel,
-  t
-} from "../lib/labels";
+import { WellbeingCalmHead } from "../components/WellbeingCalmHead";
+import { WellbeingExerciseGrid } from "../components/WellbeingExerciseGrid";
+import { WellbeingFilters, type WellbeingFilter } from "../components/WellbeingFilters";
+import { WellbeingRoutinesSide } from "../components/WellbeingRoutines";
+import { t } from "../lib/labels";
+import { fetchPublishedExercisesContent, type ExercisePost, type ExerciseRoutine } from "../services/exercisesApi";
 
 export interface ExercisesListPageProps {
   language: AppLanguage;
 }
 
-type CategoryFilter = "all" | ExerciseCategory;
+function bySortOrder<T extends { sortOrder: number }>(items: T[]): T[] {
+  return [...items].sort((a, b) => a.sortOrder - b.sortOrder);
+}
 
 export function ExercisesListPage(props: ExercisesListPageProps) {
   useScrollSectionToTopOnMount();
@@ -26,9 +24,7 @@ export function ExercisesListPage(props: ExercisesListPageProps) {
   const [routines, setRoutines] = useState<ExerciseRoutine[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<CategoryFilter>("all");
-  const packRef = useRef<HTMLDivElement | null>(null);
-  const routinesRef = useRef<HTMLElement | null>(null);
+  const [filter, setFilter] = useState<WellbeingFilter>("all");
 
   useEffect(() => {
     let active = true;
@@ -37,8 +33,8 @@ export function ExercisesListPage(props: ExercisesListPageProps) {
     fetchPublishedExercisesContent()
       .then((data) => {
         if (!active) return;
-        setExercises(data.exercises);
-        setRoutines(data.routines);
+        setExercises(bySortOrder(data.exercises));
+        setRoutines(bySortOrder(data.routines));
         setLoading(false);
       })
       .catch(() => {
@@ -57,251 +53,52 @@ export function ExercisesListPage(props: ExercisesListPageProps) {
     };
   }, [props.language]);
 
-  const visibleCategories = useMemo<ExerciseCategory[]>(() => {
-    const present = new Set(exercises.map((exercise) => exercise.category));
-    return ALL_CATEGORIES.filter((category) => present.has(category));
-  }, [exercises]);
-
   const filtered = useMemo(() => {
-    if (filter === "all") {
-      return exercises;
-    }
+    if (filter === "all") return exercises;
     return exercises.filter((exercise) => exercise.category === filter);
   }, [exercises, filter]);
 
-  function scrollToPack() {
-    packRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  function scrollToRoutines() {
-    (routinesRef.current ?? packRef.current)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  const pageTitle = t(props.language, { es: "Ejercicios", en: "Exercises", pt: "Exercícios" });
+  const pageTitle = t(props.language, { es: "Bienestar", en: "Wellbeing", pt: "Bem-estar" });
 
   return (
-    <section className="exercises-page exercises-page--ml" aria-label={pageTitle}>
-      <div className="exercises-page-ml">
-        <article className="dashboard-ml-feature-banner dashboard-ml-feature-banner--purple exercises-page-ml-banner">
-          <div className="dashboard-ml-feature-banner-frame">
-            <div className="dashboard-ml-feature-banner-copy">
-              <p className="dashboard-ml-feature-banner-kicker">
-                {t(props.language, {
-                  es: "Entre sesiones",
-                  en: "Between sessions",
-                  pt: "Entre sessoes"
-                })}
-              </p>
-              <h1 id="exercises-page-title" className="dashboard-ml-feature-banner-title">
-                <span className="dashboard-ml-feature-banner-title-icon" aria-hidden="true">
-                  <ExercisesBannerIcon />
-                </span>
-                {pageTitle}
-              </h1>
-              <p className="dashboard-ml-feature-banner-body">
-                {t(props.language, {
-                  es: "Prácticas breves de respiración, postura y presencia para sumar claridad entre turnos.",
-                  en: "Short breathing, posture, and presence practices to add clarity between sessions.",
-                  pt: "Praticas breves de respiracao, postura e presenca para somar clareza entre sessoes."
-                })}
-              </p>
-              <div className="dashboard-ml-feature-banner-actions exercises-page-ml-actions">
-                <button type="button" className="dashboard-ml-feature-banner-cta" onClick={scrollToPack}>
-                  {t(props.language, {
-                    es: "Ver prácticas",
-                    en: "View practices",
-                    pt: "Ver praticas"
-                  })}
-                </button>
-                {!loading && !error && routines.length > 0 ? (
-                  <button type="button" className="exercises-page-ml-banner-link" onClick={scrollToRoutines}>
-                    {t(props.language, {
-                      es: "Rutinas guiadas",
-                      en: "Guided routines",
-                      pt: "Rotinas guiadas"
-                    })}
-                  </button>
-                ) : null}
-              </div>
-            </div>
-            <div className="dashboard-ml-feature-banner-media" aria-hidden="true">
-              <ExercisesBannerGlyph />
-            </div>
-          </div>
-        </article>
-
-        <div ref={packRef} className="dashboard-ml-feature-panel dashboard-ml-feature-panel--open exercises-page-ml-pack">
-          <p className="exercises-page-disclaimer">
+    <section className="exercises-page exercises-page--ml wellbeing-calm" aria-label={pageTitle}>
+      <div className="wellbeing-calm-columns">
+        <div className="wellbeing-calm-main">
+          <WellbeingCalmHead language={props.language} />
+          {loading ? <MotivarCarePageLoader language={props.language} layout="block" /> : null}
+          {error ? (
+            <p className="wellbeing-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          {!loading && !error ? (
+            <>
+              <WellbeingFilters
+                language={props.language}
+                exercises={exercises}
+                filter={filter}
+                onChange={setFilter}
+              />
+              <WellbeingExerciseGrid
+                language={props.language}
+                exercises={filtered}
+                filter={filter}
+                hasRoutines={routines.length > 0}
+              />
+            </>
+          ) : null}
+        </div>
+        <aside className="wellbeing-calm-side">
+          <PortalAccountToolsMount id="wellbeing-hero-toolbar-mount" className="wellbeing-calm-tools" />
+          {!loading && !error ? <WellbeingRoutinesSide language={props.language} routines={routines} /> : null}
+          <p className="wellbeing-note">
             {t(props.language, {
               es: "Si alguno te genera molestia, suspendelo y comentalo en próxima sesión.",
               en: "If any exercise causes discomfort, stop and bring it up in your next session.",
               pt: "Se algum causar desconforto, interrompa e comente na próxima sessão."
             })}
           </p>
-
-          {!loading && !error && routines.length > 0 ? (
-            <section
-              ref={routinesRef}
-              className="exercise-routines-section"
-              aria-labelledby="exercise-routines-title"
-            >
-              <div className="exercise-routines-section-head">
-                <h2 id="exercise-routines-title">
-                  {t(props.language, { es: "Rutinas guiadas", en: "Guided routines", pt: "Rotinas guiadas" })}
-                </h2>
-                <p>
-                  {t(props.language, {
-                    es: "Secuencias ordenadas de ejercicios para practicar de punta a punta.",
-                    en: "Ordered sequences of exercises to practice start to finish.",
-                    pt: "Sequências ordenadas de exercícios para praticar do início ao fim."
-                  })}
-                </p>
-              </div>
-              <ul className="exercise-routines-grid">
-                {routines.map((routine) => (
-                  <li key={routine.id}>
-                    <Link className="exercise-routine-card" to={`/ejercicios/rutinas/${encodeURIComponent(routine.slug)}`}>
-                      <span className="exercise-routine-card-emoji" aria-hidden="true">
-                        {routine.emoji}
-                      </span>
-                      <div className="exercise-routine-card-body">
-                        <h3>{routine.title}</h3>
-                        <p>{routine.summary}</p>
-                        <small>
-                          {routine.exercises.length}{" "}
-                          {t(props.language, { es: "ejercicios", en: "exercises", pt: "exercícios" })} · ⏱{" "}
-                          {durationLabel(props.language, routine.totalDurationMinutes)}
-                        </small>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-
-          {!loading && !error && exercises.length > 0 ? (
-            <div
-              className="exercises-filters"
-              role="tablist"
-              aria-label={t(props.language, {
-                es: "Filtrar por categoría",
-                en: "Filter by category",
-                pt: "Filtrar por categoria"
-              })}
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={filter === "all"}
-                className={`exercises-filter-chip${filter === "all" ? " is-active" : ""}`}
-                onClick={() => setFilter("all")}
-              >
-                {t(props.language, { es: "Todos", en: "All", pt: "Todos" })}
-                <span className="exercises-filter-count">{exercises.length}</span>
-              </button>
-              {visibleCategories.map((category) => {
-                const count = exercises.filter((exercise) => exercise.category === category).length;
-                const isActive = filter === category;
-                const { accent, accentSoft } = categoryAccent(category);
-                return (
-                  <button
-                    key={category}
-                    type="button"
-                    role="tab"
-                    aria-selected={isActive}
-                    className={`exercises-filter-chip${isActive ? " is-active" : ""}`}
-                    onClick={() => setFilter(category)}
-                    style={
-                      isActive
-                        ? ({ "--filter-accent": accent, "--filter-accent-soft": accentSoft } as React.CSSProperties)
-                        : undefined
-                    }
-                  >
-                    {categoryLabel(props.language, category)}
-                    <span className="exercises-filter-count">{count}</span>
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
-
-          {loading ? <MotivarCarePageLoader language={props.language} layout="block" /> : null}
-
-          {error ? (
-            <p className="exercises-page-error" role="alert">
-              {error}
-            </p>
-          ) : null}
-
-          {!loading && !error && filtered.length === 0 && routines.length === 0 ? (
-            <p className="exercises-page-empty">
-              {t(props.language, {
-                es: "Todavía no hay ejercicios publicados. El equipo los cargará desde el admin.",
-                en: "No exercises published yet. The team will load them from admin.",
-                pt: "Ainda não há exercícios publicados. A equipe carregará pelo admin."
-              })}
-            </p>
-          ) : null}
-
-          {!loading && !error && filtered.length === 0 && routines.length > 0 && filter !== "all" ? (
-            <p className="exercises-page-empty">
-              {t(props.language, {
-                es: "Todavía no hay ejercicios publicados en esta categoría.",
-                en: "No exercises published in this category yet.",
-                pt: "Ainda não há exercícios publicados nesta categoria."
-              })}
-            </p>
-          ) : null}
-
-          {filtered.length > 0 ? (
-            <ul
-              className="exercises-grid"
-              aria-label={t(props.language, {
-                es: "Lista de ejercicios",
-                en: "List of exercises",
-                pt: "Lista de exercícios"
-              })}
-            >
-              {filtered.map((exercise) => {
-                const { accent, accentSoft } = categoryAccent(exercise.category);
-                return (
-                  <li key={exercise.id} className="exercises-grid-item">
-                    <Link
-                      className="exercise-card"
-                      to={`/ejercicios/${encodeURIComponent(exercise.slug)}`}
-                      aria-label={`${exercise.title} — ${categoryLabel(props.language, exercise.category)}, ${durationLabel(props.language, exercise.durationMinutes)}`}
-                      style={{ "--exercise-accent": accent, "--exercise-accent-soft": accentSoft } as React.CSSProperties}
-                    >
-                      <div className="exercise-card-emoji" aria-hidden="true">
-                        {exercise.emoji}
-                      </div>
-                      <div className="exercise-card-body">
-                        <div className="exercise-card-meta">
-                          <span className="exercise-card-pill exercise-card-pill-category">
-                            {categoryLabel(props.language, exercise.category)}
-                          </span>
-                          <span className="exercise-card-pill exercise-card-pill-time">
-                            ⏱ {durationLabel(props.language, exercise.durationMinutes)}
-                          </span>
-                          <span className="exercise-card-pill exercise-card-pill-level">
-                            {difficultyLabel(props.language, exercise.difficulty)}
-                          </span>
-                        </div>
-                        <h3>{exercise.title}</h3>
-                        <p className="exercise-card-summary">{exercise.summary}</p>
-                        <span className="exercise-card-cta">
-                          {t(props.language, { es: "Empezar", en: "Start", pt: "Começar" })}
-                          <span aria-hidden> →</span>
-                        </span>
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : null}
-        </div>
+        </aside>
       </div>
     </section>
   );

@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { McButton, McInput, McNotice, McPasswordInput } from "@therapy/ui";
+import { AuthBrand } from "../../auth/AuthBrand";
 import { friendlyAuthSurfaceMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest } from "../services/api";
 
@@ -73,15 +74,7 @@ export function PatientResetPasswordScreen(props: { language: AppLanguage }) {
     <div className="auth-shell">
       <section className="auth-card auth-card-verify-email auth-narrow-flow">
         <div className="verify-email-panel">
-          <div className="auth-brand-mark auth-brand-mark--center">
-            <img
-              className="auth-brand-lockup"
-              src="/brand/motivarcare-logo-full.png"
-              alt="MotivarCare"
-              width={708}
-              height={148}
-            />
-          </div>
+          <AuthBrand />
           <button className="auth-narrow-back" type="button" onClick={() => navigate("/", { replace: true })}>
             {t(props.language, { es: "← Ir al inicio de sesión", en: "← Go to sign in", pt: "← Ir ao login" })}
           </button>

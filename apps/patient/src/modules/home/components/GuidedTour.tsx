@@ -7,35 +7,17 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-/** SVG compacto de Maca (asistente); gradiente violeta, sin asset externo. */
-function macaAvatarSvg(size: "large" | "small"): string {
-  const dim = size === "large" ? 72 : 44;
-  const uid = `maca-${size}-${Math.random().toString(36).slice(2, 9)}`;
-  return `
-<svg class="patient-tour-maca-svg patient-tour-maca-svg--${size}" width="${dim}" height="${dim}" viewBox="0 0 64 64" aria-hidden="true">
-  <defs>
-    <linearGradient id="${uid}-g" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#c4b5fd"/>
-      <stop offset="50%" stop-color="#8b5cf6"/>
-      <stop offset="100%" stop-color="#5f44eb"/>
-    </linearGradient>
-    <filter id="${uid}-s" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="3" stdDeviation="2" flood-opacity="0.25"/>
-    </filter>
-  </defs>
-  <circle cx="32" cy="34" r="26" fill="url(#${uid}-g)" filter="url(#${uid}-s)"/>
-  <ellipse cx="32" cy="30" rx="18" ry="16" fill="rgba(255,255,255,0.22)"/>
-  <ellipse cx="24" cy="28" rx="4.5" ry="5.5" fill="#fff"/>
-  <ellipse cx="40" cy="28" rx="4.5" ry="5.5" fill="#fff"/>
-  <ellipse cx="24" cy="29" rx="2" ry="2.5" fill="#3730a3"/>
-  <ellipse cx="40" cy="29" rx="2" ry="2.5" fill="#3730a3"/>
-  <path d="M26 38 Q32 44 38 38" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
-  <ellipse cx="32" cy="48" rx="6" ry="3" fill="rgba(255,255,255,0.35)"/>
-</svg>`.trim();
+function macaAvatar(size: "large" | "small"): string {
+  const dim = size === "large" ? 64 : 40;
+  return `<img class="patient-tour-maca-img patient-tour-maca-img--${size}" src="/brand/ds/maca.svg" alt="" width="${dim}" height="${dim}" />`;
 }
 
 function isHomeMlChrome(): boolean {
   return Boolean(document.querySelector(".portal-shell--home-ml"));
+}
+
+function isCalmChrome(): boolean {
+  return Boolean(document.querySelector(".calm-sidebar"));
 }
 
 function welcomeInjectHtml(language: AppLanguage): string {
@@ -62,7 +44,7 @@ function welcomeInjectHtml(language: AppLanguage): string {
       pt: "Tour guiado"
     })}</span>
     <div class="patient-tour-welcome-head">
-      <div class="patient-tour-maca-hero__avatar" aria-hidden="true">${macaAvatarSvg("large")}</div>
+      <div class="patient-tour-maca-hero__avatar" aria-hidden="true">${macaAvatar("large")}</div>
       <div>
         <h2 class="patient-tour-welcome-h">${t(language, {
           es: "Un tour con Maca",
@@ -98,7 +80,36 @@ function welcomeInjectHtml(language: AppLanguage): string {
 
 function sidebarMenuHtml(language: AppLanguage): string {
   const isHomeMl = isHomeMlChrome();
-  const items: LocalizedText[] = isHomeMl
+  const calm = isCalmChrome();
+  const items: LocalizedText[] = calm
+    ? [
+        {
+          es: "<strong>Inicio</strong> — tu panel y resumen",
+          en: "<strong>Home</strong> — your dashboard snapshot",
+          pt: "<strong>Inicio</strong> — seu painel e resumo"
+        },
+        {
+          es: "<strong>Mensajes</strong> — con tu profesional",
+          en: "<strong>Messages</strong> — with your professional",
+          pt: "<strong>Mensagens</strong> — com seu profissional"
+        },
+        {
+          es: "<strong>Sesiones</strong> — reservar y ver turnos",
+          en: "<strong>Sessions</strong> — book and manage slots",
+          pt: "<strong>Sessoes</strong> — agendar e ver horarios"
+        },
+        {
+          es: "<strong>Diario</strong> — registrá cómo te sentís",
+          en: "<strong>Diary</strong> — log how you feel",
+          pt: "<strong>Diario</strong> — registre como se sente"
+        },
+        {
+          es: "<strong>Bienestar</strong> — recursos entre sesión y sesión",
+          en: "<strong>Wellbeing</strong> — resources between sessions",
+          pt: "<strong>Bem-estar</strong> — recursos entre sessoes"
+        }
+      ]
+    : isHomeMl
     ? [
         {
           es: "<strong>Inicio</strong> — tu panel y próximos pasos",
@@ -177,7 +188,7 @@ function sidebarMenuHtml(language: AppLanguage): string {
   const lis = items.map((text) => `<li>${t(language, text)}</li>`).join("");
   return `
 <div class="patient-tour-sidebar-wrap">
-  <div class="patient-tour-maca-mini" aria-hidden="true">${macaAvatarSvg("small")}</div>
+  <div class="patient-tour-maca-mini" aria-hidden="true">${macaAvatar("small")}</div>
   <p class="patient-tour-sidebar-intro">${intro}</p>
   <ul class="patient-tour-menu-hints">${lis}</ul>
 </div>`.trim();
@@ -726,10 +737,10 @@ function tourDriverConfig(language: AppLanguage, markIntentionalEnd: () => void)
     animate: true,
     smoothScroll: true,
     allowClose: true,
-    overlayOpacity: 0.48,
-    overlayColor: "#1e1b4b",
+    overlayOpacity: 0.36,
+    overlayColor: "#1E4033",
     stagePadding: 10,
-    stageRadius: 16,
+    stageRadius: 18,
     disableActiveInteraction: true,
     allowKeyboardControl: true,
     popoverClass: "patient-guided-tour-popover patient-guided-tour-popover--maca",

@@ -1073,3 +1073,638 @@
     padding: 16px;
   }
 }
+
+/* Piel del design system. Solo el onboarding. */
+.intake-shell {
+  --crema: #f5f3eb;
+  --superficie: #fff;
+  --tinta: #1b2a23;
+  --tinta-suave: #5d6a63;
+  --linea: #e2dfd3;
+  --bosque: #1e4033;
+  --bosque-2: #2a5543;
+  --verde-medio: #2f6b51;
+  --menta: #e7f1ea;
+  --lima: #e6edc4;
+  --amarillo: #f5c33b;
+  --amarillo-suave: #fbe9b0;
+  --serif: "Fraunces", Georgia, serif;
+  --sans: "Manrope", system-ui, sans-serif;
+  background: var(--crema);
+  color: var(--tinta);
+  font-family: var(--sans);
+}
+
+.intake-shell--couples-focus {
+  background: var(--crema);
+}
+
+.intake-card,
+.intake-card--wizard,
+.intake-shell--couples-focus .intake-card--wizard {
+  background: var(--superficie);
+  border: 1px solid var(--linea);
+  border-radius: 24px;
+  box-shadow: none;
+  color: var(--tinta);
+}
+
+.intake-shell h1,
+.intake-wizard-title,
+.intake-question-title,
+.intake-shell h2 {
+  font-family: var(--serif);
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--bosque);
+}
+
+.intake-step-meta {
+  color: var(--verde-medio);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.intake-shell .chip.intake-wizard-chip,
+.intake-shell .chip.intake-wizard-chip--couples {
+  border: 0;
+  background: var(--lima);
+  color: var(--bosque);
+  box-shadow: none;
+}
+
+.intake-progress-track {
+  background: var(--linea);
+}
+
+.intake-progress-fill {
+  background: var(--bosque);
+}
+
+.intake-shell button.primary,
+.intake-shell button.primary:hover,
+.intake-wizard-primary,
+.intake-wizard-primary:hover {
+  background: var(--amarillo);
+  color: var(--bosque);
+  border-color: transparent;
+  border-radius: 999px;
+  box-shadow: none;
+  min-height: 44px;
+}
+
+.intake-shell button.primary:hover,
+.intake-wizard-primary:hover {
+  background: #f0b81f;
+}
+
+.intake-shell button.ghost,
+.intake-wizard-secondary,
+.intake-wizard-secondary:hover,
+.intake-back-inline,
+.intake-back-inline:hover {
+  background: transparent;
+  color: var(--bosque);
+  border-color: var(--linea);
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+.intake-back-inline,
+.intake-back-inline:hover {
+  border: 0;
+  text-decoration: underline;
+  text-decoration-color: var(--amarillo);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.intake-maca-link,
+.intake-maca-link:hover {
+  border-color: var(--linea);
+  background: var(--superficie);
+  color: var(--bosque);
+}
+
+.intake-shell .question-card,
+.intake-shell .question-card--wizard,
+.question-card--wizard.intake-intro-card,
+.intake-intro-point,
+.intake-main-reason-category,
+.intake-main-reason-category--couples,
+.intake-main-reason-panel--couples {
+  background: var(--superficie);
+  border-color: var(--linea);
+  box-shadow: none;
+}
+
+.intake-intro-card-accent {
+  background: var(--salvia, #d6e7dc);
+}
+
+.intake-intro-point-icon-wrap {
+  background: var(--menta);
+  color: var(--bosque);
+  box-shadow: none;
+  border-radius: 999px;
+}
+
+.intake-intro-point-text,
+.intake-question-help,
+.intake-main-reason-category-hint,
+.intake-main-reason-panel-sub {
+  color: var(--tinta-suave);
+}
+
+.intake-main-reason-category-label,
+.intake-main-reason-panel-lead {
+  color: var(--bosque);
+}
+
+.intake-option-chip,
+.intake-main-reason-category--active,
+.intake-main-reason-category--couples.intake-main-reason-category--active,
+.intake-main-reason-step--couples .intake-option-chip--couples.intake-option-chip--selected {
+  border-color: var(--linea);
+  background: var(--superficie);
+  color: var(--tinta);
+  box-shadow: none;
+}
+
+.intake-option-chip--selected,
+.intake-shell .intake-option-chip[aria-pressed="true"] {
+  border-color: var(--bosque);
+  background: var(--menta);
+  color: var(--bosque);
+}
+
+.intake-shell .error-text,
+.intake-wizard-error {
+  color: var(--tinta);
+  background: var(--amarillo-suave);
+  border-radius: 18px;
+  padding: 10px 12px;
+}
+
+.intake-select-touch,
+.intake-shell select,
+.intake-shell textarea,
+.intake-shell input {
+  border-color: var(--linea);
+  border-radius: 10px;
+  color: var(--tinta);
+  font-family: inherit;
+}
+
+.intake-shell select:focus,
+.intake-shell textarea:focus,
+.intake-shell input:focus {
+  border-color: var(--bosque);
+  box-shadow: 0 0 0 3px var(--menta);
+}
+
+/* Pregunta sobre la crema: sin caja, una marca amarilla, píldoras. */
+.intake-shell--ask {
+  position: relative;
+  place-items: start center;
+  align-content: start;
+  background: var(--crema);
+}
+
+.intake-shell--ask::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(30, 64, 51, 0.07) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+  z-index: 0;
+}
+
+.intake-shell--ask::after {
+  content: "";
+  position: absolute;
+  width: min(520px, 90vw);
+  height: min(520px, 90vw);
+  border-radius: 50%;
+  background: #d6e7dc;
+  right: -180px;
+  top: -160px;
+  filter: blur(8px);
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.intake-shell--ask .intake-card--wizard,
+.intake-shell--couples-focus.intake-shell--ask .intake-card--wizard {
+  position: relative;
+  z-index: 1;
+  width: min(760px, 100%);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 8px 0 28px;
+}
+
+.intake-shell--ask .intake-ask {
+  display: grid;
+  gap: 10px;
+}
+
+.intake-shell--ask .intake-ask-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  width: fit-content;
+  padding: 6px 12px 6px 10px;
+  border-radius: 999px;
+  background: var(--lima);
+  color: var(--bosque);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.intake-shell--ask .intake-ask-kicker span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--amarillo);
+}
+
+.intake-shell--ask .intake-ask h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  font-size: clamp(32px, 5vw, 44px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--bosque);
+}
+
+.intake-shell--ask .intake-ask-help {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--tinta-suave);
+  font-size: 16px;
+}
+
+.intake-shell--ask .question-card,
+.intake-shell--ask .question-card--wizard,
+.intake-shell--ask .intake-main-reason-step,
+.intake-shell--ask .intake-main-reason-panel,
+.intake-shell--ask .intake-main-reason-panel--couples {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+.intake-shell--ask .question-card > .intake-question-title,
+.intake-shell--ask .intake-main-reason-step > .intake-question-title,
+.intake-shell--ask .question-card > .intake-question-help,
+.intake-shell--ask .intake-main-reason-step > .intake-question-help,
+.intake-shell--ask .intake-main-reason-panel:not(.intake-main-reason-panel--couples) > .intake-main-reason-panel-lead,
+.intake-shell--ask .intake-main-reason-category-hint {
+  display: none;
+}
+
+.intake-shell--ask .intake-main-reason-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.intake-shell--ask .intake-main-reason-category,
+.intake-shell--ask .intake-main-reason-category--couples {
+  width: auto;
+  display: inline-flex;
+  border-radius: 999px;
+  border: 1px solid var(--linea);
+  background: var(--superficie);
+  color: var(--bosque);
+  padding: 0 16px;
+  min-height: 44px;
+  box-shadow: none;
+}
+
+.intake-shell--ask .intake-main-reason-category--active,
+.intake-shell--ask .intake-main-reason-category--couples.intake-main-reason-category--active {
+  border-color: var(--bosque);
+  background: var(--menta);
+  color: var(--bosque);
+}
+
+.intake-shell--ask .intake-option-grid {
+  margin-top: 0;
+}
+
+.intake-shell--ask .intake-option-chip {
+  border: 1px solid var(--linea);
+  background: var(--superficie);
+  color: var(--tinta);
+  box-shadow: none;
+  font-family: inherit;
+}
+
+.intake-shell--ask .intake-option-chip:hover {
+  border-color: var(--bosque);
+  background: var(--superficie);
+}
+
+.intake-shell--ask .intake-option-chip--selected,
+.intake-shell--ask .intake-option-chip[aria-pressed="true"] {
+  border-color: var(--bosque);
+  background: var(--menta);
+  color: var(--bosque);
+  box-shadow: none;
+}
+
+@media (min-width: 480px) {
+  .intake-shell--ask .intake-option-grid:not(.intake-option-grid--cards):not(.intake-option-grid--wide):not(.intake-option-grid--mood):not(.intake-option-grid--safety) {
+    display: flex;
+    flex-wrap: wrap;
+    grid-template-columns: none;
+  }
+}
+
+.intake-shell--ask .intake-option-grid:not(.intake-option-grid--cards):not(.intake-option-grid--wide):not(.intake-option-grid--mood):not(.intake-option-grid--safety) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.intake-shell--ask .intake-option-grid:not(.intake-option-grid--cards):not(.intake-option-grid--wide):not(.intake-option-grid--mood):not(.intake-option-grid--safety) .intake-option-chip {
+  width: auto;
+  border-radius: 999px;
+  min-height: 40px;
+  padding: 0 14px;
+}
+
+.intake-shell--ask .intake-option-grid--cards,
+.intake-shell--ask .intake-option-grid--wide,
+.intake-shell--ask .intake-option-grid--safety {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.intake-shell--ask .intake-option-grid--cards .intake-option-chip,
+.intake-shell--ask .intake-option-grid--wide .intake-option-chip {
+  width: 100%;
+  align-items: flex-start;
+  border-radius: 18px;
+  text-align: left;
+  padding: 14px 16px;
+}
+
+.intake-shell--ask .intake-option-grid--cards .intake-option-chip-label {
+  font-weight: 700;
+}
+
+.intake-shell--ask .intake-option-grid--cards .intake-option-chip-sub {
+  color: var(--tinta-suave);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.intake-shell--ask .intake-option-chip--provisional {
+  border-style: dashed;
+  background: transparent;
+}
+
+.intake-shell--ask .intake-option-chip--provisional.intake-option-chip--selected {
+  background: var(--menta);
+  border-style: dashed;
+}
+
+@media (min-width: 720px) {
+  .intake-shell--ask .intake-option-grid--wide {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .intake-shell--ask .intake-option-grid--wide .intake-option-chip {
+    min-height: 96px;
+    justify-content: flex-start;
+  }
+}
+
+.intake-shell--ask .intake-option-grid--mood {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.intake-shell--ask .intake-option-grid--mood .intake-option-chip,
+.intake-shell--ask .intake-option-grid--mood .intake-option-chip--selected,
+.intake-shell--ask .intake-option-grid--mood .intake-option-chip[aria-pressed="true"] {
+  width: auto;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 8px 4px;
+  min-height: 0;
+  color: var(--tinta);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.intake-shell--ask .intake-option-grid--mood .intake-option-chip-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.intake-shell--ask .intake-option-grid--mood .intake-option-chip-label::before {
+  content: "";
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #8dba9e;
+}
+
+.intake-shell--ask .intake-option-grid--mood .intake-option-chip:nth-child(2) .intake-option-chip-label::before {
+  background: #f5c33b;
+}
+
+.intake-shell--ask .intake-option-grid--mood .intake-option-chip:nth-child(3) .intake-option-chip-label::before {
+  background: #2f6b51;
+}
+
+.intake-shell--ask .intake-option-grid--mood .intake-option-chip:nth-child(4) .intake-option-chip-label::before {
+  background: #1e4033;
+}
+
+.intake-shell--ask .intake-option-grid--mood .intake-option-chip--selected .intake-option-chip-label::before {
+  box-shadow: 0 0 0 3px var(--crema), 0 0 0 6px var(--amarillo);
+}
+
+.intake-shell--ask .intake-option-grid--safety .intake-option-chip:first-child {
+  width: fit-content;
+  border-radius: 999px;
+}
+
+.intake-shell--ask .intake-option-chip--safety-note,
+.intake-shell--ask .intake-option-chip--safety-note.intake-option-chip--selected {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  border-radius: 18px;
+  background: var(--amarillo-suave);
+  border-color: transparent;
+  color: var(--tinta);
+}
+
+.intake-shell--ask .intake-option-chip--safety-note.intake-option-chip--selected {
+  border-color: var(--bosque);
+}
+
+.intake-shell--ask .intake-pill-row {
+  display: grid;
+  gap: 8px;
+}
+
+.intake-shell--ask .intake-pill-row-label {
+  margin: 0;
+  color: var(--bosque);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.intake-shell--ask .intake-therapist-pref {
+  gap: 22px;
+  margin-top: 0;
+}
+
+.intake-shell--ask .intake-therapist-no-pref,
+.intake-shell--ask .intake-therapist-no-pref:hover,
+.intake-shell--ask .intake-therapist-no-pref--active,
+.intake-shell--ask .intake-therapist-no-pref--active:hover {
+  width: auto;
+  align-self: flex-start;
+  border-radius: 999px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--linea);
+  background: var(--superficie);
+  color: var(--bosque);
+  box-shadow: none;
+  font-family: inherit;
+}
+
+.intake-shell--ask .intake-therapist-no-pref--active,
+.intake-shell--ask .intake-therapist-no-pref--active:hover {
+  border-color: var(--bosque);
+  background: var(--menta);
+  color: var(--bosque);
+}
+
+.intake-shell--ask .intake-fork {
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 720px) {
+  .intake-shell--ask .intake-fork {
+    grid-template-columns: 1.2fr 0.8fr;
+  }
+}
+
+.intake-shell--ask .intake-fork-card {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid var(--linea);
+  background: var(--superficie);
+  color: var(--tinta);
+  text-align: left;
+  font: inherit;
+}
+
+.intake-shell--ask .intake-fork-card h2,
+.intake-shell--ask .intake-fork-card strong {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--bosque);
+}
+
+.intake-shell--ask .intake-fork-card p,
+.intake-shell--ask .intake-fork-card em {
+  margin: 0;
+  font-style: normal;
+  color: var(--tinta-suave);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.intake-shell--ask .intake-fork-card--maca {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border-style: dashed;
+  background: transparent;
+  cursor: pointer;
+}
+
+.intake-shell--ask .intake-fork-card--maca img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.intake-shell--ask .intake-fork-card--maca span {
+  display: grid;
+  gap: 4px;
+}
+
+.intake-shell--ask .intake-wizard-actions {
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(180deg, transparent 0%, var(--crema) 28%);
+}
+
+.intake-shell--ask .intake-cancel-link,
+.intake-shell--ask .intake-cancel-link:hover {
+  border: 0;
+  background: transparent;
+  color: var(--bosque);
+  font: inherit;
+  font-weight: 700;
+  padding: 8px 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--amarillo);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.intake-shell--ask .intake-wizard-primary {
+  flex: 0 0 auto;
+  min-width: 160px;
+}
+
+.intake-shell--ask .intake-textarea-touch {
+  border-radius: 10px;
+  border: 1px solid var(--linea);
+  background: var(--superficie);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intake-shell--ask::after {
+    filter: none;
+  }
+}

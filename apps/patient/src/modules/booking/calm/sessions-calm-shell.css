@@ -1,0 +1,179 @@
+.sessions-calm {
+  --crema: #f5f3eb;
+  --superficie: #fff;
+  --tinta: #1b2a23;
+  --tinta-suave: #5d6a63;
+  --tinta-tenue: #8a958f;
+  --linea: #e2dfd3;
+  --bosque: #1e4033;
+  --bosque-2: #2a5543;
+  --verde-medio: #2f6b51;
+  --crema-ink: #f5f3eb;
+  --salvia: #d6e7dc;
+  --menta: #e7f1ea;
+  --lima: #e6edc4;
+  --amarillo: #f5c33b;
+  --amarillo-suave: #fbe9b0;
+  --serif: "Fraunces", Georgia, serif;
+  --sans: "Manrope", system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 26px 48px 12px;
+  color: var(--tinta);
+  font-family: var(--sans);
+}
+
+.sessions-calm-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sessions-calm-kicker {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--verde-medio);
+}
+
+.sessions-calm-head h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 42px;
+  line-height: 1.08;
+  color: var(--bosque);
+}
+
+.sessions-calm-head em {
+  font-style: italic;
+  color: var(--bosque-2);
+}
+
+.sessions-calm-tools {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 44px;
+}
+
+.sessions-calm-balance {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 22px;
+  border-radius: 24px;
+  background: var(--superficie);
+  border: 1px solid var(--linea);
+}
+
+.sessions-calm-balance .sessions-calm-count {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 44px;
+  line-height: 1;
+  color: var(--bosque);
+}
+
+.sessions-calm-balance b {
+  display: block;
+  color: var(--bosque);
+  font-size: 15.5px;
+}
+
+.sessions-calm-balance span {
+  color: var(--tinta-suave);
+  font-size: 14px;
+}
+
+.sessions-calm-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.sessions-calm-dots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--salvia);
+}
+
+.sessions-calm-dots i.is-used {
+  background: var(--bosque);
+}
+
+.sessions-calm-balance-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+}
+
+.sessions-calm button.sessions-calm-book,
+.sessions-calm a.sessions-calm-join {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--amarillo);
+  color: var(--bosque);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  gap: 8px;
+}
+
+.sessions-calm button.sessions-calm-book:hover,
+.sessions-calm a.sessions-calm-join:hover,
+.sessions-calm button.sessions-calm-book:focus-visible,
+.sessions-calm a.sessions-calm-join:focus-visible {
+  background: #f0b81f;
+  color: var(--bosque);
+}
+
+.sessions-calm button.sessions-calm-buy,
+.sessions-calm button.sessions-calm-link {
+  border: 0;
+  background: transparent;
+  color: var(--verde-medio);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.sessions-calm button.sessions-calm-buy:hover,
+.sessions-calm button.sessions-calm-link:hover,
+.sessions-calm button.sessions-calm-buy:focus-visible,
+.sessions-calm button.sessions-calm-link:focus-visible {
+  background: transparent;
+  color: var(--bosque);
+  text-decoration: underline;
+}
+
+.sessions-booking-page .sessions-purchased-history,
+.sessions-booking-page .sessions-history-section {
+  background: #fff !important;
+  background-image: none !important;
+  border: 1px solid #e2dfd3 !important;
+  border-radius: 18px;
+  box-shadow: none !important;
+}
+
+.sessions-calm .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}

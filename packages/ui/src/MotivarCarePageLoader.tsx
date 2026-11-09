@@ -22,9 +22,11 @@ function MarkSpinner(props: { size: number; gradientId: string }) {
       aria-hidden="true"
     >
       <defs>
+        {/* degrade-oscuro del DS 0.1 — logo / mark sobre fondos claros */}
         <linearGradient id={props.gradientId} x1="10%" y1="92%" x2="90%" y2="8%">
-          <stop offset="0%" stopColor="#55aee8" />
-          <stop offset="100%" stopColor="#3ecfb5" />
+          <stop offset="0%" stopColor="#1E4033" />
+          <stop offset="50%" stopColor="#2F6B51" />
+          <stop offset="100%" stopColor="#7FB394" />
         </linearGradient>
       </defs>
       <path

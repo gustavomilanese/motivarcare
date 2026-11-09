@@ -789,6 +789,7 @@ export function ProfessionalMobileEmailVerificationStep(props: {
   onVerified: () => void;
 }) {
   const [resendLoading, setResendLoading] = useState(false);
+  const [skipping, setSkipping] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
   const [resendError, setResendError] = useState("");
 
@@ -875,10 +876,37 @@ export function ProfessionalMobileEmailVerificationStep(props: {
           </p>
         </div>
 
+        {import.meta.env.DEV ? (
+          <button
+            type="button"
+            className="pro-secondary pro-register-intro-cta"
+            disabled={resendLoading || skipping}
+            onClick={() => {
+              setSkipping(true);
+              setResendError("");
+              void apiRequest("/api/auth/email-verification/dev-verify", props.token, { method: "POST" })
+                .then(() => props.onVerified())
+                .catch((requestError: unknown) => {
+                  const raw = requestError instanceof Error ? requestError.message : "";
+                  setResendError(professionalAuthSurfaceMessage(raw || " ", props.language));
+                })
+                .finally(() => setSkipping(false));
+            }}
+          >
+            {skipping
+              ? t(props.language, { es: "Salteando…", en: "Skipping…", pt: "Pulando…" })
+              : t(props.language, {
+                  es: "Saltear verificación (testing)",
+                  en: "Skip verification (testing)",
+                  pt: "Pular verificação (testing)"
+                })}
+          </button>
+        ) : null}
+
         <button
           type="button"
           className="pro-secondary pro-register-intro-cta"
-          disabled={resendLoading}
+          disabled={resendLoading || skipping}
           onClick={() => void handleResend()}
         >
           {resendLoading

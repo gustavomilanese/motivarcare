@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { AuthBrand } from "../../auth/AuthBrand";
 import { friendlyVerifyEmailTokenFailedMessage, friendlyVerifyEmailTokenMissingMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest } from "../services/api";
 import type { AuthApiResponse } from "../types";
@@ -113,14 +114,15 @@ export function VerifyEmailTokenScreen(props: {
         aria-labelledby="verify-token-title"
       >
         <div className="verify-email-panel">
+          <AuthBrand />
           {state === "loading" ? (
             <>
               <div className="verify-email-icon verify-email-icon--loading" aria-hidden="true">
                 <svg className="verify-email-spinner-svg" viewBox="0 0 48 48" width="52" height="52" fill="none">
-                  <circle cx="24" cy="24" r="20" stroke="#c4b5fd" strokeWidth="3" />
+                  <circle cx="24" cy="24" r="20" stroke="#d6e7dc" strokeWidth="3" />
                   <path
                     d="M24 12a12 12 0 0 1 12 12"
-                    stroke="#5f44eb"
+                    stroke="#1e4033"
                     strokeWidth="3"
                     strokeLinecap="round"
                   />
@@ -146,8 +148,8 @@ export function VerifyEmailTokenScreen(props: {
             <>
               <div className="verify-email-icon verify-email-icon--error" aria-hidden="true">
                 <svg viewBox="0 0 48 48" width="52" height="52" fill="none">
-                  <circle cx="24" cy="24" r="22" fill="rgba(220, 38, 38, 0.1)" />
-                  <path d="M18 18 30 30M30 18 18 30" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round" />
+                  <circle cx="24" cy="24" r="22" fill="#fbe9b0" />
+                  <path d="M18 18 30 30M30 18 18 30" stroke="#1b2a23" strokeWidth="2.5" strokeLinecap="round" />
                 </svg>
               </div>
               <span className="chip chip--error">

@@ -1,10 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
-import { resendVerificationEmail } from "../lib/ensureVerificationEmailSent";
+import { devSkipEmailVerification, resendVerificationEmail } from "../lib/ensureVerificationEmailSent";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
+}
+
+/** Vite dev, o el portal abierto en esta máquina. En producción (otro host) no aparece. */
+function showTestingSkip(): boolean {
+  if (import.meta.env.DEV) {
+    return true;
+  }
+  if (typeof window === "undefined") {
+    return false;
+  }
+  const host = window.location.hostname;
+  return host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]";
 }
 
 export function VerifyEmailRequiredScreen(props: {
@@ -13,9 +25,11 @@ export function VerifyEmailRequiredScreen(props: {
   email: string;
   emailDeliveryConfigured?: boolean;
   onLogout: () => void;
+  onVerified: () => void;
 }) {
   const [loadingInitialSend, setLoadingInitialSend] = useState(true);
   const [loadingResend, setLoadingResend] = useState(false);
+  const [skipping, setSkipping] = useState(false);
   const [initialSendSucceeded, setInitialSendSucceeded] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -98,7 +112,19 @@ export function VerifyEmailRequiredScreen(props: {
         pt: "Precisamos enviar um link para"
       });
 
-  const busy = loadingInitialSend || loadingResend;
+  const busy = loadingInitialSend || loadingResend || skipping;
+
+  const skipForTesting = async () => {
+    setSkipping(true);
+    setError("");
+    const result = await devSkipEmailVerification(props.token);
+    setSkipping(false);
+    if (!result.ok) {
+      setError(professionalSurfaceMessage("verify-resend", props.language, result.raw));
+      return;
+    }
+    props.onVerified();
+  };
 
   return (
     <div className="pro-auth-shell">
@@ -164,6 +190,23 @@ export function VerifyEmailRequiredScreen(props: {
                 ? t(props.language, { es: "Enviando...", en: "Sending...", pt: "Enviando..." })
                 : t(props.language, { es: "Reenviar email", en: "Resend email", pt: "Reenviar e-mail" })}
             </button>
+
+            {showTestingSkip() ? (
+              <button
+                type="button"
+                className="pro-verify-email-secondary pro-verify-email-dev"
+                onClick={() => void skipForTesting()}
+                disabled={busy}
+              >
+                {skipping
+                  ? t(props.language, { es: "Salteando…", en: "Skipping…", pt: "Pulando…" })
+                  : t(props.language, {
+                      es: "Saltear verificación (testing)",
+                      en: "Skip verification (testing)",
+                      pt: "Pular verificação (testing)"
+                    })}
+              </button>
+            ) : null}
 
             <button
               type="button"

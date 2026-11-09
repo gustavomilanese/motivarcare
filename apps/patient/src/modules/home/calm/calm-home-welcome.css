@@ -1,0 +1,265 @@
+.calm-welcome {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px 32px;
+  border-radius: 24px;
+  background: var(--bosque);
+  color: #eaf1ec;
+}
+
+.calm-welcome-kicker {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #c8d98a;
+}
+
+.calm-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calm-steps li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.calm-steps li span {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--amarillo);
+  color: var(--bosque);
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+.calm-steps li.is-pending {
+  color: rgba(234, 241, 236, 0.62);
+}
+
+.calm-steps li.is-pending span {
+  background: transparent;
+  border: 1.5px dashed rgba(234, 241, 236, 0.5);
+  color: rgba(234, 241, 236, 0.75);
+}
+
+.calm-welcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.calm-welcome-actions p {
+  margin: 0;
+  max-width: 28ch;
+  font-size: 14px;
+  color: rgba(234, 241, 236, 0.8);
+}
+
+.calm-suggested header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.calm-suggested h2 {
+  font-size: 20px;
+}
+
+.calm-suggested header span,
+.calm-suggested-price {
+  color: var(--tinta-tenue);
+  font-size: 13px;
+}
+
+.calm-suggested ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calm-suggested li button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 10px;
+}
+
+.calm-suggested li button:hover,
+.calm-suggested li button:focus-visible {
+  background: var(--menta);
+}
+
+.calm-suggested img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+}
+
+.calm-suggested-copy {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.calm-suggested-copy b {
+  color: var(--bosque);
+  font-size: 15px;
+}
+
+.calm-suggested-copy small {
+  color: var(--tinta-suave);
+  font-size: 13px;
+}
+
+.calm-suggested-score {
+  flex: none;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--lima);
+  color: var(--bosque);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.calm-suggested-price {
+  width: 72px;
+  text-align: right;
+  flex: none;
+}
+
+.calm-suggested .calm-text-link {
+  margin-top: 8px;
+}
+
+.calm-slot-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.calm-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1.5px dashed var(--bosque);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--bosque);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 800;
+  line-height: 1.25;
+  cursor: pointer;
+}
+
+.calm-slot small {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--tinta-suave);
+}
+
+.calm-slot:hover,
+.calm-slot:focus-visible {
+  background: #fff;
+}
+
+.calm-slot--more {
+  border-style: solid;
+  border-color: transparent;
+  background: none;
+  color: var(--verde-medio);
+  font-weight: 700;
+  justify-content: center;
+}
+
+.calm-first-note {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.calm-first-note h3 {
+  font-family: var(--sans);
+  font-size: 16.5px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.calm-first-note ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calm-first-note li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  color: var(--tinta);
+  font-size: 14.5px;
+}
+
+.calm-pick-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calm-pick-back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.portal-shell:has(.calm-sidebar) .calm-pick-top .auth-brand {
+  display: none;
+}
+
+.calm-first-note li span {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--menta);
+  color: var(--verde-medio);
+}

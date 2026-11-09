@@ -14,6 +14,7 @@ function openMailtoFallback(params: {
   patientEmail?: string | null;
   assignedProfessionalName?: string | null;
   reason?: string | null;
+  language?: AppLanguage;
 }): void {
   window.location.href = buildProfessionalChangeMailtoUrl(params);
 }
@@ -56,7 +57,8 @@ function ProfessionalChangeRequestModal(props: {
     patientName: props.patientName,
     patientEmail: props.patientEmail,
     assignedProfessionalName: props.assignedProfessionalName,
-    reason: reason.trim() || undefined
+    reason: reason.trim() || undefined,
+    language: props.language
   };
 
   const offerMailtoFallback = (supportEmail: string) => {

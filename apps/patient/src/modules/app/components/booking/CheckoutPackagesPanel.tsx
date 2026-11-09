@@ -19,6 +19,9 @@ import {
 } from "./PackageCatalogSectionExtras";
 import type { PackagePlan } from "../../types";
 import { PatientResidencyConfirm } from "../PatientResidencyConfirm";
+import { CalmPayChoice } from "./HowToPay";
+import { buildCalmPayOptions } from "./buildCalmPayOptions";
+import { calmGivenName } from "../../../home/calm/calmHomeFormat";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -47,6 +50,12 @@ export function CheckoutPackagesPanel(props: {
   onConfirmResidency?: (iso: string) => Promise<void> | void;
   /** Cuando el panel vive dentro de otro modal (Inicio), oculta el chrome duplicado. */
   hideChrome?: boolean;
+  /** Paso “elegí cómo pagar”: una sesión o un paquete, con el precio publicado. */
+  variant?: "calm";
+  professionalName?: string | null;
+  professionalFirstName?: string | null;
+  professionalLastName?: string | null;
+  slotLabel?: string | null;
 }) {
   const isMobilePortal = useMobilePortal();
   const payBlocked = Boolean(props.needsResidencyConfirm) || Boolean(props.paymentLoading);
@@ -61,6 +70,59 @@ export function CheckoutPackagesPanel(props: {
     en: "Buy individual sessions",
     pt: "Comprar sessoes individuais"
   });
+
+  if (props.variant === "calm" && props.pricingReady && !props.packagesLoading && (bundlePlans.length > 0 || canIndividualCta)) {
+    const options = buildCalmPayOptions({
+      language: props.language,
+      plans: props.packagePlans,
+      featuredId: props.featuredPackageId,
+      unitPriceMajor: canIndividualCta ? props.unitPriceMajor : null,
+      givenName: props.professionalName
+        ? calmGivenName({
+            fullName: props.professionalName,
+            firstName: props.professionalFirstName ?? undefined,
+            lastName: props.professionalLastName ?? undefined
+          })
+        : "",
+      currency: props.currency,
+      fxRates: props.fxRates,
+      residencyCountry: props.residencyCountry
+    });
+    if (options.length > 0) {
+      return (
+        <div className="calm-pay-wrap">
+          <CalmPayChoice
+            language={props.language}
+            options={options}
+            slotLabel={props.slotLabel ?? null}
+            blocked={payBlocked}
+            notice={
+              props.needsResidencyConfirm ? (
+                <PatientResidencyConfirm
+                  language={props.language}
+                  currentIso={props.residencyCountry}
+                  saving={props.residencySaving}
+                  onConfirm={(iso) => props.onConfirmResidency?.(iso)}
+                />
+              ) : props.paymentError ? (
+                <p className="error-text" role="alert">{props.paymentError}</p>
+              ) : null
+            }
+            onContinue={(choice) => {
+              if (payBlocked) return;
+              if (choice.kind === "individual") {
+                props.onIndividualPurchase();
+                return;
+              }
+              const plan = props.packagePlans.find((item) => item.id === choice.planId);
+              if (plan) props.onSelectPlan(plan);
+            }}
+            onClose={props.onClose}
+          />
+        </div>
+      );
+    }
+  }
 
   const individualCta = canIndividualCta ? (
     <button

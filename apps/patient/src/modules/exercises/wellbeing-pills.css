@@ -1,0 +1,145 @@
+/* Pastillas / chips de Bienestar — tokens DS 0.1, radio 8px (regla UI). */
+
+.wellbeing-calm {
+  --exercise-accent: #1e4033;
+  --exercise-accent-soft: #e7f1ea;
+}
+
+.wellbeing-pills span,
+.wellbeing-calm .exercise-card-pill,
+.wellbeing-calm .exercise-reader-pills .exercise-card-pill,
+.wellbeing-calm .exercise-related-card-pills span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #e7f1ea; /* menta */
+  color: #1e4033; /* bosque */
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  box-shadow: none;
+}
+
+.wellbeing-calm .exercise-card-pill-category,
+.wellbeing-calm .exercise-reader-pills .exercise-card-pill-category {
+  background: #e7f1ea; /* menta */
+  color: #1e4033;
+}
+
+.wellbeing-calm .exercise-card-pill-time,
+.wellbeing-calm .exercise-reader-pills .exercise-card-pill-time {
+  background: #d6e7dc; /* salvia */
+  color: #1e4033;
+}
+
+.wellbeing-calm .exercise-card-pill-level,
+.wellbeing-calm .exercise-reader-pills .exercise-card-pill-level {
+  background: #fbe9b0; /* amarillo-suave */
+  color: #1e4033;
+}
+
+.wellbeing-calm .exercise-timer-btn,
+.wellbeing-calm .exercise-timer-btn:hover:not(:disabled),
+.wellbeing-calm .exercise-timer-btn:focus-visible:not(:disabled) {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #e2dfd3;
+  border-radius: 8px;
+  background: #fff;
+  color: #1e4033;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+.wellbeing-calm .exercise-timer-btn:hover:not(:disabled),
+.wellbeing-calm .exercise-timer-btn:focus-visible:not(:disabled) {
+  border-color: #1e4033;
+  background: #e7f1ea;
+  color: #1e4033;
+}
+
+.wellbeing-calm .exercise-timer-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.wellbeing-calm .exercise-timer-count {
+  color: #2f6b51;
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.wellbeing-calm .exercise-timer-done {
+  color: #2f6b51;
+}
+
+.wellbeing-calm .exercise-timer-cancel {
+  color: #5d6a63;
+  border-radius: 8px;
+}
+
+.wellbeing-calm .exercise-timer-cancel:hover {
+  color: #1e4033;
+  background: transparent;
+}
+
+.wellbeing-calm .exercise-interactive {
+  border: 1px solid #e2dfd3;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.wellbeing-calm .exercise-interactive-head h3 {
+  color: #1e4033;
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 500;
+}
+
+.wellbeing-calm .exercise-interactive-lead {
+  color: #5d6a63;
+}
+
+.wellbeing-calm .exercise-interactive-progress {
+  border-radius: 8px;
+  background: #e7f1ea;
+}
+
+.wellbeing-calm .exercise-interactive-progress-bar {
+  border-radius: 8px;
+  background: #2f6b51;
+}
+
+.wellbeing-calm .exercise-reader-benefits li,
+.wellbeing-calm .exercise-reader-tips li {
+  border-radius: 8px;
+  background: #e7f1ea;
+  color: #1b2a23;
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.wellbeing-calm .exercise-reader-benefits li::before {
+  color: #2f6b51;
+}
+
+.wellbeing-calm .exercise-reader-tips li {
+  background: #f5f3eb;
+}
+
+.wellbeing-calm .exercise-reader-tips li::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  left: 14px;
+  top: 15px;
+  border-radius: 50%;
+  background: #f5c33b;
+}

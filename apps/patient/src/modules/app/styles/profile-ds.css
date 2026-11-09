@@ -1,0 +1,273 @@
+/* Perfil / ajustes / soporte — tokens DS 0.1. */
+
+.profile-layout {
+  font-family: "Manrope", system-ui, sans-serif;
+  color: #1b2a23;
+}
+
+.profile-layout .profile-panel.content-card,
+.profile-panel {
+  background: #fff;
+  border: 1px solid #e2dfd3;
+  border-radius: 24px;
+  box-shadow: none;
+  padding: 28px 28px 24px;
+  display: grid;
+  gap: 18px;
+}
+
+.profile-panel h2 {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #1e4033;
+}
+
+.profile-panel-lead {
+  margin: 0;
+  color: #5d6a63;
+  font-size: 15px;
+  line-height: 1.5;
+  max-width: 640px;
+}
+
+.profile-form-grid {
+  gap: 12px;
+}
+
+.profile-form-grid label {
+  background: #f5f3eb;
+  border: 1px solid #e2dfd3;
+  border-radius: 12px;
+  padding: 12px 14px;
+  gap: 8px;
+  color: #5d6a63;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.profile-form-grid input,
+.profile-form-grid select,
+.profile-panel textarea {
+  background: #fff;
+  border: 1px solid #e2dfd3;
+  border-radius: 8px;
+  color: #1b2a23;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.profile-form-grid input:disabled {
+  background: #e7f1ea;
+  color: #5d6a63;
+}
+
+.profile-panel button.primary,
+.profile-panel .primary {
+  width: fit-content;
+  max-width: 100%;
+  min-width: 180px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 8px;
+  background: #f5c33b;
+  color: #1b2a23;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+.profile-panel button.primary:hover,
+.profile-panel .primary:hover {
+  background: #fbe9b0;
+}
+
+.profile-panel button.ghost,
+.patient-account-avatar-actions .ghost {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid #e2dfd3;
+  border-radius: 8px;
+  background: #fff;
+  color: #1e4033;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-weight: 600;
+}
+
+.profile-settings-stack {
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid #e2dfd3;
+  border-radius: 16px;
+  background: #f5f3eb;
+}
+
+.profile-settings-stack > strong {
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  font-size: 18px;
+  color: #1e4033;
+}
+
+.profile-settings-stack .inline-toggle {
+  border: 1px solid #e2dfd3;
+  border-radius: 10px;
+  background: #fff;
+  padding: 12px 14px;
+  color: #1b2a23;
+  font-weight: 600;
+  gap: 12px;
+}
+
+.profile-settings-stack .inline-toggle input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  border: 1.5px solid #1e4033;
+  border-radius: 6px;
+  background: #fff;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.profile-settings-stack .inline-toggle input[type="checkbox"]:checked {
+  background: #1e4033;
+  border-color: #1e4033;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.2 6.4 11l6-7' stroke='%23F5F3EB' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: 14px 14px;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.profile-notification-kinds-lead {
+  color: #5d6a63;
+}
+
+.profile-subscription-grid .session-summary-item {
+  background: #e7f1ea;
+  border: 1px solid #e2dfd3;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.profile-subscription-grid .session-summary-item span {
+  color: #5d6a63;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-subscription-grid .session-summary-item strong {
+  color: #1e4033;
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  font-size: 22px;
+}
+
+.profile-support-block {
+  border-top: 1px solid #e2dfd3;
+  padding-top: 18px;
+  gap: 12px;
+}
+
+.profile-support-block h3 {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  font-size: 20px;
+  color: #1e4033;
+}
+
+.patient-account-avatar-block {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid #e2dfd3;
+  border-radius: 16px;
+  background: #e7f1ea;
+}
+
+.patient-account-avatar-label {
+  color: #1e4033;
+  font-weight: 700;
+}
+
+.patient-account-avatar-hint {
+  color: #5d6a63;
+}
+
+.patient-account-avatar-preview {
+  border-radius: 12px;
+  border: 1.5px solid #e2dfd3;
+  background: #fff;
+}
+
+.patient-account-avatar-initial {
+  color: #1e4033;
+  background: #d6e7dc;
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.patient-account-avatar-upload span {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  background: #1e4033;
+  color: #eaf1ec;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-weight: 700;
+}
+
+.profile-panel .professional-change-support-btn {
+  width: fit-content;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid #1e4033;
+  border-radius: 8px;
+  background: #fff;
+  color: #1e4033;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-weight: 700;
+}
+
+.profile-panel .professional-change-support-btn:hover {
+  background: #e7f1ea;
+}
+
+.profile-panel .error-text {
+  color: #8a3a32;
+}
+
+.profile-panel .success-text {
+  color: #2f6b51;
+}
+
+@media (max-width: 680px) {
+  .profile-layout .profile-panel.content-card,
+  .profile-panel {
+    padding: 18px 16px;
+    border-radius: 18px;
+  }
+
+  .profile-panel h2 {
+    font-size: 28px;
+  }
+}

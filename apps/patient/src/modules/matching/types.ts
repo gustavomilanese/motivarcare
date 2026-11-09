@@ -121,6 +121,8 @@ export interface MatchingPageProps {
   fxRates?: DisplayFxRates;
   authToken?: string | null;
   mode?: "portal" | "onboarding-final";
+  /** Lista de profesionales dentro de la home, sin paso de onboarding. */
+  presentation?: "home";
   /** Prueba ya pagada: reservar sin pasar por checkout de nuevo. */
   trialRebookAvailable?: boolean;
   intakeAnswers: Record<string, string>;

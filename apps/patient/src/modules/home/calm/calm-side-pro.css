@@ -1,0 +1,93 @@
+.calm-side-pro {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+
+.calm-side-pro-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.calm-side-pro-row img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+  background: var(--salvia);
+}
+
+.calm-side-pro-row span {
+  display: block;
+  color: var(--tinta-tenue);
+  font-size: 13.5px;
+}
+
+.calm-side-pro-row strong {
+  display: block;
+  color: var(--bosque);
+  font-size: 16.5px;
+}
+
+.calm-side-pro-row p {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 3px 0 0;
+  color: var(--tinta-suave);
+  font-size: 13.5px;
+}
+
+.calm-side-pro-row em {
+  color: var(--amarillo);
+  font-style: normal;
+}
+
+.calm-side-pro-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0;
+  color: var(--tinta-suave);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.calm-side-pro-note i {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--amarillo-suave);
+  color: var(--bosque);
+  font: italic 700 12px/20px var(--serif);
+  text-align: center;
+}
+
+.calm-side-pro-note b {
+  color: var(--tinta);
+  font-weight: 700;
+}
+
+.calm-side-pro-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.calm-side-pro-actions .calm-btn,
+.calm-side-pro-actions button.calm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.calm-side-pro-actions .calm-btn svg {
+  flex: none;
+  display: block;
+}

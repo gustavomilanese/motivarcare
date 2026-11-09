@@ -1,0 +1,261 @@
+/* Mensajes — variante B de app-usuario/index.html.
+   Tokens copiados de ese HTML. */
+
+.chat-ds {
+  --crema: #f5f3eb;
+  --superficie: #ffffff;
+  --tinta: #1b2a23;
+  --tinta-suave: #5d6a63;
+  --tinta-tenue: #8a958f;
+  --linea: #e2dfd3;
+  --bosque: #1e4033;
+  --bosque-2: #2a5543;
+  --verde-medio: #2f6b51;
+  --bosque-claro: #eaf1ec;
+  --salvia: #d6e7dc;
+  --menta: #e7f1ea;
+  --lima-suave: #f2f5e0;
+  --amarillo: #f5c33b;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  background: var(--crema);
+  color: var(--tinta);
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.portal-main.portal-main--chat {
+  background: #f5f3eb;
+}
+
+.chat-page-root .chat-portal-toolbar-shell {
+  background: transparent;
+  border: 0;
+  padding: 8px 16px 0;
+}
+
+.portal-main.portal-main--chat .chat-page-root:not(.chat-page-root--embedded),
+.portal-main.portal-main--chat .chat-page-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.chat-ds-conv {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  background: var(--crema);
+}
+
+.chat-ds-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  /* Sin margen superior: el tope alinea con logo (sidebar 26px) y campana/menú. */
+  margin: 0 16px;
+  padding: 14px 18px;
+  border: 1px solid var(--linea);
+  border-radius: 5px;
+  background: var(--superficie);
+  flex: none;
+}
+
+.chat-ds-head img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+}
+
+.chat-ds-head-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.chat-ds-head-copy b {
+  display: block;
+  color: var(--bosque);
+  font-size: 17px;
+}
+
+.chat-ds-head-copy span {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--tinta-suave);
+}
+
+.chat-ds-reserve {
+  margin-left: auto;
+  flex: none;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.chat-ds-icon-btn {
+  margin-left: auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--superficie);
+  border: 1px solid var(--linea);
+  color: var(--bosque);
+  flex: none;
+}
+
+.chat-ds-icon-btn:hover {
+  background: var(--menta);
+  border-color: transparent;
+}
+
+.chat-ds-switch {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 10px 18px;
+  background: var(--superficie);
+  border-bottom: 1px solid var(--linea);
+}
+
+.chat-ds-switch button {
+  border: 0;
+  background: transparent;
+  color: var(--tinta-suave);
+  border-radius: 14px;
+  padding: 8px 12px;
+  font-weight: 600;
+  gap: 8px;
+}
+
+.chat-ds-switch button:hover {
+  background: var(--menta);
+  color: var(--bosque);
+}
+
+.chat-ds-switch button.is-active {
+  background: var(--salvia);
+  color: var(--bosque);
+  font-weight: 700;
+}
+
+.chat-ds-switch button span {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: var(--amarillo);
+  color: var(--bosque);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 18px;
+}
+
+
+.chat-ds-panel {
+  display: none;
+}
+
+.chat-page-root--embedded .chat-ds {
+  height: 100%;
+}
+
+.chat-page-root--embedded .chat-ds-head,
+.chat-page-root--embedded .chat-ds-thread,
+.chat-page-root--embedded .chat-ds-composer,
+.chat-page-root--embedded .chat-ds-share {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.chat-page-root--embedded .chat-ds-share {
+  left: 16px;
+  right: 16px;
+}
+
+@media (min-width: 1081px) {
+  .portal-shell:has(.portal-main--chat) {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .portal-main.portal-main--chat {
+    height: 100vh;
+    width: 100%;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .portal-main.portal-main--chat > .portal-main-content {
+    width: 100%;
+    max-width: none;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    align-content: stretch;
+  }
+
+  .portal-main.portal-main--chat .chat-page-root:not(.chat-page-root--embedded) {
+    position: relative;
+    width: 100%;
+    min-height: 0;
+    height: 100%;
+    flex: 1 1 auto;
+  }
+
+  .chat-ds:not(.chat-ds--embedded) {
+    /* Misma holgura que el logo del sidebar (padding 26). El bloque del título
+       es pad + avatar + borde; el panel (Emma) arranca debajo. */
+    --chat-ds-top: var(--portal-chrome-top, 26px);
+    --chat-ds-head-block: calc(14px + 48px + 14px + 2px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    grid-template-rows: minmax(0, 1fr);
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .chat-ds-conv {
+    border-right: 1px solid var(--linea);
+    padding-top: var(--chat-ds-top);
+  }
+
+  .portal-main.portal-main--chat .chat-portal-toolbar-shell {
+    position: absolute;
+    top: var(--portal-chrome-top, 26px);
+    right: 22px;
+    z-index: 4;
+    width: auto;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .portal-main.portal-main--chat .chat-hero-toolbar-mount,
+  .portal-main.portal-main--chat .chat-hero-toolbar-mount .header-actions {
+    width: auto;
+  }
+
+  .chat-ds-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: calc(var(--chat-ds-top) + var(--chat-ds-head-block)) 22px 22px;
+    overflow: auto;
+    background: var(--crema);
+    min-height: 0;
+  }
+}

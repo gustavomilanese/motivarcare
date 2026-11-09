@@ -35,13 +35,6 @@ export function PatientResidencyConfirm(props: {
         pt: "Pais de residencia"
       })}
     >
-      <p className="checkout-residency-confirm-copy" role="status">
-        {t(props.language, {
-          es: "El cobro usa el país que declaraste en el onboarding, no el de esta computadora. Confirmalo para continuar.",
-          en: "Checkout uses the country you declared in onboarding, not this computer. Confirm it to continue.",
-          pt: "O pagamento usa o pais declarado no onboarding, nao este computador. Confirme para continuar."
-        })}
-      </p>
       <McSelect
         label={t(props.language, { es: "País de residencia", en: "Country of residence", pt: "Pais de residencia" })}
         value={draft}

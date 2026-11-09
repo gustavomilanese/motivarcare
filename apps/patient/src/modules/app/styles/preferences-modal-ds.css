@@ -1,0 +1,92 @@
+/* Modal idioma/moneda — DS 0.1 (paciente). */
+
+.preferences-modal {
+  background: #fff;
+  border: 1px solid #e2dfd3;
+  border-radius: 24px;
+  box-shadow: 0 30px 60px -28px rgba(30, 64, 51, 0.45);
+  color: #1b2a23;
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.preferences-modal-header {
+  border-bottom: 1px solid #e2dfd3;
+  background: #fff;
+  padding: 22px 24px 18px;
+}
+
+.preferences-modal-header h2 {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  font-size: clamp(26px, 3.5vw, 34px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #1e4033;
+}
+
+.preferences-modal-header p {
+  margin-top: 8px;
+  color: #5d6a63;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.preferences-modal-close {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 8px;
+  background: transparent;
+  color: #5d6a63;
+  font-size: 24px;
+}
+
+.preferences-modal-close:hover,
+.preferences-modal-close:focus-visible {
+  background: #e7f1ea;
+  color: #1e4033;
+}
+
+.preferences-groups {
+  padding: 20px 24px 24px;
+}
+
+.preferences-group h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2f6b51;
+}
+
+.preferences-option {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+}
+
+.preferences-option strong {
+  color: #1b2a23;
+  font-size: 16px;
+}
+
+.preferences-option span {
+  color: #5d6a63;
+}
+
+.preferences-option:hover {
+  background: #f5f3eb;
+  border-color: #e2dfd3;
+}
+
+.preferences-option.active {
+  background: #e7f1ea;
+  border-color: #d6e7dc;
+}
+
+.preferences-option.active strong {
+  color: #1e4033;
+}

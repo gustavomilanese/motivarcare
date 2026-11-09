@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import {
   fetchTreatmentChatConversation,
   sendTreatmentChatMessage,
@@ -7,6 +8,10 @@ import {
   type TreatmentChatMessageDto
 } from "../services/treatmentChatApi";
 
+function t(language: AppLanguage, values: LocalizedText): string {
+  return textByLanguage(language, values);
+}
+
 export type TreatmentChatLoadState = "idle" | "loading" | "ready" | "error";
 
 interface UseTreatmentChatParams {
@@ -14,6 +19,7 @@ interface UseTreatmentChatParams {
   authToken: string | null;
   /** Si el usuario abrió alguna vez el panel: solo entonces hacemos fetch real. */
   enabled: boolean;
+  language: AppLanguage;
 }
 
 interface UseTreatmentChatResult {
@@ -39,7 +45,7 @@ interface UseTreatmentChatResult {
 }
 
 export function useTreatmentChat(params: UseTreatmentChatParams): UseTreatmentChatResult {
-  const { authToken, enabled } = params;
+  const { authToken, enabled, language } = params;
   const [loadState, setLoadState] = useState<TreatmentChatLoadState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [conversation, setConversation] = useState<TreatmentChatDto | null>(null);
@@ -70,13 +76,20 @@ export function useTreatmentChat(params: UseTreatmentChatParams): UseTreatmentCh
         }
         setLoadState("ready");
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "No pudimos abrir tu chat ahora mismo.";
+        const msg =
+          err instanceof Error
+            ? err.message
+            : t(language, {
+                es: "No pudimos abrir tu chat ahora mismo.",
+                en: "We couldn't open your chat right now.",
+                pt: "Nao foi possivel abrir seu chat agora."
+              });
         console.warn("[useTreatmentChat] load failed:", msg);
         setErrorMessage(msg);
         setLoadState("error");
       }
     },
-    []
+    [language]
   );
 
   useEffect(() => {
@@ -162,13 +175,20 @@ export function useTreatmentChat(params: UseTreatmentChatParams): UseTreatmentCh
             )
           };
         });
-        const msg = err instanceof Error ? err.message : "No pudimos enviar tu mensaje.";
+        const msg =
+          err instanceof Error
+            ? err.message
+            : t(language, {
+                es: "No pudimos enviar tu mensaje.",
+                en: "We couldn't send your message.",
+                pt: "Nao foi possivel enviar sua mensagem."
+              });
         setErrorMessage(msg);
       } finally {
         setSending(false);
       }
     },
-    [authToken]
+    [authToken, language]
   );
 
   /**
@@ -194,13 +214,20 @@ export function useTreatmentChat(params: UseTreatmentChatParams): UseTreatmentCh
         setConversation((prev) =>
           prev ? { ...prev, professionalShareConsent: previous } : prev
         );
-        const msg = err instanceof Error ? err.message : "No pudimos actualizar el consentimiento.";
+        const msg =
+          err instanceof Error
+            ? err.message
+            : t(language, {
+                es: "No pudimos actualizar el consentimiento.",
+                en: "We couldn't update consent.",
+                pt: "Nao foi possivel atualizar o consentimento."
+              });
         setErrorMessage(msg);
       } finally {
         setConsentSaving(false);
       }
     },
-    [authToken, conversation?.professionalShareConsent]
+    [authToken, conversation?.professionalShareConsent, language]
   );
 
   return {

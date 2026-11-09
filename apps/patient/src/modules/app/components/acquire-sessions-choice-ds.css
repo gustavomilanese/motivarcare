@@ -1,0 +1,169 @@
+/* Elegir paquete o sesión suelta. Tokens del design system 0.1. */
+
+.acquire-sessions-backdrop.matching-flow-backdrop {
+  background: rgba(30, 64, 51, 0.36);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.acquire-sessions-choice-modal.matching-flow-modal {
+  width: min(640px, calc(100vw - 32px));
+  padding: 28px 28px 24px;
+  gap: 22px;
+  border: 1px solid #e2dfd3;
+  border-radius: 24px;
+  background: #e7f1ea;
+  box-shadow: 0 30px 60px -28px rgba(20, 41, 31, 0.45);
+  color: #1b2a23;
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.acquire-sessions-choice-kicker {
+  color: #2f6b51;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.acquire-sessions-choice-title {
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  font-size: 32px;
+  letter-spacing: -0.01em;
+  color: #1e4033;
+}
+
+.acquire-sessions-choice-lead {
+  color: #5d6a63;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+button.acquire-sessions-choice-close.matching-flow-close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid #e2dfd3;
+  border-radius: 50%;
+  background: #fff;
+  color: #1e4033;
+  box-shadow: none;
+  font-size: 0;
+}
+
+button.acquire-sessions-choice-close.matching-flow-close:hover,
+button.acquire-sessions-choice-close.matching-flow-close:focus-visible {
+  background: #e7f1ea;
+  color: #1e4033;
+}
+
+button.acquire-sessions-choice-card {
+  height: auto;
+  min-height: 0;
+  gap: 14px;
+  padding: 22px 16px 20px;
+  border: 1px solid #e2dfd3;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: none;
+  transform: none;
+  color: #1b2a23;
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+button.acquire-sessions-choice-card::before {
+  display: none;
+}
+
+button.acquire-sessions-choice-card--packages,
+button.acquire-sessions-choice-card--individual {
+  background: #fff;
+  border-color: #e2dfd3;
+  box-shadow: none;
+}
+
+button.acquire-sessions-choice-card:hover,
+button.acquire-sessions-choice-card--packages:hover,
+button.acquire-sessions-choice-card--individual:hover,
+button.acquire-sessions-choice-card:focus-visible {
+  border-color: #1e4033;
+  background: #f5f3eb;
+  box-shadow: none;
+  transform: none;
+  outline: none;
+}
+
+.acquire-sessions-mancha {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+}
+
+.acquire-sessions-mancha-blob {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.acquire-sessions-mancha > svg:not(.acquire-sessions-mancha-blob) {
+  position: relative;
+  z-index: 1;
+}
+
+.acquire-sessions-mancha--packages {
+  color: #f5f3eb;
+}
+
+.acquire-sessions-mancha--packages .acquire-sessions-mancha-blob path {
+  fill: #2f6b51;
+  opacity: 0.85;
+}
+
+.acquire-sessions-mancha--individual {
+  color: #1e4033;
+}
+
+.acquire-sessions-mancha--individual .acquire-sessions-mancha-blob path {
+  fill: #e6edc4;
+  opacity: 1;
+}
+
+.acquire-sessions-choice-card-label-pill,
+.acquire-sessions-choice-card-label-pill--packages,
+.acquire-sessions-choice-card-label-pill--individual {
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: #e6edc4;
+  color: #1e4033;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.acquire-sessions-choice-card-title {
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  font-size: 22px;
+  letter-spacing: 0;
+  color: #1e4033;
+}
+
+.acquire-sessions-choice-card-hint {
+  color: #5d6a63;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+}

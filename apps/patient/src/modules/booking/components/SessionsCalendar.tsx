@@ -12,6 +12,7 @@ import {
   willPatientLoseCreditOnCancel
 } from "@therapy/i18n-config";
 import { pickNextPatientBooking } from "@therapy/patient-core";
+import { professionalAccessibleName } from "../../app/lib/professionalDisplayName";
 import { findProfessionalById } from "../../app/lib/professionals";
 import type { Booking, Professional } from "../../app/types";
 
@@ -216,7 +217,7 @@ export function SessionsCalendar(props: {
     if (props.professionals?.length) {
       const professional = findProfessionalById(booking.professionalId, props.professionals);
       if (professional) {
-        return professional.fullName;
+        return professionalAccessibleName(professional);
       }
     }
     return t(props.language, { es: "Sesión reservada", en: "Booked session", pt: "Sessao reservada" });

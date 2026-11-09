@@ -1,8 +1,9 @@
-import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
+import { IconFlecha } from "../../home/calm/calmIcons";
 import type { ExercisePost } from "../services/exercisesApi";
-import { categoryAccent, categoryLabel, difficultyLabel, durationLabel, t } from "../lib/labels";
+import { categoryLabel, difficultyLabel, durationLabel, t } from "../lib/labels";
+import { WellbeingMark } from "./WellbeingMark";
 
 /** Bloque tipo “productos relacionados” de un portal de compra. */
 export function ExerciseRelatedSection(props: {
@@ -15,7 +16,7 @@ export function ExerciseRelatedSection(props: {
   }
 
   return (
-    <aside className="exercise-related-section" aria-labelledby="exercise-related-title">
+    <aside className="exercise-related-section wellbeing-calm" aria-labelledby="exercise-related-title">
       <header className="exercise-related-header">
         <p className="exercise-related-eyebrow">
           {t(props.language, {
@@ -40,37 +41,24 @@ export function ExerciseRelatedSection(props: {
         </p>
       </header>
       <ul className="exercise-related-grid">
-        {props.items.map((item) => {
-          const itemAccent = categoryAccent(item.category);
-          return (
-            <li key={item.id}>
-              <Link
-                to={`/ejercicios/${encodeURIComponent(item.slug)}`}
-                className="exercise-related-card"
-                style={
-                  {
-                    "--exercise-accent": itemAccent.accent,
-                    "--exercise-accent-soft": itemAccent.accentSoft
-                  } as CSSProperties
-                }
-              >
-                <span className="exercise-related-card-emoji" aria-hidden="true">
-                  {item.emoji}
-                </span>
-                <span className="exercise-related-card-pills">
-                  <span>{categoryLabel(props.language, item.category)}</span>
-                  <span>⏱ {durationLabel(props.language, item.durationMinutes)}</span>
-                  <span>{difficultyLabel(props.language, item.difficulty)}</span>
-                </span>
-                <strong className="exercise-related-card-title">{item.title}</strong>
-                <span className="exercise-related-card-summary">{item.summary}</span>
-                <span className="exercise-related-card-cta">
-                  {t(props.language, { es: "Ver ejercicio →", en: "View exercise →", pt: "Ver exercício →" })}
-                </span>
-              </Link>
-            </li>
-          );
-        })}
+        {props.items.map((item) => (
+          <li key={item.id}>
+            <Link to={`/ejercicios/${encodeURIComponent(item.slug)}`} className="exercise-related-card">
+              <WellbeingMark category={item.category} />
+              <span className="exercise-related-card-pills">
+                <span>{categoryLabel(props.language, item.category)}</span>
+                <span>{durationLabel(props.language, item.durationMinutes)}</span>
+                <span>{difficultyLabel(props.language, item.difficulty)}</span>
+              </span>
+              <strong className="exercise-related-card-title">{item.title}</strong>
+              <span className="exercise-related-card-summary">{item.summary}</span>
+              <span className="exercise-related-card-cta">
+                {t(props.language, { es: "Ver ejercicio", en: "View exercise", pt: "Ver exercício" })}
+                <IconFlecha size={16} />
+              </span>
+            </Link>
+          </li>
+        ))}
       </ul>
     </aside>
   );

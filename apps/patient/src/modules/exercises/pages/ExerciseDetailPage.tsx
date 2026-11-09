@@ -3,7 +3,6 @@ import { Link, useParams } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
 import { fetchPublishedExercises, type ExercisePost } from "../services/exercisesApi";
 import {
-  categoryAccent,
   categoryLabel,
   difficultyLabel,
   durationLabel,
@@ -12,7 +11,9 @@ import {
 } from "../lib/labels";
 import { ExerciseInteractiveSteps } from "../components/ExerciseInteractiveSteps";
 import { ExerciseRelatedSection } from "../components/ExerciseRelatedSection";
+import { WellbeingMark } from "../components/WellbeingMark";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
+import { PortalAccountToolsMount } from "../../app/components/PortalAccountToolsMount";
 
 export interface ExerciseDetailPageProps {
   language: AppLanguage;
@@ -63,7 +64,8 @@ export function ExerciseDetailPage(props: ExerciseDetailPageProps) {
 
   if (loading) {
     return (
-      <section className="exercise-reader-page">
+      <section className="exercise-reader-page wellbeing-calm">
+        <PortalAccountToolsMount id="wellbeing-hero-toolbar-mount" className="wellbeing-calm-tools wellbeing-calm-tools--reader" />
         <Link to="/ejercicios" className="exercise-reader-back">
           ← {t(props.language, { es: "Volver a ejercicios", en: "Back to exercises", pt: "Voltar aos exercícios" })}
         </Link>
@@ -74,7 +76,8 @@ export function ExerciseDetailPage(props: ExerciseDetailPageProps) {
 
   if (error) {
     return (
-      <section className="exercise-reader-page">
+      <section className="exercise-reader-page wellbeing-calm">
+        <PortalAccountToolsMount id="wellbeing-hero-toolbar-mount" className="wellbeing-calm-tools wellbeing-calm-tools--reader" />
         <Link to="/ejercicios" className="exercise-reader-back">
           ← {t(props.language, { es: "Volver a ejercicios", en: "Back to exercises", pt: "Voltar aos exercícios" })}
         </Link>
@@ -87,7 +90,8 @@ export function ExerciseDetailPage(props: ExerciseDetailPageProps) {
 
   if (!exercise) {
     return (
-      <section className="exercise-reader-page">
+      <section className="exercise-reader-page wellbeing-calm">
+        <PortalAccountToolsMount id="wellbeing-hero-toolbar-mount" className="wellbeing-calm-tools wellbeing-calm-tools--reader" />
         <Link to="/ejercicios" className="exercise-reader-back">
           ← {t(props.language, { es: "Volver a ejercicios", en: "Back to exercises", pt: "Voltar aos exercícios" })}
         </Link>
@@ -102,26 +106,23 @@ export function ExerciseDetailPage(props: ExerciseDetailPageProps) {
     );
   }
 
-  const { accent, accentSoft } = categoryAccent(exercise.category);
-
   return (
     <section
-      className="exercise-reader-page"
-      style={{ "--exercise-accent": accent, "--exercise-accent-soft": accentSoft } as React.CSSProperties}
+      className="exercise-reader-page wellbeing-calm"
+      style={{ "--exercise-accent": "#1e4033", "--exercise-accent-soft": "#e7f1ea" } as React.CSSProperties}
     >
+      <PortalAccountToolsMount id="wellbeing-hero-toolbar-mount" className="wellbeing-calm-tools wellbeing-calm-tools--reader" />
       <Link to="/ejercicios" className="exercise-reader-back">
         ← {t(props.language, { es: "Volver a ejercicios", en: "Back to exercises", pt: "Voltar aos exercícios" })}
       </Link>
 
       <article className="exercise-reader" aria-labelledby="exercise-title">
         <header className="exercise-reader-header">
-          <div className="exercise-reader-emoji" aria-hidden="true">
-            {exercise.emoji}
-          </div>
+          <WellbeingMark category={exercise.category} size="lg" className="exercise-reader-emoji" />
           <div className="exercise-reader-heading">
             <div className="exercise-reader-pills">
               <span className="exercise-card-pill exercise-card-pill-category">{categoryLabel(props.language, exercise.category)}</span>
-              <span className="exercise-card-pill exercise-card-pill-time">⏱ {durationLabel(props.language, exercise.durationMinutes)}</span>
+              <span className="exercise-card-pill exercise-card-pill-time">{durationLabel(props.language, exercise.durationMinutes)}</span>
               <span className="exercise-card-pill exercise-card-pill-level">{difficultyLabel(props.language, exercise.difficulty)}</span>
             </div>
             <h2 id="exercise-title">{exercise.title}</h2>

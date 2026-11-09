@@ -1,0 +1,88 @@
+/* Ventana de chat desde Inicio. Tokens de app-usuario/index.html. */
+
+.dashboard-home-chat-modal.matching-flow-modal {
+  --crema: #f5f3eb;
+  --superficie: #fff;
+  --tinta: #1b2a23;
+  --tinta-suave: #5d6a63;
+  --linea: #e2dfd3;
+  --bosque: #1e4033;
+  --verde-medio: #2f6b51;
+  --menta: #e7f1ea;
+  border: 1px solid var(--linea);
+  border-radius: 24px;
+  background: var(--crema);
+  box-shadow: 0 30px 60px -28px rgba(20, 41, 31, 0.45);
+  color: var(--tinta);
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.dashboard-home-chat-modal .dashboard-home-chat-head {
+  align-items: center;
+  padding: 18px 18px 14px 22px;
+  border-bottom: 1px solid var(--linea);
+  background: transparent;
+}
+
+.dashboard-home-chat-modal .dashboard-home-chat-kicker {
+  margin: 0 0 2px;
+  font: 700 12px/1.4 "Manrope", system-ui, sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--verde-medio);
+}
+
+.dashboard-home-chat-modal .dashboard-home-chat-title {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 500;
+  font-size: 28px;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  color: var(--bosque);
+}
+
+.dashboard-home-chat-modal .dashboard-home-chat-head-actions {
+  align-items: center;
+  gap: 4px;
+}
+
+.dashboard-home-chat-modal button.dashboard-home-chat-full {
+  height: 44px;
+  min-height: 44px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 99px;
+  background: none;
+  color: var(--verde-medio);
+  font: 700 15px/1 "Manrope", system-ui, sans-serif;
+  box-shadow: none;
+}
+
+.dashboard-home-chat-modal button.dashboard-home-chat-full:hover,
+.dashboard-home-chat-modal button.dashboard-home-chat-full:focus-visible {
+  background: none;
+  color: var(--bosque);
+}
+
+.dashboard-home-chat-modal button.dashboard-home-chat-close {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid var(--linea);
+  border-radius: 50%;
+  background: var(--superficie);
+  color: var(--bosque);
+  box-shadow: none;
+}
+
+.dashboard-home-chat-modal button.dashboard-home-chat-close:hover,
+.dashboard-home-chat-modal button.dashboard-home-chat-close:focus-visible {
+  background: var(--menta);
+  color: var(--bosque);
+}
+
+.dashboard-home-chat-modal .dashboard-home-chat-body {
+  border-radius: 0 0 24px 24px;
+}

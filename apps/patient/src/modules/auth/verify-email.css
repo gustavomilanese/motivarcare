@@ -1,0 +1,99 @@
+/* Panel verificar email — mancha + acciones. Solo dentro de .auth-shell. */
+
+.auth-shell .verify-email-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  color: var(--bosque);
+}
+
+.auth-shell .verify-email-mark-blob {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.auth-shell .verify-email-mark-icon {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+}
+
+.auth-shell .verify-email-panel {
+  gap: 16px;
+}
+
+.auth-shell .verify-email-panel .auth-header-copy {
+  gap: 8px;
+}
+
+.auth-shell .verify-email-panel .auth-header-copy h1 {
+  font-size: clamp(28px, 4.6vw, 36px);
+}
+
+.auth-shell .verify-email-actions {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.auth-shell .verify-email-testing {
+  margin: 2px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--amarillo-suave);
+  border: 1px dashed color-mix(in srgb, var(--amarillo) 55%, transparent);
+  color: var(--tinta);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.auth-shell .verify-email-testing-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tinta-suave);
+}
+
+.auth-shell .verify-email-testing-link {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--bosque);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--amarillo);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.auth-shell .verify-email-testing-link:hover:not(:disabled),
+.auth-shell .verify-email-testing-link:focus-visible {
+  color: var(--bosque);
+}
+
+.auth-shell .verify-email-testing-link:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.auth-shell .verify-email-card-footer {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0 0;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--linea);
+}

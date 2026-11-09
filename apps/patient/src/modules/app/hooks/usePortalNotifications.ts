@@ -11,6 +11,7 @@ import type { AppLanguage } from "@therapy/i18n-config";
 import { fetchPublishedExercises, type ExercisePost } from "../../exercises/services/exercisesApi";
 import { fetchDiaryEntries } from "../../emotional-diary/services/emotionalDiaryApi";
 import { fetchSharedPatientChatThreads } from "../lib/fetchPatientChatThreadsShared";
+import { PATIENT_CHAT_THREADS_CHANGED_EVENT } from "../lib/patientChatThreadsSync";
 import type { ApiChatThread, PatientAppState, Professional } from "../types";
 import type { PortalNotificationItem } from "../notifications/portalNotificationTypes";
 import {
@@ -59,13 +60,13 @@ export function usePortalNotifications(params: {
     let active = true;
     const POLL_MS = 20_000;
 
-    const syncThreadsOnce = async () => {
-      if (threadsPollInFlight.current) {
+    const syncThreadsOnce = async (force = false) => {
+      if (threadsPollInFlight.current && !force) {
         return;
       }
       threadsPollInFlight.current = true;
       try {
-        const response = await fetchSharedPatientChatThreads(authToken);
+        const response = await fetchSharedPatientChatThreads(authToken, { force });
         if (!active) {
           return;
         }
@@ -84,11 +85,16 @@ export function usePortalNotifications(params: {
     const unsubscribe = subscribeDocumentVisibleInterval(() => {
       void syncThreadsOnce();
     }, POLL_MS);
+    const onThreadsChanged = () => {
+      void syncThreadsOnce(true);
+    };
+    window.addEventListener(PATIENT_CHAT_THREADS_CHANGED_EVENT, onThreadsChanged);
 
     return () => {
       active = false;
       threadsPollInFlight.current = false;
       unsubscribe();
+      window.removeEventListener(PATIENT_CHAT_THREADS_CHANGED_EVENT, onThreadsChanged);
     };
   }, [params.authToken]);
 

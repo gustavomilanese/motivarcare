@@ -25,12 +25,19 @@ async function fetchProfessionalDirectoryOnce(token?: string | null, language: "
     token ?? undefined
   );
 
+  const fallbackTitle =
+    language === "en"
+      ? "Mental health professional"
+      : language === "pt"
+        ? "Profissional de saude mental"
+        : "Profesional de salud mental";
+
   return (response.professionals ?? []).map((item) => ({
     id: item.id,
     fullName: item.fullName,
     firstName: item.firstName ?? "",
     lastName: item.lastName ?? "",
-    title: safeString(item.title) ?? "Profesional de salud mental",
+    title: safeString(item.title) ?? fallbackTitle,
     specialization: safeString(item.specialization),
     focusPrimary: safeString(item.focusPrimary),
     bio: safeString(item.bio),

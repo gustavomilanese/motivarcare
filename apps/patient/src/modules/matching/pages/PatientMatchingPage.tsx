@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { filterSlotsByBookingNotice } from "@therapy/types";
 import { MatchingHeader } from "../components/MatchingHeader";
+import { CalmIntakeSummary, CalmPickFilters } from "../../home/calm/CalmIntakeSummary";
+import { CalmProfessionalCard } from "../components/CalmProfessionalCard";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 import { ProfessionalMatchCard } from "../components/ProfessionalMatchCard";
 import { MatchingProfessionalProfileModal } from "../components/MatchingProfessionalProfileModal";
@@ -48,8 +50,9 @@ function directorySlotsForProfessional(professional: MatchCardProfessional | nul
 
 export function PatientMatchingPage(props: MatchingPageProps) {
   const mode = props.mode ?? "portal";
+  const homePick = props.presentation === "home";
   const bookingFlowEnabled = mode === "onboarding-final";
-  const [sortMode, setSortMode] = useState<SortMode>("price-asc");
+  const [sortMode, setSortMode] = useState<SortMode>(homePick ? "match" : "price-asc");
   const [sortOpen, setSortOpen] = useState(false);
   const [professionals, setProfessionals] = useState<MatchCardProfessional[]>([]);
   const [loading, setLoading] = useState(true);
@@ -183,12 +186,18 @@ export function PatientMatchingPage(props: MatchingPageProps) {
 
   const selected = visibleOrdered.find((item) => item.professional.id === props.selectedProfessionalId) ?? visibleOrdered[0] ?? null;
 
-  const sortOptions = useMemo<SortOption[]>(() => [
+  const sortOptions = useMemo<SortOption[]>(() => homePick
+    ? [
+        { value: "match", label: t(props.language, { es: "Compatibilidad", en: "Compatibility", pt: "Compatibilidade" }) },
+        { value: "price-asc", label: t(props.language, { es: "Precio", en: "Price", pt: "Preco" }) }
+      ]
+    : [
     { value: "price-asc", label: t(props.language, { es: "Precio más bajo", en: "Lowest price", pt: "Menor preco" }) },
     { value: "price-desc", label: t(props.language, { es: "Precio más alto", en: "Highest price", pt: "Maior preco" }) },
     { value: "rating-desc", label: t(props.language, { es: "Calificación más alta", en: "Highest rating", pt: "Maior classificacao" }) },
     { value: "reviews-desc", label: t(props.language, { es: "Mayor cantidad de reseñas", en: "Most reviews", pt: "Maior quantidade de avaliacoes" }) }
-  ], [props.language]);
+    ]
+  , [homePick, props.language]);
 
   const heading = props.showOnlyFavorites
     ? t(props.language, {
@@ -201,6 +210,12 @@ export function PatientMatchingPage(props: MatchingPageProps) {
           es: "Elegí tu nuevo profesional",
           en: "Choose your new professional",
           pt: "Escolha seu novo profissional"
+        })
+    : homePick
+      ? t(props.language, {
+          es: "Elegí a tu profesional",
+          en: "Choose your professional",
+          pt: "Escolha seu profissional"
         })
     : mode === "onboarding-final"
       ? t(props.language, {
@@ -225,6 +240,12 @@ export function PatientMatchingPage(props: MatchingPageProps) {
           en: "When you confirm, you’ll buy new sessions at this professional’s published price.",
           pt: "Ao confirmar, voce comprara novas sessoes pelo preco publicado deste profissional."
         })
+    : homePick
+      ? t(props.language, {
+          es: "Los ordenamos según lo que nos contaste. Elegí con calma: podés ver el perfil y los horarios de cada uno.",
+          en: "We rank them from what you told us. Take your time: you can open each profile and their times.",
+          pt: "Ordenamos pelo que voce contou. Escolha com calma: da para ver o perfil e os horarios."
+        })
     : mode === "onboarding-final"
       ? t(props.language, {
           es: "Elegí un profesional y reservá tu sesión de prueba.",
@@ -237,7 +258,13 @@ export function PatientMatchingPage(props: MatchingPageProps) {
           pt: "Os perfis sao ordenados pelo seu perfil clinico e pelos dados reais do onboarding dos terapeutas."
         });
 
-  const countLabel = mode === "onboarding-final"
+  const countLabel = homePick
+    ? t(props.language, {
+        es: `${visibleOrdered.length} profesionales`,
+        en: `${visibleOrdered.length} professionals`,
+        pt: `${visibleOrdered.length} profissionais`
+      })
+    : mode === "onboarding-final"
     ? t(props.language, {
         es: `${visibleOrdered.length} sugerencias para vos`,
         en: `${visibleOrdered.length} suggestions for you`,
@@ -591,11 +618,17 @@ export function PatientMatchingPage(props: MatchingPageProps) {
   };
 
   return (
-    <div className={`page-stack patient-matching-page ${mode === "onboarding-final" ? "onboarding-focus" : ""}`}>
+    <div className={`page-stack patient-matching-page ${mode === "onboarding-final" ? "onboarding-focus" : ""} ${homePick ? "calm-match" : ""}`}>
       <MatchingHeader
-        minimal={mode === "onboarding-final"}
-        onboardingAccent={mode === "onboarding-final"}
+        minimal={mode === "onboarding-final" || homePick}
+        onboardingAccent={mode === "onboarding-final" || homePick}
+        pillSort={homePick}
         heading={heading}
+        headingMark={
+          homePick
+            ? t(props.language, { es: "profesional", en: "professional", pt: "profissional" })
+            : undefined
+        }
         description={description}
         countLabel={countLabel}
         sortOpen={sortOpen}
@@ -606,6 +639,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
           setSortOpen(false);
         }}
         sortOptions={sortOptions}
+        filters={homePick ? <CalmPickFilters language={props.language} answers={props.intakeAnswers} /> : null}
         t={(values) => t(props.language, values)}
         onDeferTherapistSelection={
           mode === "onboarding-final" && props.onDeferTherapistSelection
@@ -645,9 +679,32 @@ export function PatientMatchingPage(props: MatchingPageProps) {
       ) : null}
 
       {!loading && !error && visibleOrdered.length > 0 ? (
-        <>
+        <div className={homePick ? "calm-pick-body" : undefined}>
           <div className="patient-therapist-list">
-            {visibleOrdered.map((item) => (
+            {visibleOrdered.map((item, index) => (
+              homePick ? (
+              <CalmProfessionalCard
+                key={item.professional.id}
+                item={item}
+                bestMatch={sortMode === "match" && index === 0}
+                language={props.language}
+                patientMarket={props.patientMarket}
+                displayCurrency={props.displayCurrency}
+                residencyCountry={props.residencyCountry}
+                fxRates={props.fxRates}
+                onChoose={() => {
+                  void Promise.resolve(
+                    props.onCompleteFirstSelection({
+                      professionalId: item.professional.id,
+                      professionalName: item.professional.fullName
+                    })
+                  );
+                }}
+                onSelect={props.onSelectProfessional}
+                onOpenProfile={(professionalId) => setProfileProfessionalId(professionalId)}
+                onImageFallback={props.onImageFallback}
+              />
+              ) : (
               <ProfessionalMatchCard
                 key={item.professional.id}
                 item={item}
@@ -670,9 +727,11 @@ export function PatientMatchingPage(props: MatchingPageProps) {
                   setProfileProfessionalId(professionalId);
                 }}
               />
+              )
             ))}
           </div>
-        </>
+          {homePick ? <CalmIntakeSummary language={props.language} answers={props.intakeAnswers} /> : null}
+        </div>
       ) : null}
 
       {!loading && !error && visibleOrdered.length === 0 ? (
@@ -712,7 +771,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         </>
       ) : null}
 
-      {selectionConfirmRequired && selected && !bookingFlowEnabled ? (
+      {selectionConfirmRequired && selected && !bookingFlowEnabled && !homePick ? (
         <MatchingStickyAction
           language={props.language}
           professionalName={selected.professional.fullName}

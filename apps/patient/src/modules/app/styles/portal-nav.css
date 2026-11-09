@@ -1084,13 +1084,13 @@
     border: none;
     margin: 0;
     padding: 0;
-    background: rgba(15, 23, 42, 0.4);
+    background: rgba(30, 64, 51, 0.36);
     cursor: pointer;
   }
   .notifications-dropdown-backdrop:hover,
   .notifications-dropdown-backdrop:focus,
   .notifications-dropdown-backdrop:active {
-    background: rgba(15, 23, 42, 0.4);
+    background: rgba(30, 64, 51, 0.36);
     border: none;
     color: inherit;
   }
@@ -1107,12 +1107,13 @@
     padding: 0 0 calc(12px + env(safe-area-inset-bottom, 0px));
     gap: 0;
     border: none;
-    border-radius: 20px 20px 0 0;
-    border-top: 1px solid var(--mobile-divider);
-    box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.16);
+    border-radius: 24px 24px 0 0;
+    border-top: 1px solid #e2dfd3;
+    background: #fff;
+    box-shadow: 0 -12px 40px rgba(30, 64, 51, 0.2);
     z-index: 280;
     overflow: hidden;
-    animation: notifications-panel-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    animation: notifications-panel-in 0.28s cubic-bezier(0.2, 0.7, 0.2, 1);
   }
   .notifications-dropdown.notifications-dropdown--mobile-sheet::before {
     content: "";
@@ -1120,7 +1121,7 @@
     width: 42px;
     height: 4px;
     border-radius: 999px;
-    background: rgba(148, 163, 184, 0.55);
+    background: #e2dfd3;
     margin: 8px auto 0;
   }
   .notifications-dropdown.notifications-dropdown--mobile-sheet .notifications-head {
@@ -1128,8 +1129,8 @@
     top: 0;
     z-index: 1;
     padding: 12px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
-    background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.96) 100%);
-    border-bottom: 1px solid var(--mobile-divider);
+    background: #fff;
+    border-bottom: 1px solid #e2dfd3;
   }
   .notifications-dropdown.notifications-dropdown--mobile-sheet .notifications-body {
     max-height: none;

@@ -1,0 +1,6 @@
+/* Mensajes — variante B. Cada zona vive en su hoja. */
+@import "./chat-ds-shell.css";
+@import "./chat-ds-thread.css";
+@import "./chat-ds-composer.css";
+@import "./chat-ds-panel.css";
+@import "./chat-ds-mobile.css";

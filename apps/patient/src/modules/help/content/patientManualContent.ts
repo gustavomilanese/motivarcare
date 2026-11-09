@@ -5,47 +5,46 @@ export const PATIENT_MANUAL_SECTIONS: HelpManualSection[] = [
     title: { es: "1. Bienvenida", en: "1. Welcome", pt: "1. Boas-vindas" },
     figures: [
       {
-        src: "/images/hero-therapy.jpg",
-        alt: { es: "Vista del inicio del portal paciente", en: "Patient portal home view", pt: "Vista do início do portal do paciente" },
+        src: "/help/manual/inicio.png",
+        alt: {
+          es: "Pantalla de Inicio del portal",
+          en: "Portal Home screen",
+          pt: "Tela de Início do portal"
+        },
         caption: {
-          es: "Inicio: resumen de sesiones, profesional activo y accesos rápidos.",
-          en: "Home: session summary, active therapist and quick links.",
-          pt: "Início: resumo de sessões, profissional ativo e atalhos."
-        }
-      },
-      {
-        src: "/help/manual/inicio.svg",
-        alt: { es: "Esquema del panel de inicio", en: "Home dashboard schematic", pt: "Esquema do painel inicial" },
-        caption: {
-          es: "Esquema: menú lateral, hero y tarjetas principales.",
-          en: "Schematic: sidebar, hero banner and main cards.",
-          pt: "Esquema: menu lateral, hero e cartões principais."
+          es: "Así se ve Inicio: próxima sesión, tu profesional y Entre sesiones.",
+          en: "This is Home: next session, your therapist and Between sessions.",
+          pt: "Assim é o Início: próxima sessão, seu profissional e Entre sessões."
         }
       }
     ],
     paragraphs: [
       {
-        es: "MotivarCare es tu portal para gestionar terapia online: reservar sesiones, hablar con tu profesional, llevar un diario emocional y acceder a recursos de bienestar.",
-        en: "MotivarCare is your portal to manage online therapy: book sessions, talk to your therapist, keep an emotional diary and access wellbeing resources.",
-        pt: "MotivarCare é seu portal para gerenciar terapia online: reservar sessões, falar com seu profissional, manter um diário emocional e acessar recursos de bem-estar."
+        es: "MotivarCare es tu portal para terapia online: reservar sesiones, escribirle a tu profesional, llevar el diario, practicar bienestar y pagar en moneda local cuando tu país está cubierto.",
+        en: "MotivarCare is your portal for online therapy: book sessions, message your therapist, keep a diary, practice wellbeing and pay in local currency when your country is covered.",
+        pt: "MotivarCare é seu portal de terapia online: reservar sessões, escrever ao profissional, manter o diário, praticar bem-estar e pagar em moeda local quando o país está coberto."
       },
       {
-        es: "Este manual describe cada sección. No necesitás leerlo completo: usá el índice mental del menú lateral (escritorio) o la barra inferior (móvil).",
-        en: "This manual describes each section. You don't need to read it all: use the sidebar (desktop) or bottom bar (mobile) as your index.",
-        pt: "Este manual descreve cada seção. Não precisa ler tudo: use o menu lateral (desktop) ou a barra inferior (móvel) como índice."
+        es: "Este manual sigue las pantallas actuales del portal (diseño calm). No hace falta leerlo entero: usá el menú lateral en escritorio o la barra inferior en el celular.",
+        en: "This manual follows the current portal screens (calm design). You don't need to read it all: use the sidebar on desktop or the bottom bar on mobile.",
+        pt: "Este manual segue as telas atuais do portal (design calm). Não precisa ler tudo: use o menu lateral no desktop ou a barra inferior no celular."
       }
     ]
   },
   {
-    title: { es: "2. Mapa del menú", en: "2. Menu map", pt: "2. Mapa do menu" },
+    title: { es: "2. Mapa del portal", en: "2. Portal map", pt: "2. Mapa do portal" },
     figures: [
       {
-        src: "/help/manual/menu.svg",
-        alt: { es: "Menú lateral e iconos del encabezado", en: "Sidebar and header icons", pt: "Menu lateral e ícones do cabeçalho" },
+        src: "/help/manual/cuenta.png",
+        alt: {
+          es: "Menú de cuenta abierto sobre Inicio",
+          en: "Account menu open over Home",
+          pt: "Menu da conta aberto sobre o Início"
+        },
         caption: {
-          es: "Escritorio: navegación lateral e iconos arriba a la derecha.",
-          en: "Desktop: sidebar navigation and top-right icons.",
-          pt: "Desktop: navegação lateral e ícones no canto superior direito."
+          es: "Tocá tu nombre (arriba a la derecha) para abrir Cuenta, Preferencias, Ayuda y Legal. A la izquierda está el menú principal.",
+          en: "Tap your name (top right) to open Account, Preferences, Help and Legal. The main menu is on the left.",
+          pt: "Toque seu nome (canto superior direito) para abrir Conta, Preferências, Ajuda e Legal. O menu principal fica à esquerda."
         }
       }
     ],
@@ -53,65 +52,65 @@ export const PATIENT_MANUAL_SECTIONS: HelpManualSection[] = [
       {
         label: { es: "Inicio", en: "Home", pt: "Início" },
         body: {
-          es: "Panel principal: créditos, profesional activo, próximas reservas, paquetes y accesos rápidos a sesión de prueba.",
-          en: "Main dashboard: credits, active therapist, upcoming bookings, packages and quick links to trial session.",
-          pt: "Painel principal: créditos, profissional ativo, próximas reservas, pacotes e atalhos para sessão de teste."
+          es: "Tu día: próxima sesión, profesional, esta semana y el bloque Entre sesiones (ánimo, respiración, diario).",
+          en: "Your day: next session, therapist, this week and Between sessions (mood, breath, diary).",
+          pt: "Seu dia: próxima sessão, profissional, esta semana e Entre sessões (humor, respiração, diário)."
+        }
+      },
+      {
+        label: { es: "Mensajes", en: "Messages", pt: "Mensagens" },
+        body: {
+          es: "Chat escrito con tu profesional asignado (no es videollamada ni Maca).",
+          en: "Written chat with your assigned therapist (not video call or Maca).",
+          pt: "Chat escrito com seu profissional (não é videochamada nem a Maca)."
         }
       },
       {
         label: { es: "Sesiones", en: "Sessions", pt: "Sessões" },
         body: {
-          es: "Reservar, reprogramar, historial, calendario, paquetes comprados y compra de nuevos créditos.",
-          en: "Book, reschedule, history, calendar, purchased packages and buying new credits.",
-          pt: "Reservar, reagendar, histórico, calendário, pacotes comprados e compra de novos créditos."
+          es: "Agenda, calendario, créditos, reservar, reprogramar, cancelar y comprar paquetes.",
+          en: "Agenda, calendar, credits, book, reschedule, cancel and buy packages.",
+          pt: "Agenda, calendário, créditos, reservar, reagendar, cancelar e comprar pacotes."
         }
       },
       {
-        label: { es: "Diario emocional", en: "Emotional diary", pt: "Diário emocional" },
+        label: { es: "Diario", en: "Diary", pt: "Diário" },
         body: {
-          es: "Nueva entrada, últimas notas y registro completo con detalle por fecha.",
-          en: "New entry, recent notes and full log with detail by date.",
-          pt: "Nova entrada, últimas notas e registro completo com detalhe por data."
+          es: "Check-in del día, nuevas entradas y registro. Desde el lateral podés ir a música o ejercicios.",
+          en: "Daily check-in, new entries and history. Side links go to music or exercises.",
+          pt: "Check-in do dia, novas entradas e registro. O lateral leva a música ou exercícios."
         }
       },
       {
-        label: { es: "Profesionales", en: "Professionals", pt: "Profissionais" },
+        label: { es: "Bienestar", en: "Wellbeing", pt: "Bem-estar" },
         body: {
-          es: "Explorar el equipo, ver especialidades, compatibilidad y marcar favoritos.",
-          en: "Explore the team, specialties, match scores and mark favorites.",
-          pt: "Explorar a equipe, especialidades, compatibilidade e marcar favoritos."
+          es: "Ejercicios guiados con filtros (respiración, postura, anclaje…) y rutinas en el panel lateral.",
+          en: "Guided exercises with filters (breath, posture, grounding…) and routines in the side panel.",
+          pt: "Exercícios guiados com filtros (respiração, postura, ancoragem…) e rotinas no painel lateral."
         }
       },
       {
-        label: { es: "Ejercicios", en: "Exercises", pt: "Exercícios" },
+        label: { es: "Campana", en: "Bell", pt: "Sino" },
         body: {
-          es: "Prácticas guiadas breves para usar entre sesiones.",
-          en: "Short guided practices to use between sessions.",
-          pt: "Práticas guiadas breves para usar entre sessões."
+          es: "Panel de notificaciones. El engranaje abre Ajustes de avisos.",
+          en: "Notifications panel. The gear opens alert settings.",
+          pt: "Painel de notificações. A engrenagem abre Ajustes de avisos."
         }
       },
       {
-        label: { es: "Música relajante", en: "Relaxing music", pt: "Música relaxante" },
+        label: { es: "Menú de cuenta", en: "Account menu", pt: "Menu da conta" },
         body: {
-          es: "Biblioteca por categorías con reproductor integrado.",
-          en: "Library by category with built-in player.",
-          pt: "Biblioteca por categorias com player integrado."
+          es: "Tocá tu nombre (inicial + nombre). Ahí están datos, actividad, idioma/moneda, notificaciones, ayuda y cerrar sesión.",
+          en: "Tap your name (initial + name). There you find profile data, activity, language/currency, notifications, help and sign out.",
+          pt: "Toque seu nome (inicial + nome). Lá estão dados, atividade, idioma/moeda, notificações, ajuda e sair."
         }
       },
       {
-        label: { es: "Chat", en: "Chat", pt: "Chat" },
+        label: { es: "Hablar con Maca", en: "Talk to Maca", pt: "Falar com a Maca" },
         body: {
-          es: "Mensajes asíncronos con tu profesional asignado (no es videollamada).",
-          en: "Async messages with your assigned therapist (not video call).",
-          pt: "Mensagens assíncronas com seu profissional atribuído (não é videochamada)."
-        }
-      },
-      {
-        label: { es: "Mi cuenta", en: "My account", pt: "Minha conta" },
-        body: {
-          es: "Acceso desde menú ☰ o barra móvil «Mi Cuenta»: perfil, foto, preferencias y soporte.",
-          en: "Access via ☰ menu or mobile «My account» bar: profile, photo, preferences and support.",
-          pt: "Acesso pelo menu ☰ ou barra móvel «Minha conta»: perfil, foto, preferências e suporte."
+          es: "Botón flotante: asistente del portal. Orienta en funciones y bienestar; no reemplaza a tu profesional ni atiende urgencias.",
+          en: "Floating button: portal assistant. Helps with features and wellbeing; does not replace your therapist or handle emergencies.",
+          pt: "Botão flutuante: assistente do portal. Orienta funções e bem-estar; não substitui o profissional nem atende urgências."
         }
       }
     ]
@@ -120,289 +119,314 @@ export const PATIENT_MANUAL_SECTIONS: HelpManualSection[] = [
     title: { es: "3. Primeros pasos", en: "3. First steps", pt: "3. Primeiros passos" },
     steps: [
       {
-        es: "Completá el registro e inicio de sesión con tu email.",
-        en: "Complete registration and sign in with your email.",
-        pt: "Conclua o cadastro e entre com seu e-mail."
+        es: "Registrate e iniciá sesión con tu email.",
+        en: "Register and sign in with your email.",
+        pt: "Cadastre-se e entre com seu e-mail."
       },
       {
-        es: "Respondé el cuestionario inicial con honestidad; ayuda al matching y a detectar situaciones de riesgo.",
-        en: "Answer the initial questionnaire honestly; it helps matching and risk detection.",
-        pt: "Responda o questionário inicial com honestidade; ajuda no matching e na detecção de risco."
+        es: "Completá el cuestionario inicial con honestidad: ayuda al matching y a detectar situaciones de riesgo.",
+        en: "Complete the intake questionnaire honestly: it helps matching and risk detection.",
+        pt: "Preencha o questionário inicial com honestidade: ajuda no matching e na detecção de risco."
       },
       {
-        es: "Elegí o conocé a tu profesional (sesión de prueba o matching).",
-        en: "Choose or meet your therapist (trial session or matching).",
-        pt: "Escolha ou conheça seu profissional (sessão de teste ou matching)."
+        es: "En Inicio seguí «Tu primera sesión, en 4 pasos» o elegí profesional / sesión de prueba según lo que veas.",
+        en: "On Home follow «Your first session, in 4 steps» or pick a therapist / trial session as shown.",
+        pt: "Em Início siga «Sua primeira sessão, em 4 passos» ou escolha profissional / sessão de teste conforme a tela."
       },
       {
-        es: "Reservá tu primera sesión desde Sesiones.",
-        en: "Book your first session from Sessions.",
-        pt: "Reserve sua primeira sessão em Sessões."
+        es: "Reservá desde Inicio o Sesiones. Si necesitás créditos, usá «Comprar sesiones» y el flujo de pago.",
+        en: "Book from Home or Sessions. If you need credits, use «Buy sessions» and the payment flow.",
+        pt: "Reserve em Início ou Sessões. Se precisar de créditos, use «Comprar sessões» e o fluxo de pagamento."
       },
       {
-        es: "Opcional: explorá diario, ejercicios y música relajante entre sesiones.",
-        en: "Optional: explore diary, exercises and relaxing music between sessions.",
-        pt: "Opcional: explore diário, exercícios e música relaxante entre sessões."
+        es: "Opcional: abrí Tour con Maca (abajo en el menú lateral) para un recorrido guiado.",
+        en: "Optional: open Tour with Maca (bottom of the sidebar) for a guided walkthrough.",
+        pt: "Opcional: abra Tour com a Maca (rodapé do menu lateral) para um passeio guiado."
       }
     ]
   },
   {
-    title: { es: "4. Reservar y gestionar sesiones", en: "4. Book and manage sessions", pt: "4. Reservar e gerenciar sessões" },
-    figures: [
+    title: { es: "4. Inicio", en: "4. Home", pt: "4. Início" },
+    paragraphs: [
       {
-        src: "/images/hero-sesiones.png",
-        alt: { es: "Página de Sesiones con hero y reservas", en: "Sessions page with hero and bookings", pt: "Página Sessões com hero e reservas" },
-        caption: {
-          es: "Sesiones: hero, créditos disponibles y próximas reservas.",
-          en: "Sessions: hero, available credits and upcoming bookings.",
-          pt: "Sessões: hero, créditos disponíveis e próximas reservas."
+        es: "El saludo («Hola, …») resume tu momento: bienvenida, próxima sesión o acompañamiento entre encuentros.",
+        en: "The greeting («Hi, …») reflects where you are: welcome, next session or between-session support.",
+        pt: "A saudação («Olá, …») resume o momento: boas-vindas, próxima sessão ou apoio entre encontros."
+      }
+    ],
+    bullets: [
+      {
+        label: { es: "Próxima sesión", en: "Next session", pt: "Próxima sessão" },
+        body: {
+          es: "Card con horario (Hoy / Próxima / En curso). Acciones: Entrar a la sesión, Ver detalle. Si no hay reserva: Reservar sesión, Elegir profesional o Sesión de prueba.",
+          en: "Card with timing (Today / Upcoming / In progress). Actions: Join session, View details. If none booked: Book session, Choose therapist or Trial session.",
+          pt: "Card com horário (Hoje / Próxima / Em andamento). Ações: Entrar na sessão, Ver detalhe. Sem reserva: Reservar sessão, Escolher profissional ou Sessão de teste."
         }
       },
       {
-        src: "/help/manual/sesiones.svg",
-        alt: { es: "Esquema de la página Sesiones", en: "Sessions page schematic", pt: "Esquema da página Sessões" },
+        label: { es: "Tu profesional", en: "Your therapist", pt: "Seu profissional" },
+        body: {
+          es: "Panel lateral con Escribile y Ver perfil. También puede mostrar un mensaje reciente con Responder.",
+          en: "Side panel with Message them and View profile. It may also show a recent message with Reply.",
+          pt: "Painel lateral com Escreva e Ver perfil. Também pode mostrar mensagem recente com Responder."
+        }
+      },
+      {
+        label: { es: "Esta semana", en: "This week", pt: "Esta semana" },
+        body: {
+          es: "Franja de la semana. Ver el mes abre el calendario ampliado.",
+          en: "Week strip. View the month opens the wider calendar.",
+          pt: "Faixa da semana. Ver o mês abre o calendário ampliado."
+        }
+      },
+      {
+        label: { es: "Entre sesiones", en: "Between sessions", pt: "Entre sessões" },
+        body: {
+          es: "¿Cómo está tu día? (climas Tormenta → Despejado), gráfico Tu semana, respiración con Empezar, e Ir al diario.",
+          en: "How is your day? (climates Storm → Clear), Your week chart, breath with Start, and Go to diary.",
+          pt: "Como está seu dia? (climas Tempestade → Limpo), gráfico Sua semana, respiração com Começar, e Ir ao diário."
+        }
+      }
+    ]
+  },
+  {
+    title: { es: "5. Sesiones y pagos", en: "5. Sessions and payments", pt: "5. Sessões e pagamentos" },
+    figures: [
+      {
+        src: "/help/manual/sesiones.png",
+        alt: {
+          es: "Pantalla Tus sesiones",
+          en: "Your sessions screen",
+          pt: "Tela Suas sessões"
+        },
         caption: {
-          es: "Esquema: banner, botón reservar y listado de citas.",
-          en: "Schematic: banner, book button and appointment list.",
-          pt: "Esquema: banner, botão reservar e lista de consultas."
+          es: "Pantalla real de Sesiones: próxima cita, listado, calendario y créditos a la derecha.",
+          en: "Real Sessions screen: next appointment, list, calendar and credits on the right.",
+          pt: "Tela real de Sessões: próxima consulta, lista, calendário e créditos à direita."
         }
       }
     ],
     paragraphs: [
       {
-        es: "En Sesiones verás un resumen de créditos disponibles arriba. El botón principal abre el flujo de reserva con calendario del profesional activo.",
-        en: "In Sessions you'll see available credits at the top. The main button opens booking with your active therapist's calendar.",
-        pt: "Em Sessões você verá créditos disponíveis no topo. O botão principal abre a reserva com o calendário do profissional ativo."
+        es: "La página se llama «Tus sesiones». Arriba ves sesiones disponibles y acciones Reservar / Comprar sesiones. El detalle de una cita permite Entrar a la sesión, Reprogramar o Cancelar sesión.",
+        en: "The page is titled «Your sessions». At the top you see available sessions and Book / Buy sessions. Session detail allows Join session, Reschedule or Cancel session.",
+        pt: "A página se chama «Suas sessões». No topo vê sessões disponíveis e Reservar / Comprar sessões. O detalhe permite Entrar na sessão, Reagendar ou Cancelar sessão."
       }
     ],
     steps: [
       {
-        es: "Elegí día y hora con disponibilidad (bloques en verde o según leyenda).",
-        en: "Pick day and time with availability (blocks in green or per legend).",
-        pt: "Escolha dia e horário com disponibilidade (blocos em verde ou conforme legenda)."
+        es: "Tocá Reservar (o Reservar sesión) y elegí un horario disponible con tu profesional.",
+        en: "Tap Book (or Book session) and pick an available time with your therapist.",
+        pt: "Toque Reservar (ou Reservar sessão) e escolha um horário disponível com seu profissional."
       },
       {
-        es: "Confirmá: se descuenta un crédito al confirmar (o usa la sesión de prueba si aplica).",
-        en: "Confirm: one credit is used on confirm (or trial session if applicable).",
-        pt: "Confirme: um crédito é usado ao confirmar (ou sessão de teste se aplicável)."
+        es: "Si no tenés créditos: Elegí cómo pagar → una sesión o un paquete (el precio se muestra en tu moneda local cuando aplica) → Continuar al pago.",
+        en: "If you have no credits: Choose how to pay → one session or a package (price shows in your local currency when applicable) → Continue to payment.",
+        pt: "Se não tiver créditos: Escolha como pagar → uma sessão ou um pacote (preço na moeda local quando aplicável) → Continuar para o pagamento."
       },
       {
-        es: "En «Próximas reservas» podés ver detalle, reprogramar o cancelar.",
-        en: "Under «Upcoming bookings» you can view detail, reschedule or cancel.",
-        pt: "Em «Próximas reservas» pode ver detalhe, reagendar ou cancelar."
+        es: "Completá el checkout (DLocal). Al volver, los créditos o la reserva se confirman en el portal.",
+        en: "Complete checkout (DLocal). When you return, credits or the booking are confirmed in the portal.",
+        pt: "Conclua o checkout (DLocal). Ao voltar, os créditos ou a reserva se confirmam no portal."
       },
       {
-        es: "Minutos antes de la sesión, entrá al enlace de videollamada desde la misma tarjeta.",
-        en: "Minutes before the session, open the video link from the same card.",
-        pt: "Minutos antes da sessão, entre no link de videochamada pelo mesmo cartão."
+        es: "Minutos antes del encuentro, usá Entrar a la sesión desde Inicio o desde la tarjeta de Sesiones.",
+        en: "Minutes before the meeting, use Join session from Home or from the Sessions card.",
+        pt: "Minutos antes do encontro, use Entrar na sessão em Início ou no card de Sessões."
       }
     ]
   },
   {
-    title: { es: "5. Chat y Maca", en: "5. Chat and Maca", pt: "5. Chat e Maca" },
+    title: { es: "6. Mensajes y Maca", en: "6. Messages and Maca", pt: "6. Mensagens e Maca" },
     figures: [
       {
-        src: "/help/manual/chat.svg",
-        alt: { es: "Interfaz de chat con el profesional", en: "Chat interface with therapist", pt: "Interface de chat com o profissional" },
+        src: "/help/manual/mensajes.png",
+        alt: {
+          es: "Pantalla Mensajes",
+          en: "Messages screen",
+          pt: "Tela Mensagens"
+        },
         caption: {
-          es: "Chat: conversación escrita con tu profesional asignado.",
-          en: "Chat: written conversation with your assigned therapist.",
-          pt: "Chat: conversa escrita com seu profissional atribuído."
+          es: "Pantalla real de Mensajes con tu profesional, el cuadro para escribir y el panel lateral.",
+          en: "Real Messages screen with your therapist, the compose box and the side panel.",
+          pt: "Tela real de Mensagens com seu profissional, a caixa de texto e o painel lateral."
         }
       }
     ],
     bullets: [
       {
         body: {
-          es: "Chat: mensajes escritos con tu profesional. Ideal para coordinar, compartir novedades o consultas no urgentes entre sesiones.",
-          en: "Chat: written messages with your therapist. Good for coordinating, updates or non-urgent questions between sessions.",
-          pt: "Chat: mensagens escritas com seu profissional. Ideal para coordenar, compartilhar novidades ou dúvidas não urgentes entre sessões."
+          es: "Mensajes: conversación escrita. Podés Reservar sesión desde el encabezado, compartir una entrada del diario (Compartir del diario) y ver Compartido en el chat.",
+          en: "Messages: written conversation. You can Book session from the header, share a diary entry (Share from diary) and see Shared in chat.",
+          pt: "Mensagens: conversa escrita. Pode Reservar sessão no cabeçalho, compartilhar entrada do diário e ver Compartilhado no chat."
         }
       },
       {
         body: {
-          es: "Maca (botón flotante): asistente del portal para orientarte en funciones y bienestar general. No atiende emergencias ni reemplaza al profesional.",
-          en: "Maca (floating button): portal assistant for features and general wellbeing. Does not handle emergencies or replace your therapist.",
-          pt: "Maca (botão flutuante): assistente do portal para funções e bem-estar geral. Não atende emergências nem substitui o profissional."
+          es: "El aviso «Este chat no es para urgencias» remite a Líneas de apoyo.",
+          en: "The notice «This chat is not for emergencies» links to Support lines.",
+          pt: "O aviso «Este chat não é para urgências» aponta para Linhas de apoio."
         }
       },
       {
         body: {
-          es: "Urgencias: usá teléfonos del pie de página o servicios de emergencia de tu país (911, 107, 112, etc.).",
-          en: "Emergencies: use footer crisis numbers or your country's emergency services (911, 107, 112, etc.).",
-          pt: "Urgências: use telefones do rodapé ou serviços de emergência do seu país (911, 107, 112, etc.)."
+          es: "Hablar con Maca (flotante): ayuda del portal. Podés aceptar compartir un resumen con tu profesional cuando la app lo ofrezca. No atiende emergencias.",
+          en: "Talk to Maca (floating): portal help. You may agree to share a summary with your therapist when offered. Does not handle emergencies.",
+          pt: "Falar com a Maca (flutuante): ajuda do portal. Pode aceitar compartilhar um resumo com o profissional quando a app oferecer. Não atende emergências."
         }
       }
     ]
   },
   {
-    title: { es: "6. Diario emocional", en: "6. Emotional diary", pt: "6. Diário emocional" },
+    title: { es: "7. Diario", en: "7. Diary", pt: "7. Diário" },
     figures: [
       {
-        src: "/images/diario-emocional-hero.png",
-        alt: { es: "Inicio del diario emocional", en: "Emotional diary home", pt: "Início do diário emocional" },
+        src: "/help/manual/diario.png",
+        alt: {
+          es: "Pantalla Tu diario",
+          en: "Your diary screen",
+          pt: "Tela Seu diário"
+        },
         caption: {
-          es: "Diario: hero, nueva entrada e historial de notas.",
-          en: "Diary: hero, new entry and note history.",
-          pt: "Diário: hero, nova entrada e histórico de notas."
-        }
-      },
-      {
-        src: "/help/manual/diario.svg",
-        alt: { es: "Esquema del diario emocional", en: "Emotional diary schematic", pt: "Esquema do diário emocional" },
-        caption: {
-          es: "Esquema: estado de ánimo, texto libre y registro.",
-          en: "Schematic: mood, free text and records.",
-          pt: "Esquema: humor, texto livre e registro."
+          es: "Pantalla real del Diario: ¿Cómo está tu día?, entradas recientes y recursos a la derecha.",
+          en: "Real Diary screen: How is your day?, recent entries and resources on the right.",
+          pt: "Tela real do Diário: Como está seu dia?, entradas recentes e recursos à direita."
         }
       }
     ],
     steps: [
       {
-        es: "Entrá a Diario emocional → «Nueva entrada» o el botón equivalente.",
-        en: "Go to Emotional diary → «New entry» or equivalent button.",
-        pt: "Entre em Diário emocional → «Nova entrada» ou botão equivalente."
+        es: "En Diario («Tu diario») marcá ¿Cómo está tu día? o tocá Nueva entrada.",
+        en: "In Diary («Your diary») set How is your day? or tap New entry.",
+        pt: "Em Diário («Seu diário») marque Como está seu dia? ou toque Nova entrada."
       },
       {
-        es: "Elegí cómo te sentís (estado de ánimo) y, si querés, emociones o actividades sugeridas.",
-        en: "Pick how you feel (mood) and optionally suggested emotions or activities.",
-        pt: "Escolha como se sente (humor) e, se quiser, emoções ou atividades sugeridas."
+        es: "En Contale a tu diario: clima, ¿Qué pasó hoy?, ¿Qué sentiste?, pensamiento y ¿Qué necesitás ahora?",
+        en: "In Tell your diary: climate, What happened today?, What did you feel?, thought and What do you need now?",
+        pt: "Em Conte ao seu diário: clima, O que aconteceu hoje?, O que sentiu?, pensamento e Do que precisa agora?"
       },
       {
-        es: "Escribí qué pasó en tus palabras. Guardá la entrada.",
-        en: "Write what happened in your words. Save the entry.",
-        pt: "Escreva o que aconteceu com suas palavras. Salve a entrada."
+        es: "Elegí visibilidad Solo yo o Para mi psicólogo/a y Guardar entrada.",
+        en: "Choose visibility Only me or For my therapist and Save entry.",
+        pt: "Escolha visibilidade Só eu ou Para meu psicólogo/a e Salvar entrada."
       },
       {
-        es: "Revisá «Registro» o «Últimas entradas» y tocá «Detalle» para leer una nota completa.",
-        en: "Review «Records» or «Recent entries» and tap «Detail» for the full note.",
-        pt: "Revise «Registro» ou «Últimas entradas» e toque «Detalhe» para ler a nota completa."
+        es: "Volvé al listado Últimas entradas para releer. El lateral ofrece Música relajante, ejercicios y preparar la próxima sesión.",
+        en: "Return to Recent entries to reread. The side panel offers Relaxing music, exercises and prepare next session.",
+        pt: "Volte às Últimas entradas para reler. O lateral oferece Música relaxante, exercícios e preparar a próxima sessão."
       }
     ]
   },
   {
-    title: { es: "7. Música relajante y ejercicios", en: "7. Relaxing music and exercises", pt: "7. Música relaxante e exercícios" },
+    title: { es: "8. Bienestar y música", en: "8. Wellbeing and music", pt: "8. Bem-estar e música" },
     figures: [
       {
-        src: "/help/manual/musica.svg",
-        alt: { es: "Biblioteca de música relajante", en: "Relaxing music library", pt: "Biblioteca de música relaxante" },
+        src: "/help/manual/bienestar.png",
+        alt: {
+          es: "Pantalla Tu bienestar",
+          en: "Your wellbeing screen",
+          pt: "Tela Seu bem-estar"
+        },
         caption: {
-          es: "Música: categorías, reproductor y grilla de videos.",
-          en: "Music: categories, player and video grid.",
-          pt: "Música: categorias, player e grade de vídeos."
+          es: "Pantalla real de Bienestar: filtros, prácticas y rutinas guiadas a la derecha.",
+          en: "Real Wellbeing screen: filters, practices and guided routines on the right.",
+          pt: "Tela real de Bem-estar: filtros, práticas e rotinas guiadas à direita."
         }
       }
     ],
     paragraphs: [
       {
-        es: "Música relajante: filtrá por categoría (lofi, piano, naturaleza…), elegí un video y reproducilo en el portal.",
-        en: "Relaxing music: filter by category (lofi, piano, nature…), pick a video and play in the portal.",
-        pt: "Música relaxante: filtre por categoria (lofi, piano, natureza…), escolha um vídeo e reproduza no portal."
+        es: "En Bienestar («Tu bienestar») filtrá por Todos, Respiración, Postura, Anclaje, Movimiento, Relajación o Mindfulness. Abrí una tarjeta para seguir los pasos; las rutinas aparecen a la derecha y el reproductor ocupa el centro al iniciarlas.",
+        en: "In Wellbeing («Your wellbeing») filter by All, Breath, Posture, Grounding, Movement, Relaxation or Mindfulness. Open a card to follow the steps; routines appear on the right and the player takes the center when you start one.",
+        pt: "Em Bem-estar («Seu bem-estar») filtre por Todos, Respiração, Postura, Ancoragem, Movimento, Relaxamento ou Mindfulness. Abra um card para seguir os passos; as rotinas ficam à direita e o player ocupa o centro ao iniciar."
       },
       {
-        es: "Ejercicios: lista de prácticas con duración estimada. Abrí cada una y seguí los pasos en pantalla; podés repetirlas cuando lo necesites.",
-        en: "Exercises: list of practices with estimated duration. Open each and follow on-screen steps; repeat whenever you need.",
-        pt: "Exercícios: lista de práticas com duração estimada. Abra cada uma e siga os passos na tela; repita quando precisar."
+        es: "Música para relajar está en /bienestar/musica (también desde el lateral del Diario). Filtrá por categoría y reproducí en el portal.",
+        en: "Music to relax is at /bienestar/musica (also from the Diary side panel). Filter by category and play in the portal.",
+        pt: "Música para relaxar está em /bienestar/musica (também pelo lateral do Diário). Filtre por categoria e reproduza no portal."
       }
     ]
   },
   {
-    title: { es: "8. Profesionales y favoritos", en: "8. Therapists and favorites", pt: "8. Profissionais e favoritos" },
-    paragraphs: [
-      {
-        es: "En Profesionales navegás fichas con foto, título, años de experiencia y áreas de trabajo. Tocá una tarjeta para ver el perfil completo.",
-        en: "In Professionals you browse cards with photo, title, years of experience and focus areas. Tap a card for the full profile.",
-        pt: "Em Profissionais você navega fichas com foto, título, anos de experiência e áreas de atuação. Toque um cartão para ver o perfil completo."
-      },
-      {
-        es: "El icono de corazón (arriba a la derecha en escritorio) abre favoritos guardados. Útil si estás comparando opciones antes de la sesión de prueba.",
-        en: "The heart icon (top right on desktop) opens saved favorites. Useful when comparing options before a trial session.",
-        pt: "O ícone de coração (canto superior direito no desktop) abre favoritos salvos. Útil ao comparar opções antes da sessão de teste."
-      }
-    ]
-  },
-  {
-    title: { es: "9. Perfil, preferencias y soporte", en: "9. Profile, preferences and support", pt: "9. Perfil, preferências e suporte" },
+    title: { es: "9. Cuenta, ajustes y soporte", en: "9. Account, settings and support", pt: "9. Conta, ajustes e suporte" },
     bullets: [
       {
-        label: { es: "Perfil", en: "Profile", pt: "Perfil" },
+        label: { es: "Datos personales", en: "Personal details", pt: "Dados pessoais" },
         body: {
-          es: "Actualizá nombre visible, foto (tocá el avatar en Inicio o Perfil) y datos de contacto.",
-          en: "Update display name, photo (tap avatar on Home or Profile) and contact details.",
-          pt: "Atualize nome exibido, foto (toque o avatar em Início ou Perfil) e dados de contato."
+          es: "Menú de cuenta → Datos personales: foto, teléfono, contacto de emergencia, zona horaria y Guardar perfil.",
+          en: "Account menu → Personal details: photo, phone, emergency contact, time zone and Save profile.",
+          pt: "Menu da conta → Dados pessoais: foto, telefone, contato de emergência, fuso e Salvar perfil."
         }
       },
       {
-        label: { es: "Preferencias", en: "Preferences", pt: "Preferências" },
+        label: { es: "Actividad de sesiones", en: "Session activity", pt: "Atividade de sessões" },
         body: {
-          es: "Idioma, moneda y zona horaria desde menú ☰.",
-          en: "Language, currency and timezone from ☰ menu.",
-          pt: "Idioma, moeda e fuso horário pelo menu ☰."
+          es: "Resumen de paquete y sesiones disponibles. Las compras se hacen desde Sesiones.",
+          en: "Package summary and available sessions. Purchases happen from Sessions.",
+          pt: "Resumo do pacote e sessões disponíveis. As compras são em Sessões."
+        }
+      },
+      {
+        label: { es: "Idioma y moneda", en: "Language and currency", pt: "Idioma e moeda" },
+        body: {
+          es: "Modal desde Preferencias. Afecta textos del portal y cómo se muestran precios en este dispositivo.",
+          en: "Modal from Preferences. Affects portal text and how prices display on this device.",
+          pt: "Modal em Preferências. Afeta textos do portal e como os preços aparecem neste dispositivo."
+        }
+      },
+      {
+        label: { es: "Notificaciones", en: "Notifications", pt: "Notificações" },
+        body: {
+          es: "Ajustes: email, recordatorios de sesión, tipos de aviso en el panel y Google Calendar.",
+          en: "Settings: email, session reminders, panel alert types and Google Calendar.",
+          pt: "Ajustes: e-mail, lembretes de sessão, tipos de aviso no painel e Google Calendar."
         }
       },
       {
         label: { es: "Soporte", en: "Support", pt: "Suporte" },
         body: {
-          es: "Solicitud de cambio de profesional y contacto a soporte@motivarcare.com.",
-          en: "Therapist change request and contact at soporte@motivarcare.com.",
-          pt: "Solicitação de troca de profissional e contato em soporte@motivarcare.com."
+          es: "Solicitar cambio de profesional y otras consultas. También soporte@motivarcare.com.",
+          en: "Request a therapist change and other requests. Also soporte@motivarcare.com.",
+          pt: "Solicitar troca de profissional e outras consultas. Também soporte@motivarcare.com."
+        }
+      },
+      {
+        label: { es: "Ayuda y legal", en: "Help and legal", pt: "Ajuda e legal" },
+        body: {
+          es: "Preguntas frecuentes, este manual, términos, privacidad y líneas de apoyo.",
+          en: "FAQ, this manual, terms, privacy and support lines.",
+          pt: "Perguntas frequentes, este manual, termos, privacidade e linhas de apoio."
         }
       }
     ]
   },
   {
-    title: { es: "10. Iconos del encabezado", en: "10. Header icons", pt: "10. Ícones do cabeçalho" },
-    bullets: [
-      {
-        body: {
-          es: "Corazón: lista de profesionales favoritos.",
-          en: "Heart: list of favorite therapists.",
-          pt: "Coração: lista de profissionais favoritos."
-        }
-      },
-      {
-        body: {
-          es: "Campana: notificaciones de sesiones, mensajes y avisos del portal.",
-          en: "Bell: notifications for sessions, messages and portal alerts.",
-          pt: "Sino: notificações de sessões, mensagens e avisos do portal."
-        }
-      },
-      {
-        body: {
-          es: "Menú ☰: Mi cuenta, Preferencias (idioma/moneda/zona horaria) y Cerrar sesión.",
-          en: "Menu ☰: My account, Preferences (language/currency/timezone) and Sign out.",
-          pt: "Menu ☰: Minha conta, Preferências (idioma/moeda/fuso) e Sair."
-        }
-      }
-    ]
-  },
-  {
-    title: { es: "11. Móvil vs escritorio", en: "11. Mobile vs desktop", pt: "11. Móvel vs desktop" },
+    title: { es: "10. Escritorio y móvil", en: "10. Desktop and mobile", pt: "10. Desktop e móvel" },
     paragraphs: [
       {
-        es: "En celular, el menú principal está en la barra inferior (Inicio, Sesiones, Diario, etc.). Los iconos de favoritos, notificaciones y menú siguen arriba a la derecha en la mayoría de pantallas.",
-        en: "On mobile, main navigation is the bottom bar (Home, Sessions, Diary, etc.). Favorites, notifications and menu icons stay top right on most screens.",
-        pt: "No celular, a navegação principal é a barra inferior (Início, Sessões, Diário, etc.). Favoritos, notificações e menu permanecem no canto superior direito na maioria das telas."
+        es: "Escritorio: menú lateral izquierdo (Inicio, Mensajes, Sesiones, Diario, Bienestar), Tour con Maca y Líneas de apoyo abajo. Campana y cuenta arriba a la derecha.",
+        en: "Desktop: left sidebar (Home, Messages, Sessions, Diary, Wellbeing), Tour with Maca and Support lines at the bottom. Bell and account top right.",
+        pt: "Desktop: menu lateral esquerdo (Início, Mensagens, Sessões, Diário, Bem-estar), Tour com a Maca e Linhas de apoio embaixo. Sino e conta no canto superior direito."
       },
       {
-        es: "En escritorio, usás el menú lateral izquierdo. El pie de página muestra soporte, ayuda, legales y teléfonos según tu país.",
-        en: "On desktop, use the left sidebar. The footer shows support, help, legal links and phones for your country.",
-        pt: "No desktop, use o menu lateral esquerdo. O rodapé mostra suporte, ajuda, legais e telefones conforme seu país."
+        es: "Móvil: la misma navegación en la barra inferior. Notificaciones y cuenta siguen arriba. El menú de cuenta y el de notificaciones pueden abrirse como hoja desde abajo.",
+        en: "Mobile: the same navigation in the bottom bar. Notifications and account stay on top. Account and notifications menus may open as bottom sheets.",
+        pt: "Móvel: a mesma navegação na barra inferior. Notificações e conta ficam no topo. Menus de conta e notificações podem abrir como folhas de baixo."
       }
     ]
   },
   {
-    title: { es: "12. Más ayuda", en: "12. More help", pt: "12. Mais ajuda" },
+    title: { es: "11. Más ayuda", en: "11. More help", pt: "11. Mais ajuda" },
     paragraphs: [
       {
-        es: "Preguntas frecuentes: respuestas cortas a dudas habituales. Pie de página: soporte@motivarcare.com, términos, privacidad y líneas de crisis.",
-        en: "FAQ: short answers to common questions. Footer: soporte@motivarcare.com, terms, privacy and crisis lines.",
-        pt: "Perguntas frequentes: respostas curtas a dúvidas comuns. Rodapé: soporte@motivarcare.com, termos, privacidade e linhas de crise."
+        es: "Preguntas frecuentes: respuestas cortas. Pie de página: soporte@motivarcare.com, legales y teléfonos útiles según tu país.",
+        en: "FAQ: short answers. Footer: soporte@motivarcare.com, legal links and useful numbers for your country.",
+        pt: "Perguntas frequentes: respostas curtas. Rodapé: soporte@motivarcare.com, legais e telefones úteis conforme seu país."
       },
       {
-        es: "Si algo no está en esta guía, escribinos con el mayor detalle posible (navegador, dispositivo y pasos que seguiste).",
-        en: "If something isn't in this guide, write to us with as much detail as possible (browser, device and steps you followed).",
-        pt: "Se algo não estiver neste guia, escreva com o máximo de detalhes (navegador, dispositivo e passos que seguiu)."
+        es: "Si algo no está en esta guía, escribinos con navegador, dispositivo y los pasos que seguiste.",
+        en: "If something isn't in this guide, write with browser, device and the steps you followed.",
+        pt: "Se algo não estiver neste guia, escreva com navegador, dispositivo e os passos que seguiu."
       }
     ]
   }

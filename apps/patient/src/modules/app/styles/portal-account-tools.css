@@ -1,0 +1,162 @@
+/* Campana y cuenta: los mismos controles en todas las pantallas con el menú calm.
+   Tokens copiados de app-usuario (crema, bosque, linea, menta, lima, amarillo). */
+
+body:has(.calm-sidebar) {
+  --superficie: #fff;
+  --linea: #e2dfd3;
+  --bosque: #1e4033;
+  --menta: #e7f1ea;
+  --lima: #e6edc4;
+  --amarillo: #f5c33b;
+  --sans: "Manrope", system-ui, sans-serif;
+}
+
+/* Tope compartido: logo (sidebar), título de página y campana/menú. */
+.portal-shell:has(.calm-sidebar) {
+  --portal-chrome-top: 26px;
+}
+
+.portal-shell:has(.calm-sidebar) .portal-account-tools.header-actions .header-icon-link {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--linea);
+  background: var(--superficie);
+  color: var(--bosque);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.portal-shell:has(.calm-sidebar) .portal-account-tools.header-actions .header-icon-link:hover,
+.portal-shell:has(.calm-sidebar) .portal-account-tools.header-actions .header-icon-link:focus-visible,
+.portal-shell:has(.calm-sidebar) .portal-account-tools.header-actions .header-icon-link.active {
+  border-color: transparent;
+  background: var(--menta);
+  color: var(--bosque);
+  box-shadow: none;
+}
+
+.portal-shell:has(.calm-sidebar) .portal-account-tools .header-bell-icon {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2;
+}
+
+.portal-shell:has(.calm-sidebar) .portal-account-tools .header-icon-link small {
+  top: 9px;
+  right: 10px;
+  width: 8px;
+  height: 8px;
+  min-width: 0;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--superficie);
+  background: var(--amarillo);
+  box-sizing: content-box;
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+}
+
+.portal-shell:has(.calm-sidebar) .portal-account-tools.header-actions .menu-toggle {
+  width: auto;
+  min-width: 0;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 14px 0 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--linea);
+  border-radius: 99px;
+  background: var(--superficie);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  font-family: var(--sans);
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--bosque);
+}
+
+.portal-shell:has(.calm-sidebar) .portal-account-tools.header-actions .menu-toggle:hover,
+.portal-shell:has(.calm-sidebar) .portal-account-tools.header-actions .menu-toggle:focus-visible {
+  background: var(--menta);
+  border-color: transparent;
+  color: var(--bosque);
+  box-shadow: none;
+}
+
+body:has(.calm-sidebar) .menu-dropdown {
+  background: #fff;
+}
+
+body:has(.calm-sidebar) .menu-dropdown .menu-item:hover,
+body:has(.calm-sidebar) .menu-dropdown .menu-item--help:hover,
+body:has(.calm-sidebar) .menu-dropdown .menu-item:active,
+body:has(.calm-sidebar) .menu-dropdown-close:hover {
+  background: #e7f1ea;
+  color: #1e4033;
+}
+
+@media (min-width: 1081px) {
+  .portal-shell:has(.calm-sidebar) > .portal-main > .portal-header {
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0 0 8px;
+    margin: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .portal-shell:has(.calm-sidebar) > .portal-main > .portal-header .portal-header-greeting {
+    display: none;
+  }
+}
+
+@media (max-width: 1080px) {
+  .portal-shell:has(.calm-sidebar) .portal-account-tools.header-actions .header-icon-link {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    min-height: 42px !important;
+    border-radius: 50% !important;
+    border: 1px solid #e2dfd3 !important;
+    background: #fff !important;
+    color: #1e4033 !important;
+    box-shadow: none !important;
+  }
+
+  .portal-shell:has(.calm-sidebar) .portal-account-tools.header-actions .menu-toggle {
+    width: 42px !important;
+    min-width: 42px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    padding: 0 !important;
+    justify-content: center;
+    gap: 0;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    color: #1e4033 !important;
+    box-shadow: none !important;
+  }
+
+  .portal-shell:has(.calm-sidebar) .portal-account-tools .calm-user-mark {
+    width: 42px;
+    height: 42px;
+    font-size: 15px;
+    border: 1px solid #e2dfd3;
+  }
+
+  .portal-shell:has(.calm-sidebar) .portal-account-tools .calm-user-name,
+  .portal-shell:has(.calm-sidebar) .portal-account-tools .calm-user-caret {
+    display: none;
+  }
+}

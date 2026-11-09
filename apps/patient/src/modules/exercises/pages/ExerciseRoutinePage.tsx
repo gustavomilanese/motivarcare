@@ -6,15 +6,24 @@ import {
   type ExercisePost,
   type ExerciseRoutine
 } from "../services/exercisesApi";
-import { categoryAccent, categoryLabel, durationLabel, t } from "../lib/labels";
-import { ExerciseInteractiveSteps } from "../components/ExerciseInteractiveSteps";
+import { pickRelatedByCategory, t } from "../lib/labels";
+import { ExerciseRelatedSection } from "../components/ExerciseRelatedSection";
+import { WellbeingRoutinePlayer } from "../components/WellbeingRoutinePlayer";
+import { WellbeingRoutinesSide } from "../components/WellbeingRoutines";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
+import { PortalAccountToolsMount } from "../../app/components/PortalAccountToolsMount";
+import { useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
 
 export interface ExerciseRoutinePageProps {
   language: AppLanguage;
 }
 
+function bySortOrder<T extends { sortOrder: number }>(items: T[]): T[] {
+  return [...items].sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
 export function ExerciseRoutinePage(props: ExerciseRoutinePageProps) {
+  useScrollSectionToTopOnMount();
   const { slug } = useParams<{ slug: string }>();
   const [exercises, setExercises] = useState<ExercisePost[]>([]);
   const [routines, setRoutines] = useState<ExerciseRoutine[]>([]);
@@ -29,8 +38,8 @@ export function ExerciseRoutinePage(props: ExerciseRoutinePageProps) {
     fetchPublishedExercisesContent()
       .then((data) => {
         if (!active) return;
-        setExercises(data.exercises);
-        setRoutines(data.routines);
+        setExercises(bySortOrder(data.exercises));
+        setRoutines(bySortOrder(data.routines));
         setLoading(false);
       })
       .catch(() => {
@@ -49,11 +58,11 @@ export function ExerciseRoutinePage(props: ExerciseRoutinePageProps) {
     };
   }, [props.language]);
 
-  const routine = useMemo(() => {
-    if (!slug) return null;
-    const decoded = decodeURIComponent(slug);
-    return routines.find((item) => item.slug === decoded) ?? null;
-  }, [routines, slug]);
+  const decodedSlug = slug ? decodeURIComponent(slug) : null;
+  const routine = useMemo(
+    () => (decodedSlug ? routines.find((item) => item.slug === decodedSlug) ?? null : null),
+    [decodedSlug, routines]
+  );
 
   const routineExercises = useMemo(() => {
     if (!routine) return [];
@@ -81,167 +90,87 @@ export function ExerciseRoutinePage(props: ExerciseRoutinePageProps) {
     [activeExerciseId, routineExercises]
   );
 
-  const activeIndex = useMemo(
-    () => (activeExercise ? routineExercises.findIndex((exercise) => exercise.id === activeExercise.id) : -1),
-    [activeExercise, routineExercises]
-  );
+  const related = useMemo(() => {
+    if (!activeExercise) return [];
+    return pickRelatedByCategory(exercises, activeExercise, 3);
+  }, [activeExercise, exercises]);
 
   const goToNext = useCallback(() => {
-    if (activeIndex < 0 || activeIndex >= routineExercises.length - 1) {
-      return;
-    }
-    setActiveExerciseId(routineExercises[activeIndex + 1]?.id ?? null);
-  }, [activeIndex, routineExercises]);
+    const index = activeExercise
+      ? routineExercises.findIndex((exercise) => exercise.id === activeExercise.id)
+      : -1;
+    if (index < 0 || index >= routineExercises.length - 1) return;
+    setActiveExerciseId(routineExercises[index + 1]?.id ?? null);
+  }, [activeExercise, routineExercises]);
 
-  if (loading) {
-    return (
-      <section className="exercise-routine-page">
-        <Link to="/ejercicios" className="exercise-reader-back">
-          ← {t(props.language, { es: "Volver a ejercicios", en: "Back to exercises", pt: "Voltar aos exercícios" })}
-        </Link>
-        <MotivarCarePageLoader language={props.language} layout="block" />
-      </section>
-    );
-  }
+  const backLabel = t(props.language, {
+    es: "Volver a filtros y prácticas",
+    en: "Back to filters and practices",
+    pt: "Voltar aos filtros e práticas"
+  });
 
-  if (error) {
-    return (
-      <section className="exercise-routine-page">
-        <Link to="/ejercicios" className="exercise-reader-back">
-          ← {t(props.language, { es: "Volver a ejercicios", en: "Back to exercises", pt: "Voltar aos exercícios" })}
-        </Link>
-        <p className="exercises-page-error" role="alert">
-          {error}
-        </p>
-      </section>
-    );
-  }
-
-  if (!routine || routineExercises.length === 0) {
-    return (
-      <section className="exercise-routine-page">
-        <Link to="/ejercicios" className="exercise-reader-back">
-          ← {t(props.language, { es: "Volver a ejercicios", en: "Back to exercises", pt: "Voltar aos exercícios" })}
-        </Link>
-        <p className="exercises-page-empty">
-          {t(props.language, {
-            es: "No encontramos esa rutina.",
-            en: "We couldn’t find that routine.",
-            pt: "Não encontramos essa rotina."
-          })}
-        </p>
-      </section>
-    );
-  }
-
-  const accent = "#5F44EB";
-  const accentSoft = "rgba(95, 68, 235, 0.08)";
+  const pageTitle = t(props.language, { es: "Bienestar", en: "Wellbeing", pt: "Bem-estar" });
 
   return (
-    <section
-      className="exercise-routine-page"
-      style={{ "--exercise-accent": accent, "--exercise-accent-soft": accentSoft } as React.CSSProperties}
-    >
-      <Link to="/ejercicios" className="exercise-reader-back">
-        ← {t(props.language, { es: "Volver a ejercicios", en: "Back to exercises", pt: "Voltar aos exercícios" })}
-      </Link>
+    <section className="exercises-page exercises-page--ml wellbeing-calm" aria-label={pageTitle}>
+      <div className="wellbeing-calm-columns">
+        <div className="wellbeing-calm-main">
+          <Link to="/ejercicios" className="exercise-reader-back wellbeing-routine-back">
+            ← {backLabel}
+          </Link>
 
-      <header className="exercise-routine-header">
-        <div className="exercise-routine-header-main">
-          <span className="exercise-routine-emoji" aria-hidden="true">
-            {routine.emoji}
-          </span>
-          <div>
-            <p className="exercise-routine-kicker">
-              {t(props.language, { es: "Rutina guiada", en: "Guided routine", pt: "Rotina guiada" })}
+          {loading ? <MotivarCarePageLoader language={props.language} layout="block" /> : null}
+
+          {error ? (
+            <p className="wellbeing-error" role="alert">
+              {error}
             </p>
-            <h2>{routine.title}</h2>
-            <p className="exercise-routine-summary">{routine.summary}</p>
-            <p className="exercise-routine-meta">
-              {routineExercises.length}{" "}
-              {t(props.language, { es: "ejercicios", en: "exercises", pt: "exercícios" })} · ⏱{" "}
-              {durationLabel(props.language, routine.totalDurationMinutes)}
+          ) : null}
+
+          {!loading && !error && (!routine || routineExercises.length === 0) ? (
+            <p className="wellbeing-empty">
+              {t(props.language, {
+                es: "No encontramos esa rutina.",
+                en: "We couldn’t find that routine.",
+                pt: "Não encontramos essa rotina."
+              })}
             </p>
-          </div>
-        </div>
-      </header>
+          ) : null}
 
-      <div className="exercise-routine-layout">
-        <aside className="exercise-routine-sidebar" aria-label={t(props.language, { es: "Secuencia de la rutina", en: "Routine sequence", pt: "Sequência da rotina" })}>
-          <h3>{t(props.language, { es: "En esta rutina", en: "In this routine", pt: "Nesta rotina" })}</h3>
-          <ol className="exercise-routine-steps">
-            {routineExercises.map((exercise, index) => {
-              const isActive = exercise.id === activeExerciseId;
-              const isDone = activeIndex >= 0 && index < activeIndex;
-              return (
-                <li key={exercise.id}>
-                  <button
-                    type="button"
-                    className={`exercise-routine-step ${isActive ? "active" : ""} ${isDone ? "done" : ""}`}
-                    onClick={() => setActiveExerciseId(exercise.id)}
-                  >
-                    <span className="exercise-routine-step-index">{index + 1}</span>
-                    <span className="exercise-routine-step-emoji" aria-hidden="true">
-                      {exercise.emoji}
-                    </span>
-                    <span className="exercise-routine-step-body">
-                      <strong>{exercise.title}</strong>
-                      <small>
-                        {categoryLabel(props.language, exercise.category)} · {durationLabel(props.language, exercise.durationMinutes)}
-                      </small>
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
-        </aside>
-
-        <div className="exercise-routine-main">
-          {activeExercise ? (
-            <article className="exercise-reader exercise-routine-active-card">
-              <header className="exercise-reader-header">
-                <div className="exercise-reader-emoji" aria-hidden="true">
-                  {activeExercise.emoji}
-                </div>
-                <div className="exercise-reader-heading">
-                  <div className="exercise-reader-pills">
-                    <span className="exercise-card-pill exercise-card-pill-category">
-                      {categoryLabel(props.language, activeExercise.category)}
-                    </span>
-                    <span className="exercise-card-pill exercise-card-pill-time">
-                      ⏱ {durationLabel(props.language, activeExercise.durationMinutes)}
-                    </span>
-                  </div>
-                  <h3>{activeExercise.title}</h3>
-                  <p className="exercise-reader-summary">{activeExercise.summary}</p>
-                </div>
-              </header>
-              <p className="exercise-reader-description">{activeExercise.description}</p>
-              <ExerciseInteractiveSteps exercise={activeExercise} language={props.language} />
-              <div className="exercise-routine-nav">
-                {activeIndex < routineExercises.length - 1 ? (
-                  <button type="button" className="primary exercise-routine-next" onClick={goToNext}>
-                    {t(props.language, {
-                      es: "Siguiente en la rutina",
-                      en: "Next in routine",
-                      pt: "Próximo na rotina"
-                    })}
-                    : {routineExercises[activeIndex + 1]?.title}
-                  </button>
-                ) : (
-                  <p className="exercise-routine-complete" role="status">
-                    {t(props.language, {
-                      es: "Completaste la rutina. Podés repetirla cuando quieras.",
-                      en: "You finished the routine. You can repeat it anytime.",
-                      pt: "Você concluiu a rotina. Pode repetir quando quiser."
-                    })}
-                  </p>
-                )}
-              </div>
-            </article>
+          {!loading && !error && routine && routineExercises.length > 0 ? (
+            <>
+              <WellbeingRoutinePlayer
+                language={props.language}
+                routine={routine}
+                exercises={routineExercises}
+                activeExerciseId={activeExerciseId}
+                onSelectExercise={setActiveExerciseId}
+                onNext={goToNext}
+              />
+              {activeExercise ? (
+                <ExerciseRelatedSection
+                  language={props.language}
+                  category={activeExercise.category}
+                  items={related}
+                />
+              ) : null}
+            </>
           ) : null}
         </div>
+
+        <aside className="wellbeing-calm-side">
+          <PortalAccountToolsMount id="wellbeing-hero-toolbar-mount" className="wellbeing-calm-tools" />
+          {!loading && !error ? (
+            <WellbeingRoutinesSide language={props.language} routines={routines} activeSlug={decodedSlug} />
+          ) : null}
+          <p className="wellbeing-note">
+            {t(props.language, {
+              es: "Si alguno te genera molestia, suspendelo y comentalo en próxima sesión.",
+              en: "If any exercise causes discomfort, stop and bring it up in your next session.",
+              pt: "Se algum causar desconforto, interrompa e comente na próxima sessão."
+            })}
+          </p>
+        </aside>
       </div>
     </section>
   );

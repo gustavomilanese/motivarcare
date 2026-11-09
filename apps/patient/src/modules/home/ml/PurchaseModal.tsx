@@ -13,7 +13,7 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-/** Modal grande de compra desde Inicio next-action (paquetes + individual). */
+/** Modal de compra desde Inicio — mismo modelo calm-pay del DS que el checkout. */
 export function DashboardHomePurchaseModal(props: {
   language: AppLanguage;
   currency: SupportedCurrency;
@@ -33,6 +33,9 @@ export function DashboardHomePurchaseModal(props: {
   onSelectPlan: (plan: PackagePlan) => void;
   onIndividualPurchase: () => void;
   onRequireProfessional: () => void;
+  professionalName?: string | null;
+  professionalFirstName?: string | null;
+  professionalLastName?: string | null;
 }) {
   useEffect(() => {
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
@@ -56,46 +59,16 @@ export function DashboardHomePurchaseModal(props: {
       onClick={props.onClose}
     >
       <section
-        className="matching-flow-modal dashboard-home-purchase-modal"
+        className="matching-flow-modal dashboard-home-purchase-modal dashboard-home-purchase-modal--calm"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="dashboard-home-purchase-title"
+        aria-label={t(props.language, {
+          es: "Elegí cómo pagar",
+          en: "Choose how to pay",
+          pt: "Escolha como pagar"
+        })}
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="dashboard-home-purchase-head">
-          <div className="dashboard-home-purchase-head-copy">
-            <p className="dashboard-home-purchase-kicker">
-              {t(props.language, {
-                es: "MotivarCare",
-                en: "MotivarCare",
-                pt: "MotivarCare"
-              })}
-            </p>
-            <h2 id="dashboard-home-purchase-title" className="dashboard-home-purchase-title">
-              {t(props.language, {
-                es: "Elegí tu terapia",
-                en: "Choose your therapy",
-                pt: "Escolha sua terapia"
-              })}
-            </h2>
-            <p className="dashboard-home-purchase-lead">
-              {t(props.language, {
-                es: "Paquete o sesión",
-                en: "Package or session",
-                pt: "Pacote ou sessao"
-              })}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="dashboard-home-purchase-close"
-            onClick={props.onClose}
-            aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
-          >
-            ×
-          </button>
-        </header>
-
         <div className="dashboard-home-purchase-body">
           <CheckoutPackagesPanel
             language={props.language}
@@ -117,6 +90,10 @@ export function DashboardHomePurchaseModal(props: {
             residencySaving={props.residencySaving}
             onConfirmResidency={props.onConfirmResidency}
             hideChrome
+            variant="calm"
+            professionalName={props.professionalName}
+            professionalFirstName={props.professionalFirstName}
+            professionalLastName={props.professionalLastName}
           />
         </div>
       </section>

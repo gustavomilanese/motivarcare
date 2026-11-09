@@ -77,6 +77,10 @@ export function ProfessionalMatchCard(props: {
   /** Tocar la tarjeta (fuera de botones) abre la ficha de descripción. */
   cardOpensProfile?: boolean;
   onOpenProfile?: (professionalId: string) => void;
+  /** Tarjeta de la home: elegir acá, sin horarios en la lista. */
+  calmPick?: boolean;
+  bestMatch?: boolean;
+  onChoose?: () => void;
 }) {
   const slotsScrollerRef = useRef<HTMLDivElement | null>(null);
   const [hasSlotsOverflow, setHasSlotsOverflow] = useState(false);
@@ -86,11 +90,13 @@ export function ProfessionalMatchCard(props: {
   const photoUrl = professionalPhotoSrc(professional.photoUrl);
   const hasVideo = Boolean(professional.videoUrl);
   const flag = countryToFlag(professional.birthCountry);
-  const matchLabel = t(props.language, {
-    es: `${props.item.score}% match`,
-    en: `${props.item.score}% match`,
-    pt: `${props.item.score}% match`
-  });
+  const matchLabel = props.calmPick
+    ? `${props.item.score} %`
+    : t(props.language, {
+        es: `${props.item.score}% match`,
+        en: `${props.item.score}% match`,
+        pt: `${props.item.score}% match`
+      });
   const reviewsLabel = professional.reviewsCount > 0
     ? `${professional.reviewsCount} ${t(props.language, { es: "opiniones", en: "reviews", pt: "avaliacoes" })}`
     : t(props.language, { es: "Sin opiniones", en: "No reviews yet", pt: "Sem avaliacoes" });
@@ -154,7 +160,7 @@ export function ProfessionalMatchCard(props: {
 
   return (
     <article
-      className={`patient-therapist-card ${props.selected ? "selected" : ""}`}
+      className={`patient-therapist-card ${props.selected ? "selected" : ""} ${props.calmPick ? "patient-therapist-card--calm" : ""} ${props.bestMatch ? "is-best" : ""}`}
       onClick={(event) => {
         if (!props.cardOpensProfile || !props.onOpenProfile) {
           return;
@@ -287,7 +293,15 @@ export function ProfessionalMatchCard(props: {
           </span>
         </div>
 
-        {displayedSpecialties.length > 0 ? (
+        {props.calmPick && props.item.matchedTopics.length > 0 ? (
+          <ul className="patient-therapist-tags patient-therapist-tags--match">
+            {props.item.matchedTopics.map((topic) => (
+              <li key={topic}>
+                <span aria-hidden="true">✓</span> {topic}
+              </li>
+            ))}
+          </ul>
+        ) : displayedSpecialties.length > 0 ? (
           <ul className="patient-therapist-tags">
             {displayedSpecialties.map((specialty) => (
               <li key={specialty}>{specialty}</li>
@@ -295,42 +309,79 @@ export function ProfessionalMatchCard(props: {
           </ul>
         ) : null}
 
+        {props.calmPick ? (
+          <div className="patient-therapist-calm-actions">
+            <button
+              type="button"
+              className="patient-therapist-profile-link"
+              onClick={() => {
+                props.onSelect(professional.id);
+                props.onOpenProfile?.(professional.id);
+              }}
+            >
+              {t(props.language, {
+                es: "Ver perfil y horarios",
+                en: "View profile and times",
+                pt: "Ver perfil e horarios"
+              })}
+            </button>
+            <button
+              type="button"
+              className="patient-therapist-choose"
+              onClick={() => {
+                props.onSelect(professional.id);
+                props.onChoose?.();
+              }}
+            >
+              {t(props.language, { es: "Elegir", en: "Choose", pt: "Escolher" })}
+            </button>
+          </div>
+        ) : null}
+
+        {props.bestMatch ? (
+          <span className="patient-therapist-best">
+            {t(props.language, { es: "La que más encaja", en: "Best match", pt: "A que mais encaixa" })}
+          </span>
+        ) : null}
+
         {/*
           Keep schedules as the last scannable line in the card body, like the
           reference experience, with horizontal drag and wheel scroll.
         */}
-        <div className="patient-therapist-slots-wrap">
-          <div
-            className="patient-therapist-slots"
-            ref={slotsScrollerRef}
-            onWheel={handleSlotsWheel}
-            onScroll={handleSlotsScroll}
-          >
-            {suggested.map((slot) => (
+        {props.calmPick ? null : (
+          <div className="patient-therapist-slots-wrap">
+            <div
+              className="patient-therapist-slots"
+              ref={slotsScrollerRef}
+              onWheel={handleSlotsWheel}
+              onScroll={handleSlotsScroll}
+            >
+              {suggested.map((slot) => (
+                <button
+                  key={slot.id}
+                  className="slot-chip"
+                  type="button"
+                  onClick={() => {
+                    props.onSelect(professional.id);
+                    props.onSelectSuggestedSlot(professional.id, slot);
+                  }}
+                >
+                  {formatSlotDate(slot.startsAt, props.language)}
+                </button>
+              ))}
               <button
-                key={slot.id}
-                className="slot-chip"
                 type="button"
+                className="slot-chip show-all"
                 onClick={() => {
                   props.onSelect(professional.id);
-                  props.onSelectSuggestedSlot(professional.id, slot);
+                  props.onShowAllSlots(professional.id);
                 }}
               >
-                {formatSlotDate(slot.startsAt, props.language)}
+                {t(props.language, { es: "Mostrar todo", en: "Show all", pt: "Mostrar todos" })}
               </button>
-            ))}
-            <button
-              type="button"
-              className="slot-chip show-all"
-              onClick={() => {
-                props.onSelect(professional.id);
-                props.onShowAllSlots(professional.id);
-              }}
-            >
-              {t(props.language, { es: "Mostrar todo", en: "Show all", pt: "Mostrar todos" })}
-            </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {props.showChatAction ? (
           <div className="patient-therapist-actions">

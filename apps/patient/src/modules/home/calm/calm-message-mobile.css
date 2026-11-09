@@ -1,0 +1,14 @@
+.calm-reply-link {
+  display: none;
+}
+
+@media (max-width: 1080px) {
+  .calm-message .calm-reply {
+    display: none;
+  }
+
+  .calm-message .calm-reply-link {
+    display: inline-flex;
+    margin-top: 12px;
+  }
+}

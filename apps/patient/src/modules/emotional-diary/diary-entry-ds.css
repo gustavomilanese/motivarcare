@@ -1,0 +1,252 @@
+/* Nueva entrada del diario. Tokens del design system 0.1.
+   Fraunces y Manrope ya están declaradas en calm-home.css. */
+
+body:has(.diary-page--entry) {
+  background: #f5f3eb;
+}
+
+.portal-main:has(.diary-page--entry) {
+  background: #f5f3eb;
+}
+
+.diary-page--entry {
+  font-family: "Manrope", system-ui, sans-serif;
+  color: #1b2a23;
+}
+
+.diary-page--entry .diary-back-link {
+  color: #2f6b51;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.diary-page--entry .diary-back-link:hover,
+.diary-page--entry .diary-back-link:focus-visible {
+  color: #2f6b51;
+  background: transparent;
+  text-decoration: underline;
+  text-decoration-color: #f5c33b;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.diary-page--entry .diary-page-title {
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  font-size: clamp(32px, 3vw, 40px);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: #1e4033;
+}
+
+.diary-page--entry .diary-card {
+  background: #fff;
+  border: 1px solid #e2dfd3;
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+.diary-page--entry .diary-field-title {
+  font-family: "Manrope", system-ui, sans-serif;
+  font-weight: 800;
+  color: #1e4033;
+}
+
+.diary-page--entry .diary-field-help,
+.diary-page--entry .diary-char-count,
+.diary-page--entry .diary-selected-mood {
+  color: #5d6a63;
+}
+
+.diary-page--entry .diary-mood-btn,
+.diary-page--entry .diary-mood-btn:hover,
+.diary-page--entry .diary-mood-btn--active {
+  border: 1px solid #e2dfd3;
+  background: #fff;
+  box-shadow: none;
+  color: #1e4033;
+}
+
+.diary-page--entry .diary-mood-btn:hover {
+  background: #f5f3eb;
+}
+
+.diary-page--entry .diary-mood-btn--active,
+.diary-page--entry .diary-mood-btn--active:hover {
+  background: #e7f1ea;
+  border-color: #1e4033;
+}
+
+.diary-page--entry .diary-mood-btn-emoji,
+.diary-page--entry .diary-mood-btn--active .diary-mood-btn-emoji {
+  width: 34px;
+  height: 34px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.diary-page--entry .diary-mood-btn-emoji svg,
+.diary-page--entry .diary-selected-mood svg {
+  display: block;
+  width: 34px;
+  height: 34px;
+}
+
+.diary-page--entry .diary-selected-mood {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.diary-page--entry .diary-mood-btn-label,
+.diary-page--entry .diary-mood-btn--active .diary-mood-btn-label {
+  color: #1e4033;
+}
+
+.diary-page--entry .diary-textarea {
+  border: 1px solid #e2dfd3;
+  border-radius: 10px;
+  background: #fff;
+  color: #1b2a23;
+  font-family: "Manrope", system-ui, sans-serif;
+  box-shadow: none;
+}
+
+.diary-page--entry .diary-textarea::placeholder {
+  color: #8a958f;
+}
+
+.diary-page--entry .diary-textarea:focus {
+  border-color: #1e4033;
+  outline: none;
+  box-shadow: none;
+}
+
+.diary-page--entry .diary-chip,
+.diary-page--entry .diary-chip:hover,
+.diary-page--entry .diary-need-btn,
+.diary-page--entry .diary-need-btn:hover {
+  border: 1px solid #e2dfd3;
+  background: #fff;
+  color: #1e4033;
+  box-shadow: none;
+}
+
+.diary-page--entry .diary-chip:hover,
+.diary-page--entry .diary-need-btn:hover {
+  background: #f5f3eb;
+}
+
+.diary-page--entry .diary-chip--active,
+.diary-page--entry .diary-chip--active:hover,
+.diary-page--entry .diary-need-btn--active,
+.diary-page--entry .diary-need-btn--active:hover {
+  background: #e6edc4;
+  border-color: transparent;
+  color: #1e4033;
+}
+
+.diary-page--entry .diary-visibility-option,
+.diary-page--entry .diary-visibility-option:hover {
+  border: 1px solid #e2dfd3;
+  background: #fff;
+  box-shadow: none;
+}
+
+.diary-page--entry .diary-visibility-option:hover {
+  background: #f5f3eb;
+}
+
+.diary-page--entry .diary-visibility-option--active,
+.diary-page--entry .diary-visibility-option--active:hover {
+  background: #e7f1ea;
+  border-color: #1e4033;
+  box-shadow: none;
+}
+
+.diary-page--entry .diary-visibility-option strong {
+  color: #1e4033;
+}
+
+.diary-page--entry .diary-visibility-option small {
+  color: #5d6a63;
+}
+
+.diary-page--entry .diary-btn--primary,
+.diary-page--entry .diary-btn--primary:hover,
+.diary-page--entry button.diary-btn--primary:hover {
+  background: #f5c33b !important;
+  color: #1e4033 !important;
+  border: 0 !important;
+  border-radius: 999px;
+  box-shadow: none;
+  transform: none;
+}
+
+.diary-page--entry .diary-btn--primary:hover,
+.diary-page--entry button.diary-btn--primary:hover {
+  background: #f0b81f !important;
+}
+
+.diary-page--entry .diary-btn--ghost,
+.diary-page--entry .diary-btn--ghost:hover,
+.diary-page--entry button.diary-btn--ghost:hover {
+  background: #fff !important;
+  color: #1e4033 !important;
+  border: 1px solid #e2dfd3 !important;
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+.diary-page--entry .diary-btn--ghost:hover,
+.diary-page--entry button.diary-btn--ghost:hover {
+  border-color: #1e4033 !important;
+}
+
+.portal-main:has(.diary-page--entry) .header-icon-link,
+.portal-main:has(.diary-page--entry) .menu-toggle {
+  background: #fff;
+  border: 1px solid #e2dfd3;
+  color: #1e4033;
+  box-shadow: none;
+}
+
+.portal-main:has(.diary-page--entry) .header-icon-link:hover,
+.portal-main:has(.diary-page--entry) .menu-toggle:hover {
+  background: #e7f1ea;
+  border-color: transparent;
+  color: #1e4033;
+}
+
+body:has(.diary-page--entry) .treatment-chat-fab,
+body:has(.diary-page--entry) .treatment-chat-fab:hover {
+  height: 54px;
+  padding: 0 20px 0 8px;
+  gap: 10px;
+  border-radius: 99px;
+  background: #fff;
+  color: #1e4033;
+  border: 1.5px dashed #1e4033;
+  box-shadow: 0 30px 60px -28px rgba(20, 41, 31, 0.45);
+  font-family: "Manrope", system-ui, sans-serif;
+  font-weight: 700;
+}
+
+body:has(.diary-page--entry) .treatment-chat-fab:hover {
+  background: #e7f1ea;
+}
+
+body:has(.diary-page--entry) .treatment-chat-fab__icon {
+  width: 40px;
+  height: 40px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  padding: 3px;
+  background: #e7f1ea url("/brand/ds/maca.svg") center / 34px 34px no-repeat;
+}
+
+body:has(.diary-page--entry) .treatment-chat-fab__icon svg {
+  opacity: 0;
+}

@@ -376,6 +376,7 @@
 .portal-shell:has(.portal-main--diary-home),
 .portal-shell:has(.portal-main--dashboard-home),
 .portal-shell:has(.portal-main--sessions-home),
+.portal-shell:has(.portal-main--exercises-home),
 .portal-shell:has(.portal-main--wellbeing-relax) {
   align-items: start;
 }
@@ -383,6 +384,7 @@
 .portal-shell:has(.portal-main--diary-home) .portal-sidebar,
 .portal-shell:has(.portal-main--dashboard-home) .portal-sidebar,
 .portal-shell:has(.portal-main--sessions-home) .portal-sidebar,
+.portal-shell:has(.portal-main--exercises-home) .portal-sidebar,
 .portal-shell:has(.portal-main--wellbeing-relax) .portal-sidebar {
   top: max(12px, var(--safe-top));
 }
@@ -390,6 +392,7 @@
 .portal-main--diary-home,
 .portal-main--dashboard-home,
 .portal-main--sessions-home,
+.portal-main--exercises-home,
 .portal-main--wellbeing-relax {
   position: relative;
   display: flex;
@@ -404,6 +407,7 @@
 .portal-main--diary-home > .portal-main-content,
 .portal-main--dashboard-home > .portal-main-content,
 .portal-main--sessions-home > .portal-main-content,
+.portal-main--exercises-home > .portal-main-content,
 .portal-main--wellbeing-relax > .portal-main-content {
   margin: 0;
   padding: 0;
@@ -417,6 +421,7 @@
   .portal-shell:has(.portal-main--diary-home),
   .portal-shell:has(.portal-main--dashboard-home),
   .portal-shell:has(.portal-main--sessions-home),
+  .portal-shell:has(.portal-main--exercises-home),
   .portal-shell:has(.portal-main--wellbeing-relax) {
     align-items: start;
   }
@@ -424,6 +429,7 @@
   .portal-shell:has(.portal-main--diary-home) > .portal-sidebar,
   .portal-shell:has(.portal-main--dashboard-home) > .portal-sidebar,
   .portal-shell:has(.portal-main--sessions-home) > .portal-sidebar,
+  .portal-shell:has(.portal-main--exercises-home) > .portal-sidebar,
   .portal-shell:has(.portal-main--wellbeing-relax) > .portal-sidebar {
     top: max(12px, var(--safe-top));
     align-self: start;
@@ -433,6 +439,7 @@
   .portal-shell:has(.portal-main--diary-home) > .portal-main,
   .portal-shell:has(.portal-main--dashboard-home) > .portal-main,
   .portal-shell:has(.portal-main--sessions-home) > .portal-main,
+  .portal-shell:has(.portal-main--exercises-home) > .portal-main,
   .portal-shell:has(.portal-main--wellbeing-relax) > .portal-main {
     align-self: start;
     margin-top: 0;
@@ -441,6 +448,7 @@
   .portal-main.portal-main--diary-home,
   .portal-main.portal-main--dashboard-home,
   .portal-main.portal-main--sessions-home,
+  .portal-main.portal-main--exercises-home,
   .portal-main.portal-main--wellbeing-relax {
     display: flex !important;
     flex-direction: column !important;
@@ -452,6 +460,7 @@
   .portal-main--diary-home > .portal-mobile-nav,
   .portal-main--dashboard-home > .portal-mobile-nav,
   .portal-main--sessions-home > .portal-mobile-nav,
+  .portal-main--exercises-home > .portal-mobile-nav,
   .portal-main--wellbeing-relax > .portal-mobile-nav {
     display: none !important;
     height: 0 !important;
@@ -464,6 +473,7 @@
   .portal-main--diary-home > .portal-main-content,
   .portal-main--dashboard-home > .portal-main-content,
   .portal-main--sessions-home > .portal-main-content,
+  .portal-main--exercises-home > .portal-main-content,
   .portal-main--wellbeing-relax > .portal-main-content {
     margin: 0 !important;
     padding: 0 !important;
@@ -475,6 +485,8 @@
   .portal-main--diary-home .diary-home-stack,
   .portal-main--dashboard-home .page-stack.patient-dashboard-home,
   .portal-main--sessions-home .sessions-booking-page,
+  .portal-main--exercises-home .exercises-page--ml,
+  .portal-main--exercises-home .wellbeing-calm,
   .portal-main--wellbeing-relax .wellbeing-relax-page {
     margin-top: 0;
     padding-top: 0;

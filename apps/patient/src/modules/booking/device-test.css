@@ -1,0 +1,207 @@
+/* Prueba local de cámara y micrófono (solo en el dispositivo). */
+
+.calm-session-actions {
+  flex-wrap: wrap;
+}
+
+/* En la card de Inicio el test AV sigue a la derecha de las acciones. */
+.calm-session-av-test {
+  margin-left: auto;
+  flex: none;
+}
+
+.device-test-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(30, 64, 51, 0.36);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.device-test-modal {
+  width: min(520px, calc(100vw - 32px));
+  max-height: min(90dvh, 720px);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+  border: 1px solid #e2dfd3;
+  border-radius: 24px;
+  background: #e7f1ea;
+  box-shadow: 0 30px 60px -28px rgba(20, 41, 31, 0.45);
+  color: #1b2a23;
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.device-test-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.device-test-kicker {
+  margin: 0 0 4px;
+  color: #2f6b51;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.device-test-head h2 {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 500;
+  font-size: 28px;
+  line-height: 1.1;
+  color: #1e4033;
+}
+
+.device-test-modal button.device-test-close,
+.device-test-modal button.device-test-close:hover,
+.device-test-modal button.device-test-close:focus-visible {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e2dfd3;
+  border-radius: 8px;
+  background: #fff;
+  color: #1e4033;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.device-test-lead,
+.device-test-error {
+  margin: 0;
+  color: #5d6a63;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.device-test-error {
+  color: #8a3d2f;
+}
+
+.device-test-preview {
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid #e2dfd3;
+  background: #1e4033;
+  aspect-ratio: 16 / 10;
+}
+
+.device-test-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  background: #1e4033;
+}
+
+.device-test-placeholder {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  height: 100%;
+  min-height: 220px;
+  padding: 24px;
+  color: #f5f3eb;
+  text-align: center;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.device-test-meter {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  color: #1e4033;
+}
+
+.device-test-meter strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5d6a63;
+}
+
+.device-test-meter.is-live strong {
+  color: #2f6b51;
+}
+
+.device-test-meter-track {
+  display: block;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #fff;
+  border: 1px solid #e2dfd3;
+}
+
+.device-test-meter-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #f5c33b;
+  transition: width 80ms linear;
+}
+
+.device-test-devices {
+  display: grid;
+  gap: 10px;
+}
+
+.device-test-devices label {
+  display: grid;
+  gap: 6px;
+  color: #5d6a63;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.device-test-devices select {
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid #e2dfd3;
+  border-radius: 10px;
+  background: #fff;
+  color: #1b2a23;
+  font: inherit;
+  font-weight: 600;
+}
+
+.device-test-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+@media (max-width: 720px) {
+  .device-test-modal {
+    padding: 22px;
+  }
+
+  .device-test-head h2 {
+    font-size: 24px;
+  }
+
+  .calm-session-av-test {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+}

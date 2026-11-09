@@ -64,19 +64,19 @@ describe("patientHomeVariant", () => {
     vi.restoreAllMocks();
   });
 
-  it("defaults to next (ML) when nothing is stored", () => {
-    expect(readPatientHomeVariant()).toBe("next");
-    expect(resolveHomeView(readPatientHomeVariant())).toBe("ml");
+  it("defaults to classic (calm home) when nothing is stored", () => {
+    expect(readPatientHomeVariant()).toBe("classic");
+    expect(resolveHomeView(readPatientHomeVariant())).toBe("classic");
   });
 
-  it("mounts RN-web home only for classic", () => {
+  it("does not mount the legacy RN home", () => {
     expect(shouldMountDashboardRnHome("ml")).toBe(false);
-    expect(shouldMountDashboardRnHome("classic")).toBe(true);
+    expect(shouldMountDashboardRnHome("classic")).toBe(false);
   });
 
-  it("ignores invalid stored values and stays on next", () => {
+  it("ignores invalid stored values and stays on classic", () => {
     localStorage.setItem(PATIENT_HOME_VARIANT_STORAGE_KEY, "legacy");
-    expect(readPatientHomeVariant()).toBe("next");
+    expect(readPatientHomeVariant()).toBe("classic");
   });
 
   it("persists classic and next", () => {

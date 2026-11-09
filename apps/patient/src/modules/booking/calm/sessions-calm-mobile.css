@@ -1,0 +1,50 @@
+@media (max-width: 1080px) {
+  .sessions-calm {
+    padding: 16px 16px 8px;
+  }
+
+  .sessions-calm-head h1 {
+    font-size: 32px;
+  }
+
+  .sessions-calm-balance {
+    flex-wrap: wrap;
+  }
+
+  .sessions-calm-balance-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .sessions-calm-days {
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .sessions-calm-day {
+    flex: 0 0 92px;
+  }
+
+  .sessions-calm-row {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .sessions-calm-row-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .sessions-calm-month-grid {
+    gap: 4px;
+  }
+
+  .sessions-calm-cell {
+    min-height: 52px;
+    padding: 4px;
+  }
+
+  .sessions-calm-cell button,
+  .sessions-calm button.sessions-calm-slot {
+    font-size: 10px;
+  }
+}

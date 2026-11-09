@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
 import { entryDetailHeading, entryListDisplayText } from "../lib/entryDisplay";
 import { t } from "../lib/labels";
-import { moodMeta, NEED_OPTIONS } from "../lib/moods";
+import { feelingChipLabel, moodMeta, NEED_OPTIONS } from "../lib/moods";
 import type { DiaryEntry } from "../types";
 
 export interface DiaryEntryDetailModalProps {
@@ -106,7 +106,7 @@ export function DiaryEntryDetailModal(props: DiaryEntryDetailModalProps) {
               <h3>{t(language, { es: "Lo que sentiste", en: "What you felt", pt: "O que sentiu" })}</h3>
               <ul className="diary-entry-modal-chips">
                 {entry.feelings.map((feeling) => (
-                  <li key={feeling}>{feeling}</li>
+                  <li key={feeling}>{feelingChipLabel(language, feeling)}</li>
                 ))}
               </ul>
             </section>

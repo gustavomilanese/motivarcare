@@ -1,4 +1,5 @@
 import { type AppLanguage } from "@therapy/i18n-config";
+import { IconFlecha, MoodFace } from "../../home/calm/calmIcons";
 import { entryTimelineTitle } from "../lib/entryDisplay";
 import { t } from "../lib/labels";
 import { moodMeta } from "../lib/moods";
@@ -11,6 +12,8 @@ export interface DiaryEntriesTimelineProps {
   ariaLabel: string;
   emptyMessage?: string;
   variant?: "default" | "minimal";
+  /** Caras del design system en lugar del emoji. */
+  moodMark?: "emoji" | "face";
 }
 
 function formatEntryDate(iso: string, language: AppLanguage, compact = false): string {
@@ -46,11 +49,11 @@ export function DiaryEntriesTimeline(props: DiaryEntriesTimelineProps) {
             <li key={entry.id}>
               <button type="button" className="diary-entry-row-min" onClick={() => props.onOpenDetail(entry.id)}>
                 <span
-                  className="diary-entry-row-min-emoji"
-                  style={{ backgroundColor: `${mood.tone}18`, color: mood.tone }}
+                  className={`diary-entry-row-min-emoji${props.moodMark === "face" ? " diary-entry-row-min-face" : ""}`}
+                  style={props.moodMark === "face" ? undefined : { backgroundColor: `${mood.tone}18`, color: mood.tone }}
                   aria-hidden="true"
                 >
-                  {mood.emoji}
+                  {props.moodMark === "face" ? <MoodFace face={entry.mood} /> : mood.emoji}
                 </span>
                 <span className="diary-entry-row-min-body">
                   <span className="diary-entry-row-min-title">{title}</span>
@@ -61,9 +64,13 @@ export function DiaryEntriesTimeline(props: DiaryEntriesTimelineProps) {
                   </span>
                 </span>
                 <span className="diary-entry-row-min-chevron" aria-hidden="true">
-                  <svg width="18" height="18" viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
-                  </svg>
+                  {props.moodMark === "face" ? (
+                    <IconFlecha size={16} />
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24">
+                      <path fill="currentColor" d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+                    </svg>
+                  )}
                 </span>
               </button>
             </li>

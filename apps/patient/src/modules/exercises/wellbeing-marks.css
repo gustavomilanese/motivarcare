@@ -1,0 +1,137 @@
+/* Marcas, chips y filtros de Bienestar — tokens DS, sin emojis. */
+
+.wellbeing-mark {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 0;
+  background: transparent;
+  color: #f5f3eb; /* override via style por categoría */
+  font-size: 0;
+  line-height: 0;
+}
+
+.wellbeing-mark--sm {
+  width: 40px;
+  height: 40px;
+}
+
+.wellbeing-mark--lg {
+  width: 72px;
+  height: 72px;
+}
+
+.wellbeing-mark-blob {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.wellbeing-mark svg:last-child {
+  position: relative;
+  z-index: 1;
+  color: currentColor;
+}
+
+.wellbeing-pills span,
+.wellbeing-calm .exercise-card-pill,
+.wellbeing-calm .exercise-reader-pills .exercise-card-pill {
+  border-radius: 8px;
+}
+
+.wellbeing-calm button.wellbeing-filter,
+.wellbeing-calm button.wellbeing-filter:hover,
+.wellbeing-calm button.wellbeing-filter:focus-visible {
+  border-radius: 8px;
+}
+
+.wellbeing-calm button.wellbeing-filter.is-active,
+.wellbeing-calm button.wellbeing-filter.is-active:hover,
+.wellbeing-calm button.wellbeing-filter.is-active:focus-visible {
+  border-color: #1e4033;
+  background: #e7f1ea;
+  color: #1e4033;
+}
+
+.wellbeing-calm .exercise-reader-emoji,
+.wellbeing-calm .exercise-routine-emoji,
+.wellbeing-calm .exercise-card-emoji {
+  width: auto;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.wellbeing-calm .exercise-routine-step-emoji {
+  width: auto;
+  height: auto;
+  display: inline-grid;
+  background: transparent;
+  border-radius: 0;
+  font-size: 0;
+}
+
+.wellbeing-calm button.exercise-routine-next.primary,
+.wellbeing-calm button.exercise-routine-next.primary:hover,
+.wellbeing-calm button.exercise-routine-next.primary:focus-visible {
+  border-radius: 8px;
+}
+
+.wellbeing-calm .exercise-related-card {
+  border: 1px solid #e2dfd3;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: none;
+  transform: none;
+}
+
+.wellbeing-calm .exercise-related-card:hover {
+  border-color: #e2dfd3;
+  background: #f5f3eb;
+  box-shadow: none;
+  transform: none;
+}
+
+.wellbeing-calm .exercise-related-card-emoji {
+  display: contents;
+}
+
+.wellbeing-calm .exercise-related-card-pills span {
+  border-radius: 8px;
+  background: #e7f1ea;
+  color: #1e4033;
+}
+
+.wellbeing-calm .exercise-related-card-title {
+  color: #1e4033;
+}
+
+.wellbeing-calm .exercise-related-card-summary {
+  color: #5d6a63;
+}
+
+.wellbeing-calm .exercise-related-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #2f6b51;
+}
+
+.wellbeing-calm .exercise-related-eyebrow {
+  color: #2f6b51;
+}
+
+.wellbeing-calm .exercise-related-header h3 {
+  color: #1e4033;
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 500;
+}
+
+.wellbeing-calm .exercise-related-lead {
+  color: #5d6a63;
+}

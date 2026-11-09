@@ -1,8 +1,7 @@
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import {
   PATIENT_COUPLES_THERAPY_FOCUS_OPTIONS_ES,
-  PATIENT_INDIVIDUAL_MAIN_REASON_OPTIONS_ES,
-  type PatientCouplesTherapyFocusOptionEs
+  PATIENT_INDIVIDUAL_MAIN_REASON_OPTIONS_ES
 } from "../patientClinicalIntakeQuestions";
 import {
   detectMainReasonCategory,
@@ -10,45 +9,10 @@ import {
   intakeMainReasonPieces,
   type MainReasonCategory
 } from "../lib/patientMainReason";
+import { intakeOptionLabel } from "../lib/intakeOptionLabels";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
-}
-
-function couplesFocusOptionLabel(language: AppLanguage, optionEs: PatientCouplesTherapyFocusOptionEs): string {
-  const labels: Record<PatientCouplesTherapyFocusOptionEs, LocalizedText> = {
-    "Comunicación y conflictos": {
-      es: "Comunicación y conflictos",
-      en: "Communication and conflict",
-      pt: "Comunicacao e conflitos"
-    },
-    "Distanciamiento emocional": {
-      es: "Distanciamiento emocional",
-      en: "Emotional distance",
-      pt: "Distanciamento emocional"
-    },
-    "Confianza, celos o infidelidad": {
-      es: "Confianza, celos o infidelidad",
-      en: "Trust, jealousy, or infidelity",
-      pt: "Confianca, ciumes ou infidelidade"
-    },
-    "Intimidad y sexualidad": {
-      es: "Intimidad y sexualidad",
-      en: "Intimacy and sexuality",
-      pt: "Intimidade e sexualidade"
-    },
-    "Convivencia, crianza y proyectos de vida": {
-      es: "Convivencia, crianza y proyectos de vida",
-      en: "Living together, parenting, and life plans",
-      pt: "Convivencia, criacao e projetos de vida"
-    },
-    "Otro / No estoy seguro(a)": {
-      es: "Otro / No estoy seguro(a)",
-      en: "Other / I'm not sure",
-      pt: "Outro / Nao tenho certeza"
-    }
-  };
-  return t(language, labels[optionEs]);
 }
 
 const OTHER_OPTION_ES = "Otro";
@@ -156,7 +120,7 @@ export function PatientMainReasonStep(props: {
                   aria-pressed={selected}
                   onClick={() => props.onToggleIndividual(option)}
                 >
-                  <span className="intake-option-chip-label">{option}</span>
+                  <span className="intake-option-chip-label">{intakeOptionLabel(props.language, option)}</span>
                 </button>
               );
             })}
@@ -214,7 +178,7 @@ export function PatientMainReasonStep(props: {
                   onClick={() => props.onToggleCouplesFocus(optionEs)}
                 >
                   <span className="intake-option-chip-label">
-                    {couplesFocusOptionLabel(props.language, optionEs)}
+                    {intakeOptionLabel(props.language, optionEs)}
                   </span>
                 </button>
               );

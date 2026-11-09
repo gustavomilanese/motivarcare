@@ -1,0 +1,307 @@
+/* Pantalla Sesiones. Tokens del design system 0.1.
+   Fraunces y Manrope ya están declaradas en calm-home.css. */
+
+.portal-main.portal-main--sessions-home,
+.portal-main:has(.sessions-booking-page) {
+  background: #f5f3eb;
+}
+
+.sessions-booking-page {
+  font-family: "Manrope", system-ui, sans-serif;
+  color: #1b2a23;
+}
+
+.sessions-booking-page .dashboard-ml-sessions-banner,
+.sessions-booking-page .sessions-page-ml-banner.dashboard-ml-sessions-banner {
+  background: #e7f1ea;
+  border: 1px solid #e2dfd3;
+  border-bottom: 0;
+  border-radius: 24px 24px 0 0;
+  box-shadow: none;
+}
+
+.sessions-booking-page .dashboard-ml-sessions-banner::before,
+.sessions-booking-page .dashboard-ml-sessions-banner::after {
+  display: none;
+}
+
+.sessions-booking-page .dashboard-ml-sessions-banner-copy,
+.sessions-booking-page .dashboard-ml-sessions-banner-title,
+.sessions-booking-page .dashboard-ml-sessions-banner-body,
+.sessions-booking-page .dashboard-ml-sessions-banner-kicker {
+  color: #1e4033;
+  text-shadow: none;
+}
+
+.sessions-booking-page .dashboard-ml-sessions-banner-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  margin: 0 0 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #e6edc4;
+  color: #1e4033;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.sessions-booking-page .dashboard-ml-sessions-banner-kicker::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f5c33b;
+  flex: none;
+}
+
+.sessions-booking-page .dashboard-ml-sessions-banner-title,
+.sessions-booking-page .sessions-panel-head h2,
+.sessions-booking-page .sessions-calendar-head h2,
+.sessions-booking-page .sessions-secondary-title {
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: #1e4033;
+}
+
+.sessions-booking-page .dashboard-ml-sessions-banner-title {
+  font-size: clamp(32px, 3vw, 40px);
+  line-height: 1.05;
+}
+
+.sessions-booking-page .dashboard-ml-sessions-banner-body {
+  color: #5d6a63;
+  font-weight: 600;
+}
+
+.sessions-booking-page .dashboard-ml-sessions-banner-glyph {
+  background: #d6e7dc;
+  border: 1px solid #e2dfd3;
+  color: #1e4033;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.sessions-booking-page .sessions-hero-toolbar-mount .header-icon-link,
+.sessions-booking-page .sessions-hero-toolbar-mount .menu-toggle {
+  background: #fff;
+  border: 1px solid #e2dfd3;
+  color: #1e4033;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.sessions-booking-page .dashboard-ml-sessions-pack,
+.sessions-booking-page .sessions-page-ml-pack {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding-top: 16px;
+}
+
+.sessions-booking-page .sessions-balance,
+.sessions-booking-page button.sessions-balance {
+  background: #fff;
+  border: 1px solid #e2dfd3;
+  border-radius: 18px;
+  box-shadow: none;
+  color: #1b2a23;
+}
+
+.sessions-booking-page .sessions-balance--interactive:hover,
+.sessions-booking-page .sessions-booking-body > .sessions-balance--interactive:hover {
+  background: #f5f3eb;
+  box-shadow: none;
+}
+
+.sessions-booking-page .sessions-balance-figure {
+  background: #e6edc4;
+  color: #1e4033;
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+}
+
+.sessions-booking-page .sessions-balance-title {
+  color: #1e4033;
+}
+
+.sessions-booking-page .sessions-balance-sub {
+  color: #5d6a63;
+}
+
+.sessions-booking-page .sessions-balance-cta-hint {
+  color: #2f6b51;
+}
+
+.sessions-booking-page .sessions-confirmed-panel,
+.sessions-booking-page .sessions-calendar-card,
+.sessions-booking-page .sessions-secondary-section,
+.sessions-booking-page .sessions-booking-body .booking-session-card {
+  background: #fff;
+  border: 1px solid #e2dfd3;
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+.sessions-booking-page .sessions-confirmed-panel .sessions-panel-head h2,
+.sessions-booking-page .sessions-calendar-head h2 {
+  font-size: 28px;
+  line-height: 1.1;
+  font-weight: 500;
+  color: #1e4033;
+}
+
+.sessions-booking-page.sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body .sessions-secondary-section,
+.sessions-booking-page .sessions-booking-body .sessions-secondary-section,
+.sessions-booking-page .sessions-booking-body .sessions-secondary-section.sessions-purchased-history {
+  background: #fff !important;
+  background-image: none !important;
+  border: 1px solid #e2dfd3 !important;
+  border-radius: 18px;
+  box-shadow: none !important;
+}
+
+.sessions-booking-page .sessions-reservations-table-head {
+  color: #8a958f;
+  font-weight: 800;
+}
+
+.sessions-booking-page .sessions-reserve-button,
+.sessions-booking-page .sessions-reserve-button:hover {
+  border: 0;
+  border-radius: 999px;
+  background: #f5c33b;
+  color: #1e4033;
+  box-shadow: none;
+}
+
+.sessions-booking-page .sessions-buy-button,
+.sessions-booking-page .sessions-buy-button:hover,
+.sessions-booking-page .session-detail-button,
+.sessions-booking-page .session-detail-button:hover {
+  border: 1px solid #e2dfd3;
+  border-radius: 999px;
+  background: #fff;
+  color: #1e4033;
+  box-shadow: none;
+}
+
+.sessions-booking-page .sessions-buy-button:hover,
+.sessions-booking-page .session-detail-button:hover {
+  background: #f5f3eb;
+}
+
+.sessions-booking-page .session-status-pill.confirmed {
+  background: #e6edc4;
+  border-color: transparent;
+  color: #1e4033;
+}
+
+.sessions-booking-page .professional-name-link:hover .professional-name-line1,
+.sessions-booking-page .professional-name-link:focus-visible .professional-name-line1 {
+  color: #2a5543;
+}
+
+.sessions-booking-page .sessions-calendar-day {
+  background: #fff;
+  border: 1px solid #e2dfd3;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.sessions-booking-page .sessions-calendar-day:hover:not(:disabled) {
+  background: #f5f3eb;
+  border-color: #e2dfd3;
+  box-shadow: none;
+}
+
+.sessions-booking-page .sessions-calendar-day.today,
+.sessions-booking-page .sessions-calendar-day.selected,
+.sessions-booking-page .sessions-calendar-day.selected.busy,
+.sessions-booking-page .sessions-calendar-day.busy {
+  background: #e7f1ea;
+  border-color: #1e4033;
+  box-shadow: none;
+}
+
+.sessions-booking-page .sessions-calendar-dayname,
+.sessions-booking-page .sessions-calendar-date {
+  color: #5d6a63;
+}
+
+.sessions-booking-page .sessions-calendar-event,
+.sessions-booking-page .sessions-calendar-event:hover,
+.sessions-booking-page .sessions-calendar-event--trial,
+.sessions-booking-page .sessions-calendar-event--trial:hover {
+  background: #e6edc4;
+  border: 0;
+  border-left: 3px solid #1e4033;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.sessions-booking-page .sessions-calendar-event-time,
+.sessions-booking-page .sessions-calendar-event--trial .sessions-calendar-event-time,
+.sessions-booking-page .sessions-calendar-event-title {
+  color: #1e4033;
+}
+
+.sessions-booking-page .sessions-calendar-month-nav button,
+.sessions-booking-page .sessions-calendar-month-nav button:hover {
+  border: 1px solid #e2dfd3;
+  border-radius: 8px;
+  background: #fff;
+  color: #1e4033;
+  box-shadow: none;
+}
+
+.sessions-booking-page .sessions-calendar-toggle,
+.sessions-booking-page .sessions-calendar-toggle:hover,
+.sessions-booking-page .sessions-purchased-history .sessions-calendar-toggle:hover,
+.sessions-booking-page .sessions-calendar-toggle:focus-visible {
+  background: transparent;
+  color: #1e4033;
+  box-shadow: none;
+}
+
+.sessions-booking-page .sessions-calendar-toggle:hover {
+  background: #f5f3eb;
+}
+
+.sessions-booking-page .sessions-secondary-title,
+.sessions-booking-page .sessions-calendar-toggle:hover .sessions-secondary-title {
+  color: #1e4033;
+}
+
+body:has(.portal-main--sessions-home) .treatment-chat-fab,
+body:has(.portal-main--sessions-home) .treatment-chat-fab:hover {
+  height: 54px;
+  padding: 0 20px 0 8px;
+  gap: 10px;
+  border-radius: 99px;
+  background: #fff;
+  color: #1e4033;
+  border: 1.5px dashed #1e4033;
+  box-shadow: 0 30px 60px -28px rgba(20, 41, 31, 0.45);
+  font-family: "Manrope", system-ui, sans-serif;
+  font-weight: 700;
+}
+
+body:has(.portal-main--sessions-home) .treatment-chat-fab__icon {
+  width: 40px;
+  height: 40px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  padding: 3px;
+  background: #e7f1ea url("/brand/ds/maca.svg") center / 34px 34px no-repeat;
+}
+
+body:has(.portal-main--sessions-home) .treatment-chat-fab__icon svg {
+  opacity: 0;
+}

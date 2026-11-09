@@ -3551,7 +3551,10 @@ ul {
 }
 
 .pro-verify-email-dev {
-  font-size: 13px;
+  border-style: dashed;
+  background: #f4f1ff;
+  color: #3d2e8a;
+  font-size: 14px;
 }
 
 .pro-verify-email-feedback {

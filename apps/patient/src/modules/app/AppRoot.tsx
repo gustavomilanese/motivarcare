@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -39,7 +39,6 @@ import {
 } from "./pages/VerifyEmailTokenScreen";
 import { MainPortal } from "./pages/MainPortal";
 import {
-  heroImage,
   initialProfessionalDirectory,
   initialProfessionalPhotoMap
 } from "./data/professionalsCatalog";
@@ -582,33 +581,44 @@ function writeDismissedCalendarPromptUsers(userIds: string[]): void {
   window.localStorage.setItem(CALENDAR_PROMPT_DISMISSED_USERS_KEY, JSON.stringify(Array.from(new Set(userIds))));
 }
 
-function mapDirectoryProfessionalToLegacyProfessional(item: {
-  id: string;
-  fullName: string;
-  firstName: string;
-  lastName: string;
-  title: string;
-  yearsExperience: number;
-  compatibilityBase: number;
-  specialization: string | null;
-  focusPrimary: string | null;
-  languages: string[];
-  therapeuticApproach: string | null;
-  bio: string | null;
-  ratingAverage: number | null;
-  reviewsCount: number;
-  stripeVerified: boolean;
-  sessionPriceUsd: number | null;
-  activePatientsCount: number;
-  cancellationHours?: number;
-  slots: Array<{ id: string; startsAt: string; endsAt: string }>;
-}): Professional {
+function defaultProfessionalTitle(language: AppLanguage): string {
+  return t(language, {
+    es: "Profesional de salud mental",
+    en: "Mental health professional",
+    pt: "Profissional de saude mental"
+  });
+}
+
+function mapDirectoryProfessionalToLegacyProfessional(
+  item: {
+    id: string;
+    fullName: string;
+    firstName: string;
+    lastName: string;
+    title: string;
+    yearsExperience: number;
+    compatibilityBase: number;
+    specialization: string | null;
+    focusPrimary: string | null;
+    languages: string[];
+    therapeuticApproach: string | null;
+    bio: string | null;
+    ratingAverage: number | null;
+    reviewsCount: number;
+    stripeVerified: boolean;
+    sessionPriceUsd: number | null;
+    activePatientsCount: number;
+    cancellationHours?: number;
+    slots: Array<{ id: string; startsAt: string; endsAt: string }>;
+  },
+  language: AppLanguage
+): Professional {
   return {
     id: item.id,
     fullName: item.fullName,
     firstName: item.firstName,
     lastName: item.lastName,
-    title: item.title || "Profesional de salud mental",
+    title: item.title || defaultProfessionalTitle(language),
     yearsExperience: item.yearsExperience,
     compatibility: item.compatibilityBase,
     specialties: [item.specialization, item.focusPrimary].filter((value): value is string => Boolean(value && value.trim().length > 0)),
@@ -627,20 +637,23 @@ function mapDirectoryProfessionalToLegacyProfessional(item: {
 }
 
 /** Profesional asignado por admin que no entra en el directorio (p. ej. visible=false); slots vacíos — la agenda se pide por API en Reservas. */
-function professionalStubFromActiveProfile(active: {
-  id: string;
-  fullName: string;
-  firstName?: string;
-  lastName?: string;
-  email: string;
-  photoUrl?: string | null;
-}): Professional {
+function professionalStubFromActiveProfile(
+  active: {
+    id: string;
+    fullName: string;
+    firstName?: string;
+    lastName?: string;
+    email: string;
+    photoUrl?: string | null;
+  },
+  language: AppLanguage
+): Professional {
   return {
     id: active.id,
     fullName: active.fullName,
     firstName: active.firstName,
     lastName: active.lastName,
-    title: "Profesional de salud mental",
+    title: defaultProfessionalTitle(language),
     yearsExperience: 0,
     compatibility: 50,
     specialties: [],
@@ -677,12 +690,6 @@ function pickPreferredProfessionalIds(
   const selected = pick(assignedProfessionalId) ?? pick(currentSelectedId) ?? currentSelectedId;
   const chat = pick(currentChatProfessionalId) ?? pick(assignedProfessionalId) ?? selected;
   return { selectedProfessionalId: selected, activeChatProfessionalId: chat };
-}
-
-function handleHeroFallback(event: SyntheticEvent<HTMLImageElement>): void {
-  const img = event.currentTarget;
-  img.onerror = null;
-  img.src = "/images/hero-therapy.svg";
 }
 
 export function App() {
@@ -1074,21 +1081,25 @@ export function App() {
         && !state.therapistSelectionCompleted
         && state.bookings.length === 0
         && state.subscription.purchaseHistory.length === 0
+        && !state.googleCalendarConnected
       ),
     [
       state.intake?.completed,
       state.intake?.riskBlocked,
       state.therapistSelectionCompleted,
       state.bookings.length,
-      state.subscription.purchaseHistory.length
+      state.subscription.purchaseHistory.length,
+      state.googleCalendarConnected
     ]
   );
 
   /**
    * Recuperación (F5): evita un frame de MainPortal entre intake completado y pantalla de Calendar.
+   * Espera sync de Calendar: si abrimos antes, `googleCalendarConnected` llega true y el cierre
+   * reabría el modal en loop (pantalla en blanco / Maximum update depth).
    */
   useLayoutEffect(() => {
-    if (!sessionId || !state.authToken) {
+    if (!sessionId || !state.authToken || !profileSyncReady || !patientAuthCalendarSynced) {
       return;
     }
     if (!shouldOfferCalendarOnboardingBeforeMatching) {
@@ -1105,6 +1116,8 @@ export function App() {
   }, [
     sessionId,
     state.authToken,
+    profileSyncReady,
+    patientAuthCalendarSynced,
     shouldOfferCalendarOnboardingBeforeMatching,
     calendarPromptDismissedUserIds,
     showCalendarOnboarding
@@ -1213,18 +1226,13 @@ export function App() {
       } catch {
         // ignore
       }
-      const calendarCtx = getCalendarOfferContext();
-      /** `post-trial` y `post-login` ya están en el portal: vuelven a home. `pre-matching` sigue el flujo de onboarding. */
-      const returnPath =
-        calendarCtx === "post-trial" || calendarCtx === "post-login"
-          ? "/"
-          : "/onboarding/final/matching";
+      /** Tras intake / login / trial: volver siempre a home (no a /profile). */
       const response = await apiRequest<{ authUrl: string }>(
         "/api/auth/google/calendar/connect",
         {
           method: "POST",
           body: JSON.stringify({
-            returnPath,
+            returnPath: "/",
             clientOrigin: window.location.origin,
             language: state.language
           })
@@ -1348,7 +1356,9 @@ export function App() {
 
         // Stub inmediato si ya hay profesional asignado; el matching completo llega en background.
         if (profileResponse?.profile?.activeProfessional?.id) {
-          const stubOnly = [professionalStubFromActiveProfile(profileResponse.profile.activeProfessional)];
+          const stubOnly = [
+            professionalStubFromActiveProfile(profileResponse.profile.activeProfessional, languageSnapshot)
+          ];
           directoryListForClamp = stubOnly;
           setProfessionalDirectory((current) => (current.length > 0 ? current : stubOnly));
         }
@@ -1394,7 +1404,7 @@ export function App() {
           /**
            * Señales server-side de que el matching/onboarding final ya ocurrió.
            * Incluye profesional activo: tras reconcile (sin compras/reservas) no hay
-           * que volver a /onboarding/final/matching.
+           * que volver a /.
            */
           const hasRemoteOnboardingCompletionSignal =
             hasRemoteConfirmedTrialBooking
@@ -1643,9 +1653,14 @@ export function App() {
               if (portalSyncDepsRef.current.authToken !== directoryToken) {
                 return;
               }
-              let directoryList = professionalDirectoryResponse.map(mapDirectoryProfessionalToLegacyProfessional);
+              let directoryList = professionalDirectoryResponse.map((row) =>
+                mapDirectoryProfessionalToLegacyProfessional(row, directoryLanguage)
+              );
               if (assignedForDirectory?.id && !directoryList.some((p) => p.id === assignedForDirectory.id)) {
-                directoryList = [professionalStubFromActiveProfile(assignedForDirectory), ...directoryList];
+                directoryList = [
+                  professionalStubFromActiveProfile(assignedForDirectory, directoryLanguage),
+                  ...directoryList
+                ];
               }
               setProfessionalDirectory(directoryList);
               setProfessionalPhotoMap((current) => {
@@ -1828,7 +1843,7 @@ export function App() {
       if (cancelled) {
         return;
       }
-      setProfessionalDirectory(rows.map(mapDirectoryProfessionalToLegacyProfessional));
+      setProfessionalDirectory(rows.map((row) => mapDirectoryProfessionalToLegacyProfessional(row, state.language)));
     }).catch(() => {});
     return () => {
       cancelled = true;
@@ -1866,8 +1881,16 @@ export function App() {
 
     const callbackUserId = query.get("calendar_user_id");
     const calendarReason = query.get("calendar_reason");
-    const onboardingPath = "/onboarding/final/matching";
-    const resumeMatching = location.pathname.startsWith("/onboarding/final");
+    /** Callback de onboarding (intake/login/trial): home. Solo perfil si el OAuth arrancó desde /profile. */
+    const resolveCalendarReturnPath = (ctx: ReturnType<typeof getCalendarOfferContext>): string => {
+      if (ctx === "pre-matching" || ctx === "post-trial" || ctx === "post-login") {
+        return "/";
+      }
+      if (location.pathname.startsWith("/profile")) {
+        return "/profile";
+      }
+      return "/";
+    };
 
     const calendarNav = (pathname: string, extraSearch: Record<string, string> | null) => {
       const nextSearch = new URLSearchParams(location.search);
@@ -1894,13 +1917,10 @@ export function App() {
       const ctxErr = getCalendarOfferContext();
       clearCalendarOfferContext();
       clearPostTrialCalendarPending();
-      const errorTarget =
-        ctxErr === "post-trial" || ctxErr === "post-login"
-          ? "/"
-          : resumeMatching
-            ? onboardingPath
-            : location.pathname;
-      calendarNav(errorTarget, { calendar_sync: "error", calendar_reason: "session_mismatch" });
+      calendarNav(resolveCalendarReturnPath(ctxErr), {
+        calendar_sync: "error",
+        calendar_reason: "session_mismatch"
+      });
       return;
     }
 
@@ -1923,12 +1943,7 @@ export function App() {
       const ctx = getCalendarOfferContext();
       clearCalendarOfferContext();
       clearPostTrialCalendarPending();
-      const targetPath =
-        ctx === "post-trial" || ctx === "post-login"
-          ? "/"
-          : resumeMatching
-            ? onboardingPath
-            : location.pathname;
+      const targetPath = resolveCalendarReturnPath(ctx);
       const meetExtra =
         targetPath === "/" ? ({ meet_hint: "1" } as Record<string, string>) : null;
       calendarNav(targetPath, meetExtra);
@@ -1963,12 +1978,21 @@ export function App() {
     if (!state.googleCalendarConnected) {
       return;
     }
+    /** Marcar dismiss: si no, pre-matching vuelve a abrir el modal → loop con navigate. */
+    setCalendarPromptDismissedUserIds((current) => {
+      if (current.includes(sessionId)) {
+        return current;
+      }
+      const nextDismissed = [...current, sessionId];
+      writeDismissedCalendarPromptUsers(nextDismissed);
+      return nextDismissed;
+    });
     setShowCalendarOnboarding(false);
     const ctx = getCalendarOfferContext();
     clearCalendarOfferContext();
     clearPostTrialCalendarPending();
     navigate(
-      ctx === "post-trial" || ctx === "post-login" ? "/?meet_hint=1" : "/onboarding/final/matching",
+      ctx === "post-trial" || ctx === "post-login" ? "/?meet_hint=1" : "/",
       { replace: true }
     );
   }, [showCalendarOnboarding, state.authToken, sessionId, state.googleCalendarConnected, navigate]);
@@ -2005,8 +2029,6 @@ export function App() {
     return (
       <AuthScreen
         language={state.language}
-        heroImage={heroImage}
-        onHeroFallback={handleHeroFallback}
         onLogin={({ user, token, emailVerificationRequired }) => {
           setProfileSyncReady(false);
           setProfessionalDirectory(initialProfessionalDirectory());
@@ -2054,6 +2076,7 @@ export function App() {
       <VerifyEmailRequiredScreen
         language={state.language}
         token={state.authToken ?? ""}
+        email={state.session.email}
         onLogout={() => {
           if (location.pathname === "/verify-email-required") {
             navigate("/", { replace: true });
@@ -2062,6 +2085,20 @@ export function App() {
           setProfessionalDirectory(initialProfessionalDirectory());
           setProfessionalPhotoMap(initialProfessionalPhotoMap());
           setState(defaultState);
+        }}
+        onVerified={() => {
+          setState((current) => {
+            if (!current.session) {
+              return current;
+            }
+            return {
+              ...current,
+              session: { ...current.session, emailVerified: true }
+            };
+          });
+          if (location.pathname === "/verify-email-required") {
+            navigate("/", { replace: true });
+          }
         }}
       />
     );
@@ -2125,12 +2162,6 @@ export function App() {
               type="button"
               onClick={() => {
                 setCalendarOnboardingError("");
-                const ctx = getCalendarOfferContext();
-                const goHome =
-                  ctx === "post-trial"
-                  || ctx === "post-login"
-                  || state.therapistSelectionCompleted
-                  || Boolean(state.assignedProfessionalId);
                 flushSync(() => {
                   if (state.session?.id) {
                     const nextDismissed = [...calendarPromptDismissedUserIds, state.session.id];
@@ -2141,7 +2172,7 @@ export function App() {
                   clearPostTrialCalendarPending();
                   setShowCalendarOnboarding(false);
                 });
-                navigate(goHome ? "/" : "/onboarding/final/matching", { replace: true });
+                navigate("/", { replace: true });
               }}
               disabled={calendarOnboardingLoading}
             >
@@ -2193,7 +2224,7 @@ export function App() {
       flushSync(() => {
         setState((current) => ({
           ...current,
-          onboardingFinalCompleted: false,
+          onboardingFinalCompleted: true,
           therapistSelectionCompleted: false,
           assignedProfessionalId: null,
           assignedProfessionalName: null,
@@ -2224,7 +2255,7 @@ export function App() {
         return;
       }
       if (sessionUserId.length === 0) {
-        navigate("/onboarding/final/matching", { replace: true });
+        navigate("/", { replace: true });
         return;
       }
 
@@ -2234,7 +2265,7 @@ export function App() {
           setShowCalendarOnboarding(true);
         });
       } else {
-        navigate("/onboarding/final/matching", { replace: true });
+        navigate("/", { replace: true });
       }
     };
 

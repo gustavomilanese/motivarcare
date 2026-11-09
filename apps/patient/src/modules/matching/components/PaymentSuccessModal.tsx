@@ -1,4 +1,6 @@
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { CalmPayMancha } from "../../app/components/booking/CalmPayMancha";
+import { IconCheck } from "../../home/calm/calmIcons";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -29,21 +31,11 @@ export function PaymentSuccessModal(props: {
         onClick={(event) => event.stopPropagation()}
       >
         <div className="payment-success-hero" aria-hidden="true">
-          <span className="payment-success-spark payment-success-spark--a" />
-          <span className="payment-success-spark payment-success-spark--b" />
-          <span className="payment-success-spark payment-success-spark--c" />
-          <span className="payment-success-spark payment-success-spark--d" />
-          <div className="payment-success-icon">
-            <svg viewBox="0 0 24 24" width="34" height="34" fill="none" aria-hidden="true">
-              <path
-                d="M5 12.5 9.2 17 19 7"
-                stroke="currentColor"
-                strokeWidth="2.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
+          <CalmPayMancha className="calm-pay-mancha payment-success-mark">
+            <span className="payment-success-mark-icon">
+              <IconCheck size={28} />
+            </span>
+          </CalmPayMancha>
         </div>
         <p className="payment-success-kicker">
           {t(props.language, { es: "Pago acreditado", en: "Payment credited", pt: "Pagamento creditado" })}

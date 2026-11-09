@@ -135,6 +135,3 @@ export function initialProfessionalDirectory(): Professional[] {
 export function initialProfessionalPhotoMap(): Record<string, string> {
   return import.meta.env.DEV ? professionalImageMap : {};
 }
-
-/** Hero login paciente: asset en `public/images/auth-hero-patient.png`. */
-export const heroImage = "/images/auth-hero-patient.png";

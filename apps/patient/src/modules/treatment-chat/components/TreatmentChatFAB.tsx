@@ -31,7 +31,8 @@ export function TreatmentChatFAB(props: TreatmentChatFABProps) {
 
   const chat = useTreatmentChat({
     authToken,
-    enabled: hasOpenedOnce
+    enabled: hasOpenedOnce,
+    language
   });
 
   const handleOpen = useCallback(() => {

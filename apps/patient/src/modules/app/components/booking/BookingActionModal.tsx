@@ -1,7 +1,10 @@
 import { textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
 import { MotivarCareLoader } from "@therapy/ui";
 import { type SyntheticEvent, useEffect, useMemo, useState } from "react";
+import { professionalAccessibleName } from "../../lib/professionalDisplayName";
 import type { TimeSlot } from "../../types";
+import { IconCerrar } from "../../../home/calm/calmIcons";
+import { BookingSlotChoices } from "./BookingSlotChoices";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -11,6 +14,8 @@ export function BookingActionModal(props: {
   panelMode: "new" | "reschedule" | null;
   modalProfessional: {
     fullName: string;
+    firstName?: string;
+    lastName?: string;
     title: string;
   };
   modalProfessionalPhoto: string;
@@ -91,7 +96,7 @@ export function BookingActionModal(props: {
             onClick={props.onClose}
             aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
           >
-            ×
+            <IconCerrar size={18} />
           </button>
         </header>
 
@@ -137,7 +142,7 @@ export function BookingActionModal(props: {
               <span className="session-booking-prof-label">
                 {t(props.language, { es: "Tu profesional", en: "Your professional", pt: "Seu profissional" })}
               </span>
-              <strong>{props.modalProfessional.fullName}</strong>
+              <strong>{professionalAccessibleName(props.modalProfessional)}</strong>
               {props.modalProfessional.title ? <small>{props.modalProfessional.title}</small> : null}
             </div>
           </div>
@@ -164,31 +169,19 @@ export function BookingActionModal(props: {
               </button>
             </div>
           ) : (
-            <label className="session-booking-slot-field">
+            <div className="session-booking-slot-field">
               <span className="session-booking-slot-label">
                 {t(props.language, { es: "Disponibilidad", en: "Availability", pt: "Disponibilidade" })}
               </span>
-              <select
-                value={props.selectedSlotId}
-                onChange={(event) => props.onSelectSlot(event.target.value)}
-                disabled={props.slotHoldLoading}
-              >
-                <option value="">
-                  {props.slotsLoading
-                    ? t(props.language, { es: "Cargando disponibilidad...", en: "Loading availability...", pt: "Carregando disponibilidade..." })
-                    : props.slotHoldLoading
-                      ? t(props.language, { es: "Reservando horario...", en: "Reserving time...", pt: "Reservando horario..." })
-                      : props.availableSlots.length === 0
-                        ? t(props.language, { es: "Sin horarios publicados por ahora", en: "No published times right now", pt: "Sem horarios publicados por enquanto" })
-                        : t(props.language, { es: "Seleccioná día y horario", en: "Select day and time", pt: "Selecione dia e horario" })}
-                </option>
-                {props.availableSlots.map((slot) => (
-                  <option key={slot.id} value={slot.id}>
-                    {props.formatDateTime({ isoDate: slot.startsAt, timezone: props.sessionTimezone, language: props.language })}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <BookingSlotChoices
+                slots={props.availableSlots}
+                loading={props.slotsLoading}
+                disabled={Boolean(props.slotHoldLoading)}
+                language={props.language}
+                timeZone={props.sessionTimezone}
+                onSelect={props.onSelectSlot}
+              />
+            </div>
           )}
 
           <div className="session-booking-credits-pill">
@@ -241,7 +234,7 @@ export function BookingActionModal(props: {
           </button>
           <button
             type="button"
-            className="session-booking-secondary"
+            className="session-booking-dismiss"
             onClick={props.onClose}
             disabled={props.bookingSubmitting}
           >

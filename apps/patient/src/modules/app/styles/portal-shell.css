@@ -234,6 +234,15 @@
   padding-right: 0;
   margin-bottom: 0;
 }
+.portal-main--exercises-home .portal-main-content:has(.exercises-page--ml),
+.portal-main--exercises-home .portal-main-content:has(.wellbeing-calm) {
+  padding-top: 0;
+  gap: 0;
+}
+.portal-main.portal-main--exercises-home {
+  gap: 0;
+  padding: 0;
+}
 @media (min-width: 1081px) {
   .portal-main--chat {
     gap: 0;
@@ -273,6 +282,7 @@
   .portal-shell:has(.portal-main--dashboard-home),
   .portal-shell:has(.portal-main--diary-home),
   .portal-shell:has(.portal-main--sessions-home),
+  .portal-shell:has(.portal-main--exercises-home),
   .portal-shell:has(.portal-main--wellbeing-relax),
   .portal-shell:has(.portal-main--home-ml),
   .portal-shell:has(.portal-main--chat) {
@@ -358,6 +368,7 @@
   .portal-shell:has(.portal-main--dashboard-home),
   .portal-shell:has(.portal-main--diary-home),
   .portal-shell:has(.portal-main--sessions-home),
+  .portal-shell:has(.portal-main--exercises-home),
   .portal-shell:has(.portal-main--wellbeing-relax),
   .portal-shell:has(.portal-main--home-ml),
   .portal-shell:has(.portal-main--chat) {

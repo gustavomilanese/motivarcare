@@ -1,36 +1,19 @@
 import { useEffect } from "react";
 import { textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
+import { IconCerrar, IconSesiones } from "../../home/calm/calmIcons";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-function IconBundleStack() {
+function SessionMancha(props: { tone: "packages" | "individual" }) {
   return (
-    <svg className="acquire-sessions-choice-icon" viewBox="0 0 48 48" fill="none" aria-hidden>
-      <rect x="6" y="10" width="36" height="9" rx="3" fill="currentColor" opacity="0.2" />
-      <rect x="6" y="20" width="36" height="9" rx="3" fill="currentColor" opacity="0.45" />
-      <rect x="6" y="30" width="36" height="9" rx="3" fill="currentColor" opacity="0.85" />
-    </svg>
-  );
-}
-
-function IconSingleSession() {
-  return (
-    <svg className="acquire-sessions-choice-icon" viewBox="0 0 48 48" fill="none" aria-hidden>
-      <rect
-        x="12"
-        y="12"
-        width="24"
-        height="24"
-        rx="5"
-        fill="currentColor"
-        fillOpacity="0.12"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeOpacity="0.88"
-      />
-    </svg>
+    <span className={`acquire-sessions-mancha acquire-sessions-mancha--${props.tone}`} aria-hidden="true">
+      <svg className="acquire-sessions-mancha-blob" viewBox="0 0 100 100">
+        <path d="M82 64c-6 18-26 28-44 24S8 68 10 48 28 12 50 12s38 34 32 52z" />
+      </svg>
+      <IconSesiones size={22} />
+    </span>
   );
 }
 
@@ -87,7 +70,7 @@ export function AcquireSessionsChoiceModal(props: {
             onClick={props.onClose}
             aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
           >
-            ×
+            <IconCerrar size={18} />
           </button>
         </header>
 
@@ -100,11 +83,7 @@ export function AcquireSessionsChoiceModal(props: {
               props.onClose();
             }}
           >
-            <span className="acquire-sessions-choice-card-visual" aria-hidden>
-              <span className="acquire-sessions-choice-card-squircle acquire-sessions-choice-card-squircle--packages">
-                <IconBundleStack />
-              </span>
-            </span>
+            <SessionMancha tone="packages" />
             <span className="acquire-sessions-choice-card-label-pill acquire-sessions-choice-card-label-pill--packages">
               {t(props.language, { es: "Paquetes", en: "Bundles", pt: "Pacotes" })}
             </span>
@@ -134,11 +113,7 @@ export function AcquireSessionsChoiceModal(props: {
               props.onClose();
             }}
           >
-            <span className="acquire-sessions-choice-card-visual" aria-hidden>
-              <span className="acquire-sessions-choice-card-squircle acquire-sessions-choice-card-squircle--individual">
-                <IconSingleSession />
-              </span>
-            </span>
+            <SessionMancha tone="individual" />
             <span className="acquire-sessions-choice-card-label-pill acquire-sessions-choice-card-label-pill--individual">
               {t(props.language, { es: "Flexible", en: "Flexible", pt: "Flexível" })}
             </span>

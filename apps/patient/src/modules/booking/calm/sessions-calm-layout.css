@@ -1,0 +1,277 @@
+/* Sesiones en tres columnas: menú, agenda y riel de 330px (como mensajes). */
+
+.portal-shell.portal-shell--home-ml:has(.sessions-booking-page),
+.portal-main:has(.sessions-booking-page),
+.sessions-booking-page--ml {
+  --dashboard-ml-page: #f5f3eb;
+  background: #f5f3eb;
+}
+
+/* Sin padding fantasma del layout ML viejo: el chrome (logo/título/tools) usa --portal-chrome-top. */
+@media (min-width: 1081px) {
+  .sessions-booking-page--ml .sessions-page-ml:has(.sessions-calm-columns) {
+    padding: 0;
+  }
+}
+
+.sessions-calm-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 20px;
+  align-items: start;
+  padding: var(--portal-chrome-top, 26px) 48px 40px;
+}
+
+.sessions-calm-columns .sessions-calm {
+  padding: 0;
+}
+
+@media (min-width: 1081px) {
+  .sessions-calm-columns {
+    align-items: stretch;
+    padding-top: 0;
+    padding-bottom: 0;
+    min-height: calc(100vh - 58px);
+  }
+
+  .sessions-calm-main {
+    border-right: 1px solid #e2dfd3;
+    padding: var(--portal-chrome-top, 26px) 48px 40px 0;
+  }
+
+  .sessions-calm-side {
+    padding: var(--portal-chrome-top, 26px) 0 40px;
+  }
+}
+
+.sessions-calm-side {
+  --crema: #f5f3eb;
+  --superficie: #fff;
+  --tinta: #1b2a23;
+  --tinta-suave: #5d6a63;
+  --tinta-tenue: #8a958f;
+  --linea: #e2dfd3;
+  --bosque: #1e4033;
+  --verde-medio: #2f6b51;
+  --salvia: #d6e7dc;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.sessions-calm-balance-host.sessions-calm {
+  display: block;
+  padding: 0;
+}
+
+.sessions-calm-side .sessions-calm-balance {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.sessions-calm-side .sessions-calm-balance-actions {
+  width: 100%;
+  margin-left: 0;
+}
+
+.sessions-calm-side .chat-ds-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0;
+  background: transparent;
+  overflow: visible;
+  min-height: 0;
+}
+
+.sessions-calm-side .chat-ds-profile-link {
+  display: inline-flex;
+  align-items: center;
+}
+
+.sessions-calm-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  min-height: 44px;
+}
+
+.sessions-side-card {
+  background: var(--superficie, #fff);
+  border: 1px solid var(--linea, #e2dfd3);
+  border-radius: 24px;
+  padding: 18px 18px 8px;
+  color: var(--tinta, #1b2a23);
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.sessions-side-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sessions-side-mancha {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: #f5f3eb;
+}
+
+.sessions-side-mancha-blob {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.sessions-side-card h2 .sessions-side-mancha svg {
+  color: #f5f3eb;
+}
+
+.sessions-side-done {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  background: #1e4033;
+  color: #f5f3eb;
+}
+
+.sessions-side-card h2 .sessions-side-done svg {
+  color: #f5f3eb;
+}
+
+.sessions-side-card h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 500;
+  font-size: 22px;
+  color: var(--bosque, #1e4033);
+}
+
+.sessions-side-card h2 svg {
+  flex: none;
+  color: var(--bosque, #1e4033);
+}
+
+.sessions-side-card header button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--verde-medio, #2f6b51);
+  font: 700 13.5px/1 "Manrope", system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.sessions-side-card header button:hover,
+.sessions-side-card header button:focus-visible,
+.sessions-side-card li button:hover,
+.sessions-side-card li button:focus-visible {
+  background: transparent;
+  color: var(--bosque, #1e4033);
+  text-decoration: underline;
+}
+
+.sessions-side-card > p {
+  margin: 12px 0 14px;
+  color: var(--tinta-suave, #5d6a63);
+  font-size: 14px;
+}
+
+.sessions-side-card ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.sessions-side-card li + li {
+  border-top: 1px solid var(--linea, #e2dfd3);
+}
+
+.sessions-side-card li strong {
+  display: block;
+  color: var(--tinta, #1b2a23);
+  font-size: 14.5px;
+}
+
+.sessions-side-card li span {
+  display: block;
+  margin-top: 2px;
+  color: var(--tinta-suave, #5d6a63);
+  font-size: 13px;
+}
+
+.sessions-side-card li {
+  padding: 12px 0;
+}
+
+.sessions-side-card li button {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.sessions-side-card li button:hover strong,
+.sessions-side-card li button:focus-visible strong {
+  color: var(--bosque-2, #2a5543);
+}
+
+.sessions-side-card em {
+  font-style: normal;
+  color: var(--verde-medio, #2f6b51);
+}
+
+.sessions-side-card em.is-cancelled {
+  color: var(--tinta-tenue, #8a958f);
+}
+
+@media (max-width: 1080px) {
+  .sessions-calm-columns {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px 16px 32px;
+  }
+
+  .sessions-calm-side {
+    display: contents;
+    padding-top: 0;
+  }
+
+  .sessions-calm-tools {
+    order: -1;
+  }
+
+  .sessions-calm-main {
+    order: 0;
+    border-right: 0;
+    padding: 0;
+  }
+
+  .sessions-calm-balance-host,
+  .sessions-side-card {
+    order: 1;
+  }
+
+  .sessions-calm-next h2 {
+    font-size: 28px;
+  }
+}

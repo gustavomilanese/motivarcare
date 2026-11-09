@@ -1,45 +1,20 @@
-import { type KeyboardEvent, type SyntheticEvent, useEffect, useMemo, useState } from "react";
-import { subscribeDocumentVisibleInterval } from "@therapy/auth";
-import { useSearchParams } from "react-router-dom";
-import {
-  type AppLanguage,
-  type LocalizedText,
-  formatDateWithLocale,
-  textByLanguage
-} from "@therapy/i18n-config";
-import { fetchSharedPatientChatThreads } from "../lib/fetchPatientChatThreadsShared";
-import { friendlyChatSurfaceMessage } from "../lib/friendlyPatientMessages";
-import { apiRequest, professionalPhotoSrc, resolvePublicAssetUrl } from "../services/api";
-import type {
-  ApiChatMessage,
-  ApiChatThread,
-  Message,
-  PatientAppState,
-  Professional
-} from "../types";
+import { type SyntheticEvent, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { formatShortDate } from "../../home/calm/calmHomeFormat";
+import { SessionDetailModal } from "../../booking/components/SessionDetailModal";
+import { DashboardHomeProfessionalProfileModal } from "../../home/ml/ProfessionalProfileModal";
+import { moodMeta } from "../../emotional-diary/lib/moods";
+import { professionalAccessibleName } from "../lib/professionalDisplayName";
+import { ChatContextPanel } from "../../chat/ChatContextPanel";
+import { ChatConversation } from "../../chat/ChatConversation";
+import { diaryEntryShareBody } from "../../chat/chatTimeline";
+import { useChatViewModel, useSharedDiaryEntries } from "../../chat/hooks/useChatViewModel";
+import { usePatientChat } from "../../chat/hooks/usePatientChat";
+import type { PatientAppState, Professional } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
-}
-
-function findProfessionalById(professionalId: string, professionals: Professional[]): Professional | null {
-  return professionals.find((item) => item.id === professionalId) ?? null;
-}
-
-function getUnreadCount(messages: Message[], professionalId?: string): number {
-  return messages.filter((message) => !message.read && (!professionalId || message.professionalId === professionalId)).length;
-}
-
-function formatMessageTime(params: { isoDate: string; timezone: string; language: AppLanguage }): string {
-  return formatDateWithLocale({
-    value: params.isoDate,
-    language: params.language,
-    timeZone: params.timezone,
-    options: {
-      hour: "numeric",
-      minute: "2-digit"
-    }
-  });
 }
 
 export function ChatPage(props: {
@@ -56,345 +31,41 @@ export function ChatPage(props: {
   /** Modal desde Inicio: sin toolbar del portal y conversación enfocada. */
   embedded?: boolean;
 }) {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [draft, setDraft] = useState("");
-  const [mobileLayout, setMobileLayout] = useState(false);
-  const [mobileInboxOpen, setMobileInboxOpen] = useState(false);
-  const [apiThreads, setApiThreads] = useState<ApiChatThread[]>([]);
-  const [apiAvailableProfessionalIds, setApiAvailableProfessionalIds] = useState<string[]>([]);
-  const [apiMessages, setApiMessages] = useState<ApiChatMessage[]>([]);
-  const [activeThreadId, setActiveThreadId] = useState("");
-  const [apiError, setApiError] = useState("");
-  const [pendingUnreadFocus, setPendingUnreadFocus] = useState(searchParams.get("focus") === "first-unread");
+  const navigate = useNavigate();
+  const threadRef = useRef<HTMLDivElement>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [sessionDetailOpen, setSessionDetailOpen] = useState(false);
+  const chat = usePatientChat(props);
+  const sharedEntries = useSharedDiaryEntries(props.authToken);
+  const view = useChatViewModel({
+    state: props.state,
+    language: props.language,
+    sessionUserId: props.sessionUserId,
+    professionalPhotoMap: props.professionalPhotoMap,
+    remoteMode: chat.remoteMode,
+    threadProfessional: chat.threadProfessional,
+    threadMessages: chat.threadMessages,
+    apiMessages: chat.apiMessages,
+    apiThreadByProfessional: chat.apiThreadByProfessional,
+    sharedEntries,
+    pendingUnreadFocus: chat.pendingUnreadFocus,
+    activeProfessionalId: chat.activeProfessionalId,
+    threadRef
+  });
 
-  const remoteMode = Boolean(props.authToken);
-  const availableProfessionals = useMemo(() => {
-    const visibleIds = new Set<string>();
-    const validIds = new Set(props.professionals.map((professional) => professional.id));
-
-    if (props.state.assignedProfessionalId && validIds.has(props.state.assignedProfessionalId)) {
-      visibleIds.add(props.state.assignedProfessionalId);
-    }
-
-    if (remoteMode) {
-      apiThreads.forEach((thread) => {
-        if (validIds.has(thread.professionalId)) {
-          visibleIds.add(thread.professionalId);
-        }
-      });
-      apiAvailableProfessionalIds.forEach((professionalId) => {
-        if (validIds.has(professionalId)) {
-          visibleIds.add(professionalId);
-        }
-      });
-    } else {
-      props.state.bookings.forEach((booking) => {
-        if (validIds.has(booking.professionalId)) {
-          visibleIds.add(booking.professionalId);
-        }
-      });
-      props.state.messages.forEach((message) => {
-        if (validIds.has(message.professionalId)) {
-          visibleIds.add(message.professionalId);
-        }
-      });
-    }
-
-    return props.professionals.filter((professional) => visibleIds.has(professional.id));
-  }, [
-    apiAvailableProfessionalIds,
-    apiThreads,
-    props.professionals,
-    props.state.assignedProfessionalId,
-    props.state.bookings,
-    props.state.messages,
-    remoteMode
-  ]);
-
-  const activeProfessionalId = useMemo(() => {
-    if (availableProfessionals.length === 0) {
-      return null;
-    }
-    if (availableProfessionals.some((professional) => professional.id === props.state.activeChatProfessionalId)) {
-      return props.state.activeChatProfessionalId;
-    }
-    return availableProfessionals[0].id;
-  }, [availableProfessionals, props.state.activeChatProfessionalId]);
-
-  const threadProfessional = activeProfessionalId ? findProfessionalById(activeProfessionalId, props.professionals) : null;
-  const threadMessages = threadProfessional
-    ? props.state.messages
-        .filter((message) => message.professionalId === threadProfessional.id)
-        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-    : [];
-
-  const apiThreadByProfessional = useMemo(() => {
-    const map = new Map<string, ApiChatThread>();
-    for (const thread of apiThreads) {
-      map.set(thread.professionalId, thread);
-    }
-    return map;
-  }, [apiThreads]);
-
-  useEffect(() => {
-    const media = window.matchMedia("(max-width: 1080px)");
-    const syncLayout = () => setMobileLayout(media.matches);
-    syncLayout();
-    media.addEventListener("change", syncLayout);
-    return () => media.removeEventListener("change", syncLayout);
-  }, []);
-
-  const showMobileInbox = mobileLayout && availableProfessionals.length > 1 && mobileInboxOpen;
-
-  useEffect(() => {
-    if (searchParams.get("focus") === "first-unread") {
-      setPendingUnreadFocus(true);
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
-    if (!activeProfessionalId || props.state.activeChatProfessionalId === activeProfessionalId) {
-      return;
-    }
-    props.onSetActiveProfessional(activeProfessionalId);
-  }, [activeProfessionalId, props.onSetActiveProfessional, props.state.activeChatProfessionalId]);
-
-  useEffect(() => {
-    if (activeProfessionalId) {
-      return;
-    }
-    setActiveThreadId("");
-    setApiMessages([]);
-  }, [activeProfessionalId]);
-
-  useEffect(() => {
-    if (remoteMode || !threadProfessional) {
-      return;
-    }
-
-    const unread = getUnreadCount(props.state.messages, threadProfessional.id);
-    if (unread > 0) {
-      if (pendingUnreadFocus) {
-        const timer = window.setTimeout(() => {
-          props.onMarkRead(threadProfessional.id);
-        }, 650);
-        return () => {
-          window.clearTimeout(timer);
-        };
-      }
-      props.onMarkRead(threadProfessional.id);
-    }
-  }, [remoteMode, threadProfessional, props.onMarkRead, props.state.messages, pendingUnreadFocus]);
-
-  const loadThreads = async () => {
-    if (!props.authToken) {
-      return;
-    }
-
-    try {
-      const response = await fetchSharedPatientChatThreads(props.authToken);
-      setApiThreads(
-        response.threads.map((thread) => ({
-          ...thread,
-          counterpartPhotoUrl: resolvePublicAssetUrl(thread.counterpartPhotoUrl) ?? thread.counterpartPhotoUrl ?? null
-        }))
-      );
-      setApiAvailableProfessionalIds(response.availableProfessionalIds ?? []);
-      setApiError("");
-    } catch (requestError) {
-      const raw = requestError instanceof Error ? requestError.message : "";
-      setApiError(friendlyChatSurfaceMessage("threads", raw, props.language));
-    }
+  const shareEntry = (entry: (typeof view.sharedForTimeline)[number]) => {
+    const mood = moodMeta(entry.mood);
+    const at = entry.publishedAt || entry.createdAt;
+    void chat.sendBody(
+      diaryEntryShareBody({
+        id: entry.id,
+        dateLabel: formatShortDate(at, view.timeZone, props.language),
+        moodLabel: t(props.language, { es: mood.labelEs, en: mood.labelEn, pt: mood.labelPt }),
+        title: entry.title.trim() || t(props.language, { es: "Entrada del diario", en: "Diary entry", pt: "Entrada do diário" })
+      }),
+      false
+    );
   };
-
-  const loadMessages = async (threadId: string) => {
-    if (!props.authToken) {
-      return;
-    }
-
-    try {
-      const response = await apiRequest<{ messages: ApiChatMessage[] }>(
-        `/api/chat/threads/${threadId}/messages`,
-        {},
-        props.authToken ?? undefined
-      );
-      setApiMessages(response.messages);
-      setApiError("");
-    } catch (requestError) {
-      const raw = requestError instanceof Error ? requestError.message : "";
-      setApiError(friendlyChatSurfaceMessage("messages", raw, props.language));
-    }
-  };
-
-  const ensureThreadForProfessional = async (professionalId: string): Promise<string | null> => {
-    if (!props.authToken) {
-      return null;
-    }
-
-    try {
-      const response = await apiRequest<{ threadId: string }>(
-        `/api/chat/threads/by-professional/${professionalId}`,
-        { method: "POST" },
-        props.authToken ?? undefined
-      );
-      setActiveThreadId(response.threadId);
-      return response.threadId;
-    } catch (requestError) {
-      const raw = requestError instanceof Error ? requestError.message : "";
-      setApiError(friendlyChatSurfaceMessage("open", raw, props.language));
-      return null;
-    }
-  };
-
-  useEffect(() => {
-    if (!remoteMode || !props.authToken) {
-      return;
-    }
-
-    void loadThreads();
-    const unsubscribe = subscribeDocumentVisibleInterval(() => {
-      void loadThreads();
-    }, 20_000);
-
-    return () => {
-      unsubscribe();
-    };
-  }, [remoteMode, props.authToken]);
-
-  useEffect(() => {
-    if (!remoteMode || !props.authToken || !activeProfessionalId) {
-      return;
-    }
-
-    let active = true;
-
-    const run = async () => {
-      const threadId = await ensureThreadForProfessional(activeProfessionalId);
-      if (!threadId || !active) {
-        return;
-      }
-
-      await loadMessages(threadId);
-      await apiRequest<{ markedAsRead: number }>(
-        `/api/chat/threads/${threadId}/read`,
-        { method: "POST" },
-        props.authToken ?? undefined
-      ).catch(() => undefined);
-    };
-
-    run();
-
-    return () => {
-      active = false;
-    };
-  }, [activeProfessionalId, remoteMode, props.authToken]);
-
-  useEffect(() => {
-    if (!remoteMode || !props.authToken || !activeThreadId) {
-      return;
-    }
-
-    const unsubscribe = subscribeDocumentVisibleInterval(() => {
-      void loadMessages(activeThreadId);
-    }, 15_000);
-
-    return () => {
-      unsubscribe();
-    };
-  }, [remoteMode, props.authToken, activeThreadId]);
-
-  const handleSelectProfessional = async (professionalId: string) => {
-    if (!availableProfessionals.some((professional) => professional.id === professionalId)) {
-      return;
-    }
-
-    props.onSetActiveProfessional(professionalId);
-    setMobileInboxOpen(false);
-
-    if (!remoteMode || !props.authToken) {
-      return;
-    }
-
-    const threadId = await ensureThreadForProfessional(professionalId);
-    if (threadId) {
-      await loadMessages(threadId);
-      await loadThreads();
-    }
-  };
-
-  const handleSend = async () => {
-    if (!draft.trim() || !threadProfessional) {
-      return;
-    }
-
-    if (remoteMode && props.authToken) {
-      const threadId = activeThreadId || (await ensureThreadForProfessional(threadProfessional.id));
-      if (!threadId) {
-        return;
-      }
-
-      try {
-        await apiRequest(
-          `/api/chat/threads/${threadId}/messages`,
-          {
-            method: "POST",
-            body: JSON.stringify({ body: draft.trim() })
-          },
-          props.authToken ?? undefined
-        );
-        setDraft("");
-        await loadMessages(threadId);
-        await loadThreads();
-      } catch (requestError) {
-        const raw = requestError instanceof Error ? requestError.message : "";
-        setApiError(friendlyChatSurfaceMessage("send", raw, props.language));
-      }
-      return;
-    }
-
-    props.onSendMessage(threadProfessional.id, draft.trim());
-    setDraft("");
-  };
-
-  const handleComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      handleSend();
-    }
-  };
-
-  useEffect(() => {
-    if (!pendingUnreadFocus) {
-      return;
-    }
-
-    const firstUnreadMessageId = remoteMode
-      ? apiMessages.find((message) => message.senderUserId !== props.sessionUserId && !message.readAt)?.id ?? null
-      : threadMessages.find((message) => message.sender === "professional" && !message.read)?.id ?? null;
-
-    if (firstUnreadMessageId) {
-      const messageElement = document.getElementById(`chat-msg-${firstUnreadMessageId}`);
-      if (messageElement) {
-        messageElement.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-
-      setPendingUnreadFocus(false);
-      setSearchParams({}, { replace: true });
-      return;
-    }
-
-    if (!remoteMode || apiMessages.length > 0) {
-      setPendingUnreadFocus(false);
-      setSearchParams({}, { replace: true });
-    }
-  }, [
-    pendingUnreadFocus,
-    remoteMode,
-    apiMessages,
-    threadMessages,
-    props.sessionUserId,
-    setSearchParams
-  ]);
 
   return (
     <div className={`chat-page-root${props.embedded ? " chat-page-root--embedded" : ""}`}>
@@ -404,218 +75,105 @@ export function ChatPage(props: {
         </div>
       )}
       <div className="chat-page-body">
-      <div
-        className={`wa-shell${showMobileInbox ? " wa-shell--mobile-inbox" : ""}${props.embedded ? " wa-shell--embedded" : ""}`}
-      >
-      {props.embedded ? null : (
-      <aside className="wa-sidebar">
-        <header className="wa-sidebar-header">
-          <h2>{t(props.language, { es: "Mensajes", en: "Messages", pt: "Mensagens" })}</h2>
-        </header>
-
-        <div className="wa-thread-list">
-          {availableProfessionals.map((professional) => {
-            const remoteThread = apiThreadByProfessional.get(professional.id);
-            const unread = remoteMode ? remoteThread?.unreadCount ?? 0 : getUnreadCount(props.state.messages, professional.id);
-            const lastMessageText = remoteMode
-              ? remoteThread?.lastMessage?.body
-                ?? t(props.language, { es: "Todavía no hay mensajes", en: "No messages yet", pt: "Ainda nao ha mensagens" })
-              : props.state.messages
-                  .filter((message) => message.professionalId === professional.id)
-                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]?.text
-                ?? t(props.language, { es: "Todavía no hay mensajes", en: "No messages yet", pt: "Ainda nao ha mensagens" });
-
-            const threadPhoto = remoteThread?.counterpartPhotoUrl?.trim();
-            const photoSrc = professionalPhotoSrc(threadPhoto || props.professionalPhotoMap[professional.id] || null);
-            return (
-              <button
-                className={professional.id === activeProfessionalId ? "wa-thread-item active" : "wa-thread-item"}
-                key={professional.id}
-                type="button"
-                onClick={() => {
-                  void handleSelectProfessional(professional.id);
-                }}
-              >
-                <img
-                  src={photoSrc}
-                  alt={professional.fullName}
-                  onError={props.onImageFallback}
-                />
-                <div>
-                  <strong>{professional.fullName}</strong>
-                  <p>{lastMessageText}</p>
-                </div>
-                {unread > 0 ? (
-                  <div
-                    className="wa-thread-unread"
-                    aria-label={t(props.language, {
-                      es: `${unread} mensajes nuevos`,
-                      en: `${unread} new messages`,
-                      pt: `${unread} novas mensagens`
-                    })}
-                  >
-                    <span className="wa-thread-unread-dot" aria-hidden="true" />
-                    <span className="badge">{unread}</span>
-                  </div>
-                ) : null}
-              </button>
-            );
-          })}
-          {availableProfessionals.length === 0 ? (
-            <p className="wa-empty">
-              {t(props.language, {
-                es: "Tu chat se habilita cuando tengas un profesional asignado.",
-                en: "Your chat will be enabled once you have an assigned professional.",
-                pt: "Seu chat sera habilitado quando voce tiver um profissional atribuido."
-              })}
-            </p>
-          ) : null}
-        </div>
-      </aside>
-      )}
-
-      <section className="wa-main">
-        <header className="wa-main-header">
-          {mobileLayout && !props.embedded && availableProfessionals.length > 1 ? (
-            <button
-              type="button"
-              className="wa-mobile-back"
-              onClick={() => setMobileInboxOpen(true)}
-              aria-label={t(props.language, { es: "Volver a mensajes", en: "Back to messages", pt: "Voltar para mensagens" })}
-            >
-              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-                <path fill="currentColor" d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-              </svg>
-            </button>
-          ) : null}
-          <div className="wa-main-profile">
-            {threadProfessional ? (
-              <>
-                <img
-                  src={professionalPhotoSrc(
-                    (remoteMode
-                      ? apiThreadByProfessional.get(threadProfessional.id)?.counterpartPhotoUrl?.trim()
-                      : undefined) ||
-                      props.professionalPhotoMap[threadProfessional.id] ||
-                      null
-                  )}
-                  alt={threadProfessional.fullName}
-                  onError={props.onImageFallback}
-                />
-                <div>
-                  <h3>{threadProfessional.fullName}</h3>
-                  <span>{t(props.language, { es: "En linea", en: "Online", pt: "Online" })}</span>
-                </div>
-              </>
-            ) : (
-              <div>
-                <h3>{t(props.language, { es: "Chat no disponible", en: "Chat unavailable", pt: "Chat indisponivel" })}</h3>
-                <span>
-                  {t(props.language, {
-                    es: "No tienes profesionales asignados para mensajeria.",
-                    en: "You have no assigned professionals for messaging.",
-                    pt: "Voce nao tem profissionais atribuidos para mensagens."
-                  })}
-                </span>
-              </div>
-            )}
-          </div>
-        </header>
-
-        <div className="wa-messages">
-          {threadProfessional && remoteMode && apiMessages.length === 0 ? (
-            <p className="wa-empty">
-              {t(props.language, {
-                es: "Todavía no hay mensajes en esta conversación.",
-                en: "There are no messages in this conversation yet.",
-                pt: "Ainda nao ha mensagens nesta conversa."
-              })}
-            </p>
-          ) : null}
-
-          {threadProfessional && remoteMode
-            ? apiMessages.map((message) => (
-                <article
-                  id={`chat-msg-${message.id}`}
-                  className={message.senderUserId === props.sessionUserId ? "wa-message outgoing" : "wa-message incoming"}
-                  key={message.id}
-                >
-                  <p>{message.body}</p>
-                  <time>
-                    {formatMessageTime({
-                      isoDate: message.createdAt,
-                      timezone: props.state.profile.timezone,
-                      language: props.language
-                    })}
-                  </time>
-                </article>
-              ))
-            : null}
-
-          {!threadProfessional ? (
-            <p className="wa-empty">
-              {t(props.language, {
-                es: "Cuando tengas un profesional asignado, podras escribirle desde aqui.",
-                en: "Once you have an assigned professional, you can message from here.",
-                pt: "Quando voce tiver um profissional atribuido, podera escrever por aqui."
-              })}
-            </p>
-          ) : !remoteMode && threadMessages.length === 0 ? (
-            <p className="wa-empty">
-              {t(props.language, {
-                es: "Todavía no hay mensajes en esta conversación.",
-                en: "There are no messages in this conversation yet.",
-                pt: "Ainda nao ha mensagens nesta conversa."
-              })}
-            </p>
-          ) : (
-            !remoteMode ? threadMessages.map((message) => (
-              <article
-                id={`chat-msg-${message.id}`}
-                className={message.sender === "patient" ? "wa-message outgoing" : "wa-message incoming"}
-                key={message.id}
-              >
-                <p>{message.text}</p>
-                <time>
-                  {formatMessageTime({
-                    isoDate: message.createdAt,
-                    timezone: props.state.profile.timezone,
-                    language: props.language
-                  })}
-                </time>
-              </article>
-            )) : null
-          )}
-        </div>
-
-        <footer className="wa-composer">
-          <textarea
-            placeholder={threadProfessional
-              ? t(props.language, { es: "Escribe un mensaje", en: "Write a message", pt: "Escreva uma mensagem" })
-              : t(props.language, { es: "Chat deshabilitado hasta asignacion", en: "Chat disabled until assignment", pt: "Chat desativado ate atribuicao" })}
-            rows={1}
-            value={draft}
-            disabled={!threadProfessional}
-            onKeyDown={handleComposerKeyDown}
-            onChange={(event) => setDraft(event.target.value)}
+        <div className={`chat-ds${props.embedded ? " chat-ds--embedded" : ""}`}>
+          <ChatConversation
+            language={props.language}
+            mobile={chat.mobileLayout}
+            professionalName={view.professionalName}
+            givenName={view.givenName}
+            photoSrc={view.photoSrc || null}
+            onImageFallback={props.onImageFallback}
+            professionals={
+              props.embedded
+                ? []
+                : chat.availableProfessionals.map((professional) => ({
+                    id: professional.id,
+                    name: professionalAccessibleName(professional),
+                    unread: chat.remoteMode
+                      ? chat.apiThreadByProfessional.get(professional.id)?.unreadCount ?? 0
+                      : chat.unreadCount(props.state.messages, professional.id)
+                  }))
+            }
+            activeProfessionalId={chat.activeProfessionalId}
+            onSelectProfessional={(professionalId) => {
+              void chat.selectProfessional(professionalId);
+            }}
+            items={view.timeline}
+            emptyLabel={view.emptyLabel}
+            sessionNotice={view.sessionNotice}
+            onOpenSession={() => setSessionDetailOpen(true)}
+            draft={chat.draft}
+            onDraftChange={chat.setDraft}
+            onSend={() => {
+              void chat.sendBody(chat.draft, true);
+            }}
+            canSend={Boolean(chat.draft.trim() && chat.threadProfessional)}
+            shareEntries={view.sharedForTimeline}
+            sharedEntryIds={view.sentEntryIds}
+            onShareEntry={shareEntry}
+            threadRef={threadRef}
           />
-          <button
-            className="wa-send"
-            type="button"
-            onClick={handleSend}
-            disabled={!threadProfessional}
-            aria-label={t(props.language, { es: "Enviar", en: "Send", pt: "Enviar" })}
-            title={t(props.language, { es: "Enviar", en: "Send", pt: "Enviar" })}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3.8 11.4 19.6 4.6c.9-.4 1.8.5 1.4 1.4l-6.8 15.8c-.4 1-1.8.9-2.1-.1l-1.7-5.7-5.7-1.7c-1-.3-1.1-1.7-.1-2.1Zm7.6 2.2 1.2 4 4.8-11.1-11.1 4.8 4 1.2 5.7-5.7a.9.9 0 1 1 1.2 1.2l-5.8 5.6Z" />
-            </svg>
-          </button>
-        </footer>
-      </section>
+          {!props.embedded && chat.threadProfessional ? (
+            <ChatContextPanel
+              language={props.language}
+              name={view.professionalName ?? ""}
+              meta={view.profileMeta}
+              photoSrc={view.photoSrc}
+              ratingLabel={view.ratingLabel}
+              onOpenProfile={() => setProfileOpen(true)}
+              onImageFallback={props.onImageFallback}
+              session={
+                view.sessionNotice
+                  ? { when: view.sessionNotice.when, meta: view.sessionNotice.meta, credits: view.creditsLabel }
+                  : null
+              }
+              shared={view.sharedPanel}
+              authToken={props.authToken}
+              patientName={props.state.session?.fullName ?? null}
+              patientEmail={props.state.session?.email ?? null}
+            />
+          ) : null}
+        </div>
+        {chat.apiError ? <p className="error-text">{chat.apiError}</p> : null}
       </div>
-      {apiError ? <p className="error-text">{apiError}</p> : null}
-      </div>
+
+      {sessionDetailOpen && view.upcomingBooking && chat.threadProfessional ? (
+        <SessionDetailModal
+          booking={view.upcomingBooking}
+          timezone={view.timeZone}
+          language={props.language}
+          patientName={props.state.session?.fullName}
+          professional={{
+            fullName: chat.threadProfessional.fullName,
+            firstName: chat.threadProfessional.firstName,
+            lastName: chat.threadProfessional.lastName,
+            title: chat.threadProfessional.title,
+            approach: chat.threadProfessional.approach,
+            photoUrl: view.photoSrc,
+            rating: chat.threadProfessional.rating,
+            reviewsCount: chat.threadProfessional.reviewsCount
+          }}
+          noticeHours={chat.threadProfessional.cancellationHours}
+          onImageFallback={props.onImageFallback}
+          onClose={() => setSessionDetailOpen(false)}
+        />
+      ) : null}
+
+      {profileOpen && chat.threadProfessional ? (
+        <DashboardHomeProfessionalProfileModal
+          language={props.language}
+          professional={chat.threadProfessional}
+          photoSrc={view.photoSrc}
+          canSelfChangeProfessional={view.canSelfChange}
+          onClose={() => setProfileOpen(false)}
+          onChat={() => setProfileOpen(false)}
+          onChangeProfessional={() => {
+            setProfileOpen(false);
+            navigate("/matching?changeProfessional=1");
+          }}
+          onImageFallback={props.onImageFallback}
+        />
+      ) : null}
     </div>
   );
 }

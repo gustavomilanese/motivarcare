@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
+import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
+import { PortalAccountToolsMount } from "../../app/components/PortalAccountToolsMount";
+import { navigateToSectionTop, useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
 import { DiaryEntriesTimeline } from "../components/DiaryEntriesTimeline";
 import { DiaryEntryDetailModal } from "../components/DiaryEntryDetailModal";
-import { DiaryMoodPicker } from "../components/DiaryMoodPicker";
-import { DiaryHomeHero, DiaryShell } from "../components/DiaryChrome";
-import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
-import { useScrollSectionToTopOnMount, navigateToSectionTop } from "../../app/lib/navigateSectionTop";
+import { DiaryCalmHead } from "../components/DiaryCalmHead";
+import { DiaryMoodCheckin } from "../components/DiaryMoodCheckin";
+import { DiaryShell } from "../components/DiaryChrome";
+import { DiarySideResources } from "../components/DiarySideResources";
 import { t } from "../lib/labels";
 import { fetchDiaryEntries, migrateLocalDiaryIfNeeded } from "../services/emotionalDiaryApi";
-import type { DiaryEntry, MoodLevel } from "../types";
+import type { DiaryEntry } from "../types";
 
 export interface DiaryHomePageProps {
   language: AppLanguage;
@@ -44,7 +47,15 @@ export function DiaryHomePage(props: DiaryHomePageProps) {
         setEntries(published);
       } catch (requestError) {
         if (cancelled) return;
-        setError(requestError instanceof Error ? requestError.message : "Error al cargar el diario");
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : t(props.language, {
+                es: "Error al cargar el diario",
+                en: "Could not load the diary",
+                pt: "Erro ao carregar o diario"
+              })
+        );
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -60,203 +71,61 @@ export function DiaryHomePage(props: DiaryHomePageProps) {
     [detailEntryId, entries]
   );
 
-  const homeResources = useMemo(
-    () => [
-      {
-        to: "/bienestar/musica",
-        title: t(props.language, { es: "Música relajante", en: "Relaxing music", pt: "Música relaxante" }),
-        description: t(props.language, {
-          es: "Más de 100 videos por categoría: lofi, lluvia, meditación, sueño y más.",
-          en: "100+ videos by category: lofi, rain, meditation, sleep, and more.",
-          pt: "Mais de 100 vídeos por categoria: lofi, chuva, meditação, sono e mais."
-        })
-      },
-      {
-        to: "/ejercicios",
-        title: t(props.language, { es: "Ejercicio CBT", en: "CBT exercise", pt: "Exercício TCC" }),
-        description: t(props.language, {
-          es: "Herramientas prácticas inspiradas en terapia cognitiva.",
-          en: "Practical tools inspired by cognitive therapy.",
-          pt: "Ferramentas práticas inspiradas em terapia cognitiva."
-        })
-      },
-      {
-        to: "/sessions",
-        title: t(props.language, { es: "Preparar próxima sesión", en: "Prepare next session", pt: "Preparar próxima sessão" }),
-        description: t(props.language, {
-          es: "Revisá tu próximo turno y llegá con lo que quieras conversar.",
-          en: "Review your next appointment and arrive with what you want to discuss.",
-          pt: "Revise seu próximo horário e chegue com o que quiser conversar."
-        })
-      }
-    ],
-    [props.language]
-  );
-
-  function handleMoodQuickPick(mood: MoodLevel) {
-    navigateToSectionTop(navigate, `/diario/nueva?mood=${mood}`);
-  }
-
-  const heroTitle = t(props.language, { es: "Diario emocional", en: "Emotional diary", pt: "Diário emocional" });
-  const heroSubtitle = t(props.language, {
-    es: "Registrá cómo te sentís, revisá entradas anteriores y volvé a ellas cuando quieras.",
-    en: "Log how you feel, review past entries, and return whenever you need.",
-    pt: "Registre como se sente, revise entradas anteriores e volte quando quiser."
-  });
-
-  if (loading) {
-    return (
-      <DiaryShell language={props.language} className="diary-page--home">
-        <div className="page-stack diary-home-page diary-home-page--ml">
-          <section className="diary-page-ml" aria-label={heroTitle}>
-            <DiaryHomeHero language={props.language} title={heroTitle} subtitle={heroSubtitle} />
-            <div className="dashboard-ml-diary-pack diary-page-ml-pack">
-              <MotivarCarePageLoader language={props.language} layout="block" />
-            </div>
-          </section>
-        </div>
-      </DiaryShell>
-    );
-  }
-
   return (
-    <DiaryShell language={props.language} className="diary-page--home">
-      <div className="page-stack diary-home-page diary-home-page--ml">
-        <section className="diary-page-ml" aria-label={heroTitle}>
-          <DiaryHomeHero language={props.language} title={heroTitle} subtitle={heroSubtitle} />
-
-          <div className="dashboard-ml-diary-pack diary-page-ml-pack">
+    <DiaryShell language={props.language} className="diary-page--home diary-home-page diary-home-page--ml diary-calm">
+      <div className="diary-calm-columns">
+        <div className="diary-calm-main">
+          <DiaryCalmHead language={props.language} />
+          <DiaryMoodCheckin language={props.language} />
+          <section aria-labelledby="diary-recent-title">
+            <div className="diary-calm-recent-head">
+              <h2 id="diary-recent-title">
+                {t(props.language, { es: "Últimas entradas", en: "Recent entries", pt: "Últimas entradas" })}
+              </h2>
+              <button
+                type="button"
+                className="diary-calm-new"
+                onClick={() => navigateToSectionTop(navigate, "/diario/nueva")}
+              >
+                {t(props.language, { es: "Nueva entrada", en: "New entry", pt: "Nova entrada" })}
+              </button>
+            </div>
             {error ? <p className="diary-error">{error}</p> : null}
-
-            <section
-              className="diary-home-band diary-home-band--checkin"
-              aria-label={t(props.language, { es: "Check-in de hoy", en: "Today's check-in", pt: "Check-in de hoje" })}
-            >
-              <article className="diary-hero-card diary-hero-card--elevated">
-                <h3 className="diary-hero-card-title">
-                  <span className="diary-home-eyebrow diary-home-eyebrow--inline">
-                    {t(props.language, { es: "Paso 1", en: "Step 1", pt: "Passo 1" })}
-                  </span>
-                  <span className="diary-hero-card-title-text">
-                    {t(props.language, {
-                      es: "¿Cómo te sentís hoy?",
-                      en: "How do you feel today?",
-                      pt: "Como você se sente hoje?"
-                    })}
-                  </span>
-                </h3>
-                <p>
-                  {t(props.language, {
-                    es: "Elegí un estado o empezá directo. En la entrada te hacemos preguntas cortas. Escribí en tu diario cuando te sirva — te guiamos paso a paso en cada sección.",
-                    en: "Pick a mood or start right away. Short guided prompts in the entry flow. Write in your diary when it works for you — we guide you step by step in each section.",
-                    pt: "Escolha um humor ou comece direto. Perguntas curtas na entrada. Escreva no seu diário quando fizer sentido — guiamos você passo a passo em cada seção."
-                  })}
-                </p>
-                <DiaryMoodPicker
+            {loading ? (
+              <MotivarCarePageLoader language={props.language} layout="block" />
+            ) : (
+              <>
+                <DiaryEntriesTimeline
                   language={props.language}
-                  ariaLabel={t(props.language, {
-                    es: "Elegí cómo te sentís hoy",
-                    en: "Choose how you feel today",
-                    pt: "Escolha como você se sente hoje"
+                  entries={recent}
+                  variant="minimal"
+                  moodMark="face"
+                  onOpenDetail={setDetailEntryId}
+                  ariaLabel={t(props.language, { es: "Últimas entradas", en: "Recent entries", pt: "Últimas entradas" })}
+                  emptyMessage={t(props.language, {
+                    es: "Todavía no tenés entradas. Tu primera puede tomar unos minutos.",
+                    en: "No entries yet. Your first one only takes a few minutes.",
+                    pt: "Ainda não há entradas. A primeira leva só alguns minutos."
                   })}
-                  onSelect={handleMoodQuickPick}
                 />
-              </article>
-              <div className="diary-checkin-actions">
-                <Link
-                  className="diary-btn diary-btn--primary diary-btn--wide"
-                  to="/diario/nueva"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    navigateToSectionTop(navigate, "/diario/nueva");
-                  }}
-                >
-                  {t(props.language, { es: "Nueva entrada", en: "New entry", pt: "Nova entrada" })}
-                </Link>
-                <Link
-                  className="diary-soft-link"
-                  to="/diario/registros"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    navigateToSectionTop(navigate, "/diario/registros");
-                  }}
-                >
-                  {t(props.language, {
-                    es: "Ver historial y estadísticas →",
-                    en: "View history and stats →",
-                    pt: "Ver histórico e estatísticas →"
-                  })}
-                </Link>
-              </div>
-            </section>
-
-            <section
-              className="diary-home-band diary-home-band--history"
-              aria-label={t(props.language, { es: "Historial reciente", en: "Recent history", pt: "Histórico recente" })}
-            >
-              <header className="diary-recent-head">
-                <h3 className="diary-recent-title">
-                  {t(props.language, { es: "Últimas entradas", en: "Recent entries", pt: "Últimas entradas" })}
-                </h3>
                 {recent.length > 0 ? (
-                  <Link
-                    className="diary-recent-link"
-                    to="/diario/registros"
-                    onClick={(event) => {
-                      event.preventDefault();
-                      navigateToSectionTop(navigate, "/diario/registros");
-                    }}
+                  <button
+                    type="button"
+                    className="diary-side-link diary-calm-all"
+                    onClick={() => navigateToSectionTop(navigate, "/diario/registros")}
                   >
                     {t(props.language, { es: "Ver todas", en: "See all", pt: "Ver todas" })}
-                  </Link>
+                  </button>
                 ) : null}
-              </header>
-              <DiaryEntriesTimeline
-                language={props.language}
-                entries={recent}
-                variant="minimal"
-                onOpenDetail={setDetailEntryId}
-                ariaLabel={t(props.language, { es: "Últimas entradas", en: "Recent entries", pt: "Últimas entradas" })}
-                emptyMessage={t(props.language, {
-                  es: "Todavía no tenés entradas. Tu primera puede tomar unos minutos.",
-                  en: "No entries yet. Your first one only takes a few minutes.",
-                  pt: "Ainda não há entradas. A primeira leva só alguns minutos."
-                })}
-              />
-            </section>
-
-            <section
-              className="diary-home-band diary-home-band--extras"
-              aria-labelledby="diary-home-more-title"
-            >
-              <h2 id="diary-home-more-title" className="diary-home-section-title">
-                {t(props.language, { es: "Más opciones", en: "More options", pt: "Mais opções" })}
-              </h2>
-              <p className="diary-home-section-lead">
-                {t(props.language, {
-                  es: "Recursos útiles para acompañarte entre sesiones.",
-                  en: "Helpful resources to support you between sessions.",
-                  pt: "Recursos úteis para acompanhar você entre sessões."
-                })}
-              </p>
-              <ul className="diary-resource-list">
-                {homeResources.map((resource) => (
-                  <li key={`${resource.to}-${resource.title}`}>
-                    <Link className="diary-resource-card" to={resource.to}>
-                      <strong>{resource.title}</strong>
-                      <span className="diary-resource-desc">{resource.description}</span>
-                      <span className="diary-resource-cta">
-                        {t(props.language, { es: "Ir al recurso →", en: "Go to resource →", pt: "Ir ao recurso →" })}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          </div>
-        </section>
+              </>
+            )}
+          </section>
+        </div>
+        <aside className="diary-calm-side">
+          <PortalAccountToolsMount id="diary-hero-toolbar-mount" className="diary-calm-tools" />
+          <DiarySideResources language={props.language} />
+        </aside>
       </div>
-
       {detailEntry ? (
         <DiaryEntryDetailModal
           language={props.language}

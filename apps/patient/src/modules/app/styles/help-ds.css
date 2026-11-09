@@ -1,0 +1,125 @@
+/* FAQ / Manual — tokens DS 0.1. */
+
+.patient-help-page {
+  font-family: "Manrope", system-ui, sans-serif;
+  color: #1b2a23;
+}
+
+.patient-help-card {
+  background: #fff;
+  border: 1px solid #e2dfd3;
+  border-radius: 24px;
+  box-shadow: none;
+}
+
+.patient-help-back a {
+  color: #2f6b51;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.patient-help-back a:hover {
+  color: #1e4033;
+  text-decoration: underline;
+}
+
+.patient-help-card h1 {
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: #1e4033;
+}
+
+.patient-help-intro,
+.patient-help-paragraph,
+.patient-help-list,
+.patient-help-faq-answer,
+.patient-help-faq dd {
+  color: #5d6a63;
+}
+
+.patient-help-inline-link {
+  color: #2f6b51;
+  font-weight: 700;
+}
+
+.patient-help-inline-link:hover {
+  color: #1e4033;
+}
+
+.patient-help-section {
+  border-top-color: #e2dfd3;
+}
+
+.patient-help-section h2 {
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  color: #1e4033;
+}
+
+.patient-help-faq-item {
+  border: 1px solid #e2dfd3;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.patient-help-faq-item[open] {
+  border-color: #d6e7dc;
+  background: #e7f1ea;
+  box-shadow: none;
+}
+
+.patient-help-faq-question {
+  color: #1e4033;
+}
+
+.patient-help-faq-question::after {
+  border-radius: 8px;
+  background: #f5f3eb;
+  color: #1e4033;
+}
+
+.patient-help-faq-item[open] .patient-help-faq-question::after {
+  background: #d6e7dc;
+  color: #1e4033;
+}
+
+.patient-help-faq-answer {
+  border-top-color: #e2dfd3;
+}
+
+.patient-help-figures {
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin: 0 0 16px;
+}
+
+.patient-help-figure {
+  border: 1px solid #e2dfd3;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.patient-help-figure img {
+  width: 100%;
+  height: auto;
+  display: block;
+  vertical-align: middle;
+}
+
+.patient-help-figure-caption {
+  color: #5d6a63;
+  background: #fff;
+  border-top: 1px solid #e2dfd3;
+  padding: 10px 12px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.patient-help-faq dt {
+  color: #1e4033;
+}

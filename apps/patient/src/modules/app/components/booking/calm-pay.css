@@ -1,0 +1,64 @@
+.calm-pay {
+  --crema: #f5f3eb;
+  --superficie: #fff;
+  --tinta: #1b2a23;
+  --tinta-suave: #5d6a63;
+  --linea: #e2dfd3;
+  --bosque: #1e4033;
+  --bosque-2: #2a5543;
+  --verde-medio: #2f6b51;
+  --menta: #e7f1ea;
+  --lima: #e6edc4;
+  --amarillo: #f5c33b;
+  --serif: "Fraunces", Georgia, serif;
+  --sans: "Manrope", system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--tinta);
+  font-family: var(--sans);
+}
+
+.calm-pay-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.calm-pay-head h3 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 36px;
+  line-height: 1.1;
+  color: var(--bosque);
+}
+
+.calm-pay-head em {
+  font-style: italic;
+  color: var(--bosque-2);
+}
+
+.calm-pay-lead {
+  margin: 0;
+  color: var(--tinta-suave);
+  font-size: 16px;
+}
+
+.calm-pay-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 22px;
+  align-items: start;
+}
+
+@media (max-width: 1080px) {
+  .calm-pay-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .calm-pay-head h3 {
+    font-size: 30px;
+  }
+}

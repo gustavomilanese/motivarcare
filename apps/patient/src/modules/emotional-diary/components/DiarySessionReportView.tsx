@@ -1,7 +1,8 @@
 import type { CSSProperties } from "react";
 import { type AppLanguage } from "@therapy/i18n-config";
 import type { EmotionalDiarySessionSummary } from "@therapy/types";
-import { moodMeta, NEED_OPTIONS } from "../lib/moods";
+import { MoodFace } from "../../home/calm/calmIcons";
+import { feelingChipLabel, moodMeta, NEED_OPTIONS } from "../lib/moods";
 import { t } from "../lib/labels";
 
 function formatBlockDate(iso: string, language: AppLanguage): string {
@@ -71,7 +72,9 @@ export function DiarySessionReportView(props: {
                 className="diary-session-report-mood"
                 style={{ "--diary-mood-tone": mood.tone } as CSSProperties}
               >
-                <span aria-hidden="true">{mood.emoji}</span>{" "}
+                <span className="diary-session-report-face" aria-hidden="true">
+                  <MoodFace face={block.mood} />
+                </span>{" "}
                 {t(props.language, {
                   es: `Cómo te sentías: ${mood.labelEs}`,
                   en: `How you felt: ${mood.labelEn}`,
@@ -91,7 +94,9 @@ export function DiarySessionReportView(props: {
                   <span>
                     {t(props.language, { es: "Sentimientos", en: "Feelings", pt: "Sentimentos" })}
                   </span>
-                  <p>{block.feelings.join(" · ")}</p>
+                  <p>
+                    {block.feelings.map((feeling) => feelingChipLabel(props.language, feeling)).join(" · ")}
+                  </p>
                 </div>
               ) : null}
               {block.recurringThought ? (

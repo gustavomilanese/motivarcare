@@ -42,6 +42,10 @@ import {
   parseTherapistPreferencesStored
 } from "../patientClinicalIntakeQuestions";
 import { PatientMainReasonStep } from "../components/PatientMainReasonStep";
+import { IntakeChoicePills } from "../components/IntakeChoicePills";
+import { IntakeMarkedTitle } from "../components/IntakeMarkedTitle";
+import { AuthBrand } from "../../auth/AuthBrand";
+import { intakeOptionLabel, intakeOptionSubtext } from "../lib/intakeOptionLabels";
 import { buildPatientIntakeWizardSteps, wizardStepIndexForQuestion } from "../lib/patientIntakeWizardSteps";
 import {
   activateCouplesMainReason,
@@ -208,9 +212,9 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
         pt: "3. Voce tem alguma preferencia sobre seu psicologo/a?"
       }),
       help: t(language, {
-        es: "Elegí “No tengo preferencias” o indicá género, edad y enfoque LGBTIQ+ con los desplegables.",
-        en: "Choose “I have no preferences” or set gender, age, and LGBTIQ+ focus using the dropdowns.",
-        pt: "Escolha “Nao tenho preferencias” ou indique genero, idade e LGBTIQ+ nos menus."
+        es: "Elegí “No tengo preferencias”, o marcá género, edad y enfoque LGBTIQ+.",
+        en: "Choose “I have no preferences”, or mark gender, age, and LGBTIQ+ focus.",
+        pt: "Escolha “Nao tenho preferencias”, ou marque genero, idade e enfoque LGBTIQ+."
       })
     };
   }
@@ -275,13 +279,7 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
         es: "Contexto para continuidad terapéutica.",
         en: "Context for therapy continuity.",
         pt: "Contexto para continuidade terapeutica."
-      }),
-      options: [
-        t(language, { es: "Apoyo fuerte", en: "Strong support", pt: "Apoio forte" }),
-        t(language, { es: "Apoyo limitado", en: "Limited support", pt: "Apoio limitado" }),
-        t(language, { es: "Sin apoyo", en: "No support", pt: "Sem apoio" }),
-        t(language, { es: "Prefiero no responder", en: "Prefer not to answer", pt: "Prefiro nao responder" })
-      ]
+      })
     };
   }
 
@@ -297,13 +295,7 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
         es: "Pregunta de seguridad obligatoria antes de habilitar reservas.",
         en: "Mandatory safety question before enabling bookings.",
         pt: "Pergunta obrigatoria de seguranca antes de habilitar reservas."
-      }),
-      options: [
-        t(language, { es: "No", en: "No", pt: "Nao" }),
-        t(language, { es: "A veces", en: "Sometimes", pt: "As vezes" }),
-        t(language, { es: "Frecuentemente", en: "Frequently", pt: "Frequentemente" }),
-        t(language, { es: "Prefiero no responder", en: "Prefer not to answer", pt: "Prefiro nao responder" })
-      ]
+      })
     };
   }
 
@@ -403,6 +395,51 @@ export function IntakeScreen(props: {
       : null;
   const progressPct = ((stepIndex + 1) / totalWizardSteps) * 100;
   const isLast = stepIndex >= totalWizardSteps - 1;
+  const ask = useMemo(() => {
+    const markFor: Record<string, LocalizedText> = {
+      mainReason: { es: "motivos", en: "reasons", pt: "motivos" },
+      therapyGoal: { es: "lograr", en: "achieve", pt: "alcancar" },
+      therapistPreferences: { es: "preferencia", en: "preferences", pt: "preferencia" },
+      preferredApproach: { es: "terapia", en: "therapy", pt: "terapia" },
+      previousTherapy: { es: "antes", en: "before", pt: "antes" },
+      emotionalState: { es: "hoy", en: "today", pt: "hoje" },
+      supportNetwork: { es: "apoyo", en: "support", pt: "apoio" }
+    };
+    if (currentWizardStep?.kind === "intro") {
+      return {
+        title: t(props.language, {
+          es: "Unas preguntas, antes de empezar",
+          en: "A few questions before we start",
+          pt: "Algumas perguntas antes de comecar"
+        }),
+        mark: t(props.language, { es: "empezar", en: "start", pt: "comecar" }),
+        help: ""
+      };
+    }
+    if (currentWizardStep?.kind === "country") {
+      return {
+        title: t(props.language, {
+          es: "¿En qué país vivís?",
+          en: "Which country do you live in?",
+          pt: "Em que pais voce mora?"
+        }),
+        mark: t(props.language, { es: "vivís", en: "live", pt: "mora" }),
+        help: t(props.language, {
+          es: "Así mostramos precios y profesionales de tu zona.",
+          en: "So we can show prices and professionals for your area.",
+          pt: "Assim mostramos precos e profissionais da sua regiao."
+        })
+      };
+    }
+    if (!current) {
+      return { title: "", mark: "", help: "" };
+    }
+    return {
+      title: wizardHeading(current.title),
+      mark: markFor[current.id] ? t(props.language, markFor[current.id]) : "",
+      help: current.help
+    };
+  }, [current, currentWizardStep, props.language]);
 
   useEffect(() => {
     // Un borrador viejo puede apuntar a un paso que ya no existe (p. ej. el país ahora sale del perfil).
@@ -755,55 +792,19 @@ export function IntakeScreen(props: {
 
   return (
     <div
-      className={`intake-shell intake-shell--wizard${isMainReasonCouplesView ? " intake-shell--couples-focus" : ""}`}
+      className={`intake-shell intake-shell--wizard intake-shell--ask${isMainReasonCouplesView ? " intake-shell--couples-focus" : ""}`}
     >
       <section className="intake-card intake-card--wizard">
-        <div className="intake-brand">
-          <img
-            className="intake-brand-logo"
-            src="/brand/motivarcare-logo-full.png"
-            alt="MotivarCare"
-            width={280}
-            height={72}
-          />
-          <span className="intake-brand-context">{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</span>
-        </div>
+        <AuthBrand />
 
         <div className="intake-wizard-top">
           <div className="intake-header-inline">
-            <p className="intake-step-meta" aria-live="polite">
-              {replaceTemplate(
-                t(props.language, {
-                  es: "Paso {current} de {total}",
-                  en: "Step {current} of {total}",
-                  pt: "Passo {current} de {total}"
-                }),
-                { current: String(stepIndex + 1), total: String(totalWizardSteps) }
-              )}
-            </p>
-            <div className="intake-header-inline-actions">
-              {props.onChooseMacaChat && currentWizardStep?.kind === "intro" ? (
-                <button type="button" className="intake-maca-link" onClick={props.onChooseMacaChat}>
-                  {props.hasActiveMacaChatSession
-                    ? t(props.language, {
-                        es: "Continuar con Maca",
-                        en: "Continue with Maca",
-                        pt: "Continuar com Maca"
-                      })
-                    : t(props.language, {
-                        es: "Chatear con Maca",
-                        en: "Chat with Maca",
-                        pt: "Conversar com Maca"
-                      })}
-                </button>
-              ) : null}
-              <button className="intake-back-inline" type="button" onClick={stepIndex === 0 ? handleBack : goPrev}>
-                {stepIndex === 0 ? null : <span aria-hidden="true">←</span>}
-                {stepIndex === 0
-                  ? t(props.language, { es: "Salir", en: "Exit", pt: "Sair" })
-                  : t(props.language, { es: "Atrás", en: "Back", pt: "Voltar" })}
-              </button>
-            </div>
+            <button className="intake-back-inline" type="button" onClick={stepIndex === 0 ? handleBack : goPrev}>
+              {stepIndex === 0 ? null : <span aria-hidden="true">← </span>}
+              {stepIndex === 0
+                ? t(props.language, { es: "Salir", en: "Exit", pt: "Sair" })
+                : t(props.language, { es: "Atrás", en: "Back", pt: "Voltar" })}
+            </button>
           </div>
 
           <div
@@ -812,108 +813,90 @@ export function IntakeScreen(props: {
             aria-valuenow={stepIndex + 1}
             aria-valuemin={1}
             aria-valuemax={totalWizardSteps}
+            aria-label={replaceTemplate(
+              t(props.language, {
+                es: "Paso {current} de {total}",
+                en: "Step {current} of {total}",
+                pt: "Passo {current} de {total}"
+              }),
+              { current: String(stepIndex + 1), total: String(totalWizardSteps) }
+            )}
           >
             <div className="intake-progress-track">
               <div className="intake-progress-fill" style={{ width: `${progressPct}%` }} />
             </div>
           </div>
 
-          <h1 className="intake-wizard-title">
-            {patientIntakeWizardName(props.user.fullName)}
-            {t(props.language, {
+          <IntakeMarkedTitle
+            kicker={`${patientIntakeWizardName(props.user.fullName)}${t(props.language, {
               es: ", armamos tu perfil",
               en: ", let us build your profile",
               pt: ", vamos montar seu perfil"
-            })}
-          </h1>
-          <span
-            className={`chip intake-wizard-chip${isMainReasonCouplesView ? " intake-wizard-chip--couples" : ""}`}
-          >
-            {isMainReasonCouplesView
-              ? t(props.language, {
-                  es: "Terapia de pareja",
-                  en: "Couples therapy",
-                  pt: "Terapia de casal"
-                })
-              : t(props.language, {
-                  es: "Cuestionario inicial",
-                  en: "Initial questionnaire",
-                  pt: "Questionario inicial"
-                })}
-          </span>
-
+            })}`}
+            title={ask.title}
+            mark={ask.mark}
+            help={ask.help}
+          />
         </div>
 
         <form className="intake-wizard-form" onSubmit={isLast ? handleSubmit : (e) => e.preventDefault()}>
           {currentWizardStep?.kind === "intro" ? (
-            <article className="question-card question-card--wizard intake-intro-card" key="intake-pre-questions-intro">
-              <div className="intake-intro-card-accent" aria-hidden="true" />
-              <div className="intake-intro-card-body">
-                <div className="intake-intro-points">
-                  {introCopy.map((paragraph, index) => (
-                    <div className="intake-intro-point" key={index}>
-                      <span className="intake-intro-point-icon-wrap" aria-hidden="true">
-                        {index === 0 ? (
-                          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.65">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
-                            />
-                          </svg>
-                        ) : (
-                          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.65">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
-                            />
-                          </svg>
-                        )}
-                      </span>
-                      <p className="intake-intro-point-text">{paragraph}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </article>
+            <div className="intake-fork" key="intake-pre-questions-intro">
+              <article className="intake-fork-card">
+                <h2>
+                  {t(props.language, { es: "Cuestionario", en: "Questionnaire", pt: "Questionario" })}
+                </h2>
+                {introCopy.map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+              </article>
+              {props.onChooseMacaChat ? (
+                <button type="button" className="intake-fork-card intake-fork-card--maca" onClick={props.onChooseMacaChat}>
+                  <img src="/brand/ds/maca.svg" alt="" />
+                  <span>
+                    <strong>
+                      {props.hasActiveMacaChatSession
+                        ? t(props.language, {
+                            es: "Continuar con Maca",
+                            en: "Continue with Maca",
+                            pt: "Continuar com Maca"
+                          })
+                        : t(props.language, {
+                            es: "Hablar con Maca",
+                            en: "Talk with Maca",
+                            pt: "Falar com a Maca"
+                          })}
+                    </strong>
+                    <em>
+                      {t(props.language, {
+                        es: "Las mismas preguntas, en una charla.",
+                        en: "The same questions, as a conversation.",
+                        pt: "As mesmas perguntas, numa conversa."
+                      })}
+                    </em>
+                  </span>
+                </button>
+              ) : null}
+            </div>
           ) : currentWizardStep?.kind === "country" ? (
             <article className="question-card question-card--wizard" key="intake-residency">
-              <h2 className="intake-question-title">
-                {t(props.language, {
+              <IntakeChoicePills
+                showLabel={false}
+                label={t(props.language, {
                   es: "País de residencia",
                   en: "Country of residence",
                   pt: "Pais de residencia"
                 })}
-              </h2>
-              <label className="intake-select-field">
-                <select
-                  className="intake-select-touch"
-                  aria-label={t(props.language, {
-                    es: "País de residencia",
-                    en: "Country of residence",
-                    pt: "Pais de residencia"
-                  })}
-                  value={residencyCountry}
-                  onChange={(event) => {
-                    setError("");
-                    setResidencyCountry(event.target.value);
-                  }}
-                >
-                  <option value="">
-                    {t(props.language, {
-                      es: "Seleccionar…",
-                      en: "Select…",
-                      pt: "Selecionar…"
-                    })}
-                  </option>
-                  {PATIENT_PORTAL_RESIDENCY_OPTIONS.map((row) => (
-                    <option key={row.code} value={row.code}>
-                      {row.names[props.language]}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                options={PATIENT_PORTAL_RESIDENCY_OPTIONS.map((row) => row.code)}
+                value={residencyCountry}
+                labelFor={(code) =>
+                  PATIENT_PORTAL_RESIDENCY_OPTIONS.find((row) => row.code === code)?.names[props.language] ?? code
+                }
+                onChange={(code) => {
+                  setError("");
+                  setResidencyCountry(code);
+                }}
+              />
             </article>
           ) : current?.id === "mainReason" ? (
             <PatientMainReasonStep
@@ -978,113 +961,81 @@ export function IntakeScreen(props: {
 
                   {!therapistPrefParsed.exclusive ? (
                     <div className="intake-therapist-pref-fields">
-                      <label className="intake-select-field">
-                        <span className="intake-select-field-label">
-                          {t(props.language, {
-                            es: "Género del/de la psicólogo/a",
-                            en: "Therapist gender",
-                            pt: "Genero do/da psicologo/a"
-                          })}
-                        </span>
-                        <select
-                          className="intake-select-touch"
-                          value={coerceTherapistOption(THERAPIST_PREF_GENDER_OPTIONS_ES, therapistPrefParsed.gender)}
-                          onChange={(event) => {
-                            setError("");
-                            const v = event.target.value;
-                            setAnswers((prev) => {
-                              const p = parseTherapistPreferencesStored(prev.therapistPreferences ?? "");
-                              return {
-                                ...prev,
-                                therapistPreferences: buildTherapistPreferencesStored(
-                                  false,
-                                  v,
-                                  coerceTherapistOption(THERAPIST_PREF_AGE_OPTIONS_ES, p.age),
-                                  coerceTherapistOption(THERAPIST_PREF_LGBT_OPTIONS_ES, p.lgbtq)
-                                )
-                              };
-                            });
-                          }}
-                        >
-                          {THERAPIST_PREF_GENDER_OPTIONS_ES.map((opt) => (
-                            <option key={opt} value={opt}>
-                              {therapistPrefGenderOptionLabel(props.language, opt)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label className="intake-select-field">
-                        <span className="intake-select-field-label">
-                          {t(props.language, {
-                            es: "Edad aproximada del/de la psicólogo/a",
-                            en: "Approximate age of therapist",
-                            pt: "Idade aproximada do/da psicologo/a"
-                          })}
-                        </span>
-                        <select
-                          className="intake-select-touch"
-                          value={coerceTherapistOption(THERAPIST_PREF_AGE_OPTIONS_ES, therapistPrefParsed.age)}
-                          onChange={(event) => {
-                            setError("");
-                            const v = event.target.value;
-                            setAnswers((prev) => {
-                              const p = parseTherapistPreferencesStored(prev.therapistPreferences ?? "");
-                              return {
-                                ...prev,
-                                therapistPreferences: buildTherapistPreferencesStored(
-                                  false,
-                                  coerceTherapistOption(THERAPIST_PREF_GENDER_OPTIONS_ES, p.gender),
-                                  v,
-                                  coerceTherapistOption(THERAPIST_PREF_LGBT_OPTIONS_ES, p.lgbtq)
-                                )
-                              };
-                            });
-                          }}
-                        >
-                          {THERAPIST_PREF_AGE_OPTIONS_ES.map((opt) => (
-                            <option key={opt} value={opt}>
-                              {therapistPrefAgeOptionLabel(props.language, opt)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label className="intake-select-field">
-                        <span className="intake-select-field-label">
-                          {t(props.language, {
-                            es: "Experiencia en temas LGBTIQ+",
-                            en: "Experience with LGBTIQ+ topics",
-                            pt: "Experiencia em temas LGBTIQ+"
-                          })}
-                        </span>
-                        <select
-                          className="intake-select-touch"
-                          value={coerceTherapistOption(THERAPIST_PREF_LGBT_OPTIONS_ES, therapistPrefParsed.lgbtq)}
-                          onChange={(event) => {
-                            setError("");
-                            const v = event.target.value;
-                            setAnswers((prev) => {
-                              const p = parseTherapistPreferencesStored(prev.therapistPreferences ?? "");
-                              return {
-                                ...prev,
-                                therapistPreferences: buildTherapistPreferencesStored(
-                                  false,
-                                  coerceTherapistOption(THERAPIST_PREF_GENDER_OPTIONS_ES, p.gender),
-                                  coerceTherapistOption(THERAPIST_PREF_AGE_OPTIONS_ES, p.age),
-                                  v
-                                )
-                              };
-                            });
-                          }}
-                        >
-                          {THERAPIST_PREF_LGBT_OPTIONS_ES.map((opt) => (
-                            <option key={opt} value={opt}>
-                              {therapistPrefLgbtOptionLabel(props.language, opt)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                      <IntakeChoicePills
+                        label={t(props.language, {
+                          es: "Género",
+                          en: "Gender",
+                          pt: "Genero"
+                        })}
+                        options={THERAPIST_PREF_GENDER_OPTIONS_ES}
+                        value={coerceTherapistOption(THERAPIST_PREF_GENDER_OPTIONS_ES, therapistPrefParsed.gender)}
+                        labelFor={(option) => therapistPrefGenderOptionLabel(props.language, option)}
+                        onChange={(value) => {
+                          setError("");
+                          setAnswers((prev) => {
+                            const parsed = parseTherapistPreferencesStored(prev.therapistPreferences ?? "");
+                            return {
+                              ...prev,
+                              therapistPreferences: buildTherapistPreferencesStored(
+                                false,
+                                value,
+                                coerceTherapistOption(THERAPIST_PREF_AGE_OPTIONS_ES, parsed.age),
+                                coerceTherapistOption(THERAPIST_PREF_LGBT_OPTIONS_ES, parsed.lgbtq)
+                              )
+                            };
+                          });
+                        }}
+                      />
+                      <IntakeChoicePills
+                        label={t(props.language, {
+                          es: "Edad",
+                          en: "Age",
+                          pt: "Idade"
+                        })}
+                        options={THERAPIST_PREF_AGE_OPTIONS_ES}
+                        value={coerceTherapistOption(THERAPIST_PREF_AGE_OPTIONS_ES, therapistPrefParsed.age)}
+                        labelFor={(option) => therapistPrefAgeOptionLabel(props.language, option)}
+                        onChange={(value) => {
+                          setError("");
+                          setAnswers((prev) => {
+                            const parsed = parseTherapistPreferencesStored(prev.therapistPreferences ?? "");
+                            return {
+                              ...prev,
+                              therapistPreferences: buildTherapistPreferencesStored(
+                                false,
+                                coerceTherapistOption(THERAPIST_PREF_GENDER_OPTIONS_ES, parsed.gender),
+                                value,
+                                coerceTherapistOption(THERAPIST_PREF_LGBT_OPTIONS_ES, parsed.lgbtq)
+                              )
+                            };
+                          });
+                        }}
+                      />
+                      <IntakeChoicePills
+                        label={t(props.language, {
+                          es: "Temas LGBTIQ+",
+                          en: "LGBTIQ+ topics",
+                          pt: "Temas LGBTIQ+"
+                        })}
+                        options={THERAPIST_PREF_LGBT_OPTIONS_ES}
+                        value={coerceTherapistOption(THERAPIST_PREF_LGBT_OPTIONS_ES, therapistPrefParsed.lgbtq)}
+                        labelFor={(option) => therapistPrefLgbtOptionLabel(props.language, option)}
+                        onChange={(value) => {
+                          setError("");
+                          setAnswers((prev) => {
+                            const parsed = parseTherapistPreferencesStored(prev.therapistPreferences ?? "");
+                            return {
+                              ...prev,
+                              therapistPreferences: buildTherapistPreferencesStored(
+                                false,
+                                coerceTherapistOption(THERAPIST_PREF_GENDER_OPTIONS_ES, parsed.gender),
+                                coerceTherapistOption(THERAPIST_PREF_AGE_OPTIONS_ES, parsed.age),
+                                value
+                              )
+                            };
+                          });
+                        }}
+                      />
                     </div>
                   ) : null}
                 </div>
@@ -1108,7 +1059,17 @@ export function IntakeScreen(props: {
               ) : (
                 <>
                   <div
-                    className="intake-option-grid"
+                    className={`intake-option-grid${
+                      current.id === "preferredApproach"
+                        ? " intake-option-grid--cards"
+                        : current.id === "previousTherapy" || current.id === "supportNetwork"
+                          ? " intake-option-grid--wide"
+                          : current.id === "emotionalState"
+                            ? " intake-option-grid--mood"
+                            : current.id === "safetyRisk"
+                              ? " intake-option-grid--safety"
+                              : ""
+                    }`}
                     role="group"
                     aria-label={wizardHeading(current.title)}
                     aria-multiselectable={current.allowMultiple ? true : undefined}
@@ -1126,12 +1087,14 @@ export function IntakeScreen(props: {
                         Boolean(current.crisisLastOption) &&
                         current.options &&
                         optIdx === current.options.length - 1;
+                      const isProvisional = Boolean(current.exclusiveOptionEs) && option === current.exclusiveOptionEs;
+                      const isSafetyNote = current.id === "safetyRisk" && isSafetyRiskPositiveAnswer(option);
                       const sub = current.optionSubtexts?.[optIdx];
                       return (
                         <button
                           key={option}
                           type="button"
-                          className={`intake-option-chip ${selected ? "intake-option-chip--selected" : ""}${isCrisisChip ? " intake-option-chip--crisis" : ""}`}
+                          className={`intake-option-chip ${selected ? "intake-option-chip--selected" : ""}${isCrisisChip ? " intake-option-chip--crisis" : ""}${isProvisional ? " intake-option-chip--provisional" : ""}${isSafetyNote ? " intake-option-chip--safety-note" : ""}`}
                           aria-pressed={selected}
                           onClick={() => {
                             setError("");
@@ -1144,8 +1107,14 @@ export function IntakeScreen(props: {
                             setAnswers((prev) => applyIntakeOptionSelection(prev, current.id, option, multi));
                           }}
                         >
-                          <span className="intake-option-chip-label">{option}</span>
-                          {sub ? <span className="intake-option-chip-sub">{sub}</span> : null}
+                          <span className="intake-option-chip-label">
+                            {intakeOptionLabel(props.language, option)}
+                          </span>
+                          {sub || intakeOptionSubtext(props.language, option) ? (
+                            <span className="intake-option-chip-sub">
+                              {intakeOptionSubtext(props.language, option) ?? sub}
+                            </span>
+                          ) : null}
                         </button>
                       );
                     })}
@@ -1204,7 +1173,7 @@ export function IntakeScreen(props: {
           />
 
           <div className="intake-wizard-actions">
-            <button className="ghost intake-wizard-secondary" type="button" onClick={handleCancel} disabled={submitting}>
+            <button className="intake-cancel-link" type="button" onClick={handleCancel} disabled={submitting}>
               {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
             </button>
             {isLast ? (
@@ -1212,9 +1181,9 @@ export function IntakeScreen(props: {
                 {submitting
                   ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
                   : t(props.language, {
-                      es: "Finalizar cuestionario",
-                      en: "Finish questionnaire",
-                      pt: "Finalizar questionario"
+                      es: "Listo",
+                      en: "Done",
+                      pt: "Pronto"
                     })}
               </button>
             ) : (

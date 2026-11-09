@@ -1,0 +1,68 @@
+/* Lo que el paso de pago todavía heredaba del violeta. */
+
+.sessions-package-options-panel:has(.calm-pay),
+.sessions-package-options-panel:has(.calm-pay):focus,
+.sessions-package-options-panel:has(.calm-pay):focus-visible {
+  border: 1px solid #e2dfd3;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: none;
+  outline: none;
+}
+
+.checkout-residency-confirm {
+  gap: 14px;
+  margin: 0;
+  padding: 16px 18px;
+  border: 1px solid #e2dfd3;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.checkout-residency-confirm .mc-field__label {
+  color: #2f6b51;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.checkout-residency-confirm .mc-input {
+  border: 1px solid #e2dfd3;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.checkout-residency-confirm .mc-input:focus-within {
+  border-color: #1e4033;
+  box-shadow: none;
+}
+
+.checkout-residency-confirm .mc-input .mc-input__control,
+.checkout-residency-confirm .mc-input .mc-input__control:focus {
+  color: #1b2a23;
+  font-family: "Manrope", system-ui, sans-serif;
+  font-weight: 600;
+}
+
+.checkout-residency-confirm .mc-input .mc-input__control--select,
+.checkout-residency-confirm .mc-input .mc-input__control--select:focus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%231e4033' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+}
+
+.checkout-residency-confirm button.mc-btn.mc-btn--primary,
+.checkout-residency-confirm button.mc-btn.mc-btn--primary:hover,
+.checkout-residency-confirm button.mc-btn.mc-btn--primary:focus-visible,
+.checkout-residency-confirm button.mc-btn.mc-btn--primary:active {
+  border: 0;
+  border-radius: 8px;
+  background: #f5c33b;
+  color: #1e4033;
+  box-shadow: none;
+}
+
+.checkout-residency-confirm button.mc-btn.mc-btn--primary:hover:not(:disabled),
+.checkout-residency-confirm button.mc-btn.mc-btn--primary:focus-visible:not(:disabled) {
+  background: #f0b81f;
+  color: #1e4033;
+}

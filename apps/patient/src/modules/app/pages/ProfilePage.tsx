@@ -262,8 +262,8 @@ export function ProfilePage(props: {
   };
 
   return (
-    <div className="profile-layout">
-      <section className="content-card profile-panel hostinger-payment-card">
+    <div className="profile-layout profile-layout--ds">
+      <section className="content-card profile-panel profile-panel--ds hostinger-payment-card">
         {tab === "data" ? (
           <>
             <h2>{t(props.language, { es: "Mis datos", en: "My data", pt: "Meus dados" })}</h2>

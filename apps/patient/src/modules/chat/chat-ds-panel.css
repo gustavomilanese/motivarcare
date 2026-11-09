@@ -1,0 +1,123 @@
+.chat-ds-card {
+  background: var(--superficie);
+  border: 1px solid var(--linea);
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.chat-ds-card h3 {
+  margin: 0 0 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tinta-tenue);
+}
+
+.chat-ds-card p,
+.chat-ds-card span {
+  margin: 0;
+  font-size: 14px;
+  color: var(--tinta-suave);
+}
+
+.chat-ds-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.chat-ds-profile img {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.chat-ds-profile b {
+  display: block;
+  color: var(--bosque);
+  font-size: 16.5px;
+}
+
+.chat-ds-rating {
+  display: block;
+  margin-top: 4px;
+  color: var(--tinta-suave);
+}
+
+.chat-ds-profile-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--verde-medio);
+  font-weight: 700;
+  font-size: 14.5px;
+  gap: 6px;
+}
+
+.chat-ds-profile-link:hover {
+  background: transparent;
+  color: var(--bosque);
+}
+
+.chat-ds-next {
+  background: var(--salvia);
+  border-color: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chat-ds-next b {
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 1.1;
+  color: var(--bosque);
+}
+
+.chat-ds-credits {
+  margin-top: 6px;
+}
+
+.chat-ds-card ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.chat-ds-card li a {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  color: var(--tinta);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.chat-ds-card li a svg {
+  color: var(--verde-medio);
+  flex: none;
+}
+
+.chat-ds-panel .professional-change-support-btn {
+  align-self: flex-start;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  height: auto;
+  min-height: 0;
+  color: var(--tinta-suave);
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: 0;
+}
+
+.chat-ds-panel .professional-change-support-btn:hover {
+  background: transparent;
+  color: var(--verde-medio);
+}

@@ -25,9 +25,6 @@ export function ResidencyConfirmBlock(props: {
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.copy}>
-        El cobro usa el país que declaraste en el onboarding, no el de este teléfono. Confirmalo para continuar.
-      </Text>
       <View style={styles.options}>
         {options.map((row) => {
           const selected = draft === row.code;
@@ -58,12 +55,6 @@ function buildStyles(colors: import("../theme/colors").AppThemeColors) {
   return StyleSheet.create({
     wrap: {
       gap: 12
-    },
-    copy: {
-      fontSize: 14,
-      fontWeight: "600",
-      color: colors.textSecond,
-      lineHeight: 20
     },
     options: {
       gap: 8

@@ -254,29 +254,9 @@ export function MainPortal(props: {
     const dash = props.state.profile.dashboardPhotoDataUrl?.trim();
     return dash ? dash : null;
   }, [props.state.session?.avatarUrl, props.state.profile.dashboardPhotoDataUrl]);
-  const hasAnyBookingHistory = props.state.bookings.length > 0;
-  const hasAnyPurchasedCredits =
-    Boolean(props.state.subscription.packageId)
-    || props.state.subscription.creditsTotal > 0
-    || props.state.subscription.creditsRemaining > 0;
-  const hasAssignedTherapist =
-    props.state.therapistSelectionCompleted
-    || Boolean(props.state.assignedProfessionalId?.trim());
-  /**
-   * Onboarding final = matching. Queda hecho si ya eligió profesional, o si hay
-   * historial de compras/reservas (aunque un reconcile haya vaciado el wallet).
-   */
-  const hasCompletedOnboardingPreviously =
-    hasAnyBookingHistory || hasAnyPurchasedCredits || hasAssignedTherapist;
-  const needsOnboardingFinalFlow =
-    !props.state.intake?.riskBlocked
-    && !hasCompletedOnboardingPreviously
-    && !props.state.onboardingFinalCompleted;
-  /** Solo forzar pantalla de matching hasta elegir terapeuta; después el resto del portal debe ser usable (comprar, chat, etc.). */
-  const canLeaveMatchingOnboarding = hasAssignedTherapist || props.state.bookings.length > 0;
-  const shouldLockToTherapistSelection = needsOnboardingFinalFlow && !canLeaveMatchingOnboarding;
-  const isOnboardingMatchingView =
-    shouldLockToTherapistSelection && location.pathname.startsWith("/onboarding/final/matching");
+  /** La elección de profesional vive en la home. El portal no se bloquea en un paso de matching. */
+  const shouldLockToTherapistSelection = false;
+  const isOnboardingMatchingView = false;
   const isBookTrialView = location.pathname === "/book/trial";
   const isMobilePortal = useMobilePortal();
   const [homeVariant, setHomeVariant] = useState(() => readPatientHomeVariant());
@@ -342,6 +322,7 @@ export function MainPortal(props: {
   const {
     syncActiveProfessionalAssignment,
     addPackage,
+    syncPendingDlocalCheckouts,
     purchaseIndividualSessions,
     startTrialCheckout,
     syncTrialPayment,
@@ -362,6 +343,20 @@ export function MainPortal(props: {
     onStateChange: props.onStateChange,
     onRefreshPortalFromApi: props.onRefreshPortalFromApi
   });
+
+  /**
+   * Recuperación silenciosa: si el wallet está en 0 pero hay un checkout
+   * REDIRECTED ya PAID en dLocal (return/webhook no llegó), sincroniza una vez.
+   * Sin modal de éxito — solo acredita créditos.
+   */
+  const quietPendingSyncRef = useRef(false);
+  useEffect(() => {
+    if (quietPendingSyncRef.current) return;
+    if (!props.state.authToken) return;
+    if ((Number(props.state.subscription.creditsRemaining) || 0) > 0) return;
+    quietPendingSyncRef.current = true;
+    void syncPendingDlocalCheckouts().catch(() => undefined);
+  }, [props.state.authToken, props.state.subscription.creditsRemaining, syncPendingDlocalCheckouts]);
 
   /**
    * Retorno de dLocal centralizado a nivel portal: procesa el pago sin importar
@@ -687,6 +682,11 @@ export function MainPortal(props: {
             const bookingId = selectedBooking.id;
             setSelectedBookingId("");
             handleRescheduleBookingFromAnywhere(bookingId);
+          }}
+          onMessageProfessional={() => {
+            const professionalId = selectedBooking.professionalId;
+            setSelectedBookingId("");
+            handleChatFromAnywhere(professionalId);
           }}
           onCancel={async (reason) => {
             setCancelSubmitting(true);

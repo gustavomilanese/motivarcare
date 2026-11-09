@@ -28,27 +28,23 @@ export function difficultyLabel(language: AppLanguage, difficulty: ExerciseDiffi
   return t(language, DIFFICULTY_LABELS[difficulty]);
 }
 
-/**
- * Devuelve un par de variables CSS (`--exercise-accent`, `--exercise-accent-soft`) para
- * tematizar tarjetas y badges según la categoría sin tener que mantener una hoja de
- * estilos por cada una.
- */
+/** Acentos DS por categoría (alineados a `wellbeingMarkTone`). */
 export function categoryAccent(category: ExerciseCategory): { accent: string; accentSoft: string } {
   switch (category) {
     case "respiracion":
-      return { accent: "#5b9bd5", accentSoft: "rgba(91, 155, 213, 0.16)" };
+      return { accent: "#2f6b51", accentSoft: "#e7f1ea" };
     case "postura":
-      return { accent: "#7a5cff", accentSoft: "rgba(122, 92, 255, 0.16)" };
+      return { accent: "#1e4033", accentSoft: "#d6e7dc" };
     case "grounding":
-      return { accent: "#3aa17e", accentSoft: "rgba(58, 161, 126, 0.16)" };
+      return { accent: "#5e9677", accentSoft: "#e7f1ea" };
     case "movimiento":
-      return { accent: "#f08b3a", accentSoft: "rgba(240, 139, 58, 0.16)" };
+      return { accent: "#2a5543", accentSoft: "#d6e7dc" };
     case "relajacion":
-      return { accent: "#d97aa6", accentSoft: "rgba(217, 122, 166, 0.16)" };
+      return { accent: "#1b2a23", accentSoft: "#fbe9b0" };
     case "mindfulness":
-      return { accent: "#48a3a8", accentSoft: "rgba(72, 163, 168, 0.16)" };
+      return { accent: "#1e4033", accentSoft: "#e6edc4" };
     default:
-      return { accent: "#7a5cff", accentSoft: "rgba(122, 92, 255, 0.14)" };
+      return { accent: "#1e4033", accentSoft: "#e7f1ea" };
   }
 }
 
