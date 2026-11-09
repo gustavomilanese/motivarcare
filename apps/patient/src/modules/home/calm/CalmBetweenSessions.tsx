@@ -13,7 +13,7 @@ export function CalmBetweenSessions(props: {
   language: AppLanguage;
   timeZone: string;
   now: Date;
-  authToken: string;
+  authToken: string | null;
   mode?: "between" | "welcome";
 }) {
   const navigate = useNavigate();

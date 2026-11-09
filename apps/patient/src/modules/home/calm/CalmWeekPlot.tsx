@@ -12,7 +12,7 @@ export function CalmWeekPlot(props: {
   language: AppLanguage;
   timeZone: string;
   now: Date;
-  authToken: string;
+  authToken: string | null;
 }) {
   const { entries, loading } = useWeekMoodEntries(props.authToken, true);
   const points = useMemo(
