@@ -31,10 +31,14 @@ export function WellbeingExerciseGrid(props: {
     );
   }
 
+  const title = t(props.language, { es: "Prácticas", en: "Practices", pt: "Práticas" });
+  const showCount = props.filter === "all";
+
   return (
     <section className="wellbeing-exercises" aria-labelledby="wellbeing-practices-title">
       <h2 id="wellbeing-practices-title">
-        {t(props.language, { es: "Prácticas", en: "Practices", pt: "Práticas" })}
+        {title}
+        {showCount ? <span className="wellbeing-practices-count"> ({props.exercises.length})</span> : null}
       </h2>
       <ul className="wellbeing-exercise-list">
         {props.exercises.map((exercise) => (

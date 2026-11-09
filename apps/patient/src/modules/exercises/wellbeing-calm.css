@@ -127,6 +127,14 @@
   color: var(--bosque);
 }
 
+.wellbeing-practices-count {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 0.72em;
+  color: var(--tinta-suave);
+  letter-spacing: 0;
+}
+
 .wellbeing-calm-side .wellbeing-section-head h2 {
   font-size: 22px;
 }

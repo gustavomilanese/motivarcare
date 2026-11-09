@@ -22,6 +22,9 @@
     padding-inline: max(16px, env(safe-area-inset-left, 0px))
       max(16px, env(safe-area-inset-right, 0px)) !important;
     box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
   }
 
   .portal-main .diary-page--records.diary-records-calm > .diary-calm-columns,
@@ -42,6 +45,8 @@
     flex-direction: column;
     gap: 18px;
     padding: 0;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
   }
 
@@ -51,6 +56,8 @@
     gap: 16px;
     border-right: 0;
     padding: 0;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
   }
 
@@ -77,13 +84,19 @@
   }
 
   .diary-calm-cta {
-    display: block;
-    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+    width: auto;
+    max-width: 100%;
+    min-width: 0;
     min-height: 48px;
     margin: 2px 0 0;
     padding: 0 18px;
     border: 0;
     border-radius: 8px;
+    box-sizing: border-box;
     background: var(--amarillo, #f5c33b);
     color: var(--bosque, #1e4033);
     font: 700 15px/1 var(--sans, "Manrope", system-ui, sans-serif);
@@ -95,10 +108,19 @@
     background: #f0b81f;
   }
 
-  /* Mood: misma densidad que home phone. */
+  /* Mood: misma densidad que home phone; no estirar el ancho de la página. */
   .diary-calm .calm-mood {
     gap: 12px;
     padding: 20px 18px;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .diary-calm .calm-mood-row {
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
   }
 
   .diary-calm .calm-mood h3 {

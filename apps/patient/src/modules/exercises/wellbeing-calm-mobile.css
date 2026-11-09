@@ -1,15 +1,25 @@
 /* Bienestar · layout teléfono (no “web achicado”). */
 
 @media (max-width: 1080px) {
+  .portal-main .exercises-page--ml.wellbeing-calm,
+  .portal-main--home-ml .exercises-page--ml.wellbeing-calm,
   .exercises-page--ml.wellbeing-calm,
   .exercise-routine-page.wellbeing-calm,
   .exercise-reader-page.wellbeing-calm {
-    padding: 8px 10px 96px;
+    padding-top: 8px !important;
+    padding-bottom: 96px !important;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(16px, env(safe-area-inset-right, 0px)) !important;
     box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
   }
 
   .wellbeing-calm > .calm-toolbar-row {
     margin-bottom: 10px;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .wellbeing-calm-columns {
@@ -17,6 +27,8 @@
     flex-direction: column;
     gap: 16px;
     padding: 0;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
   }
 
@@ -26,6 +38,8 @@
     gap: 16px;
     border-right: 0;
     padding: 0;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
   }
 
@@ -59,15 +73,23 @@
     display: none;
   }
 
-  /* Filtros: scroll horizontal, sin wrap de escritorio. */
+  /* Filtros: carrusel horizontal (el wrap de desktop impedía llegar a los del final). */
   .wellbeing-filters {
-    flex-wrap: nowrap;
+    display: flex;
+    flex-wrap: nowrap !important;
+    align-items: center;
     gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
     scrollbar-width: none;
-    margin: 0 -2px;
-    padding: 2px;
+    margin: 0;
+    padding: 2px 0 8px;
   }
 
   .wellbeing-filters::-webkit-scrollbar {
@@ -75,7 +97,7 @@
   }
 
   .wellbeing-calm button.wellbeing-filter {
-    flex: none;
+    flex: 0 0 auto;
     white-space: nowrap;
     padding: 8px 12px;
     font-size: 13px;
@@ -165,12 +187,6 @@
     display: none;
   }
 
-  .portal-main--home-ml .exercise-routine-page.wellbeing-calm,
-  .portal-main--home-ml .exercise-reader-page.wellbeing-calm,
-  .exercise-routine-page.wellbeing-calm,
-  .exercise-reader-page.wellbeing-calm {
-    padding: 8px 10px 96px;
-  }
 
   .wellbeing-calm .exercise-reader-back {
     font-size: 14px;
