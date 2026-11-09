@@ -88,15 +88,16 @@
     max-width: 100% !important;
     gap: 0 !important;
   }
-  .portal-main .diary-home-page--ml,
-  .portal-main--home-ml .diary-home-page--ml {
+  /* Full-bleed solo para el hero ML viejo; el diario calm maneja su propio padding. */
+  .portal-main .diary-home-page--ml:not(.diary-calm),
+  .portal-main--home-ml .diary-home-page--ml:not(.diary-calm) {
     padding-inline: 0 !important;
     /* Sin aire extra post-última sección: el clear del tab lo da portal-main / footer */
     padding-bottom: 0 !important;
     background: var(--mobile-canvas, #f4f4f5) !important;
   }
-  .portal-main .diary-page--home,
-  .portal-main--home-ml .diary-page--home {
+  .portal-main .diary-page--home:not(.diary-calm),
+  .portal-main--home-ml .diary-page--home:not(.diary-calm) {
     padding-bottom: 0 !important;
   }
   .portal-main .diary-home-page--ml .diary-page-ml-pack {

@@ -1,12 +1,26 @@
 /* Diario · layout teléfono (no “web achicado”). */
 
 @media (max-width: 1080px) {
-  /* Un poco más de aire izq/der: título, logo, Volver y el cuerpo dejan de pegarse. */
+  /*
+   * diary-mobile.css fuerza padding-inline: 0 !important en .diary-home-page--ml.
+   * Sin !important acá, logo / título / CTA / cards quedan pegados al borde.
+   */
   .portal-main .diary-page.diary-calm,
+  .portal-main .diary-home-page.diary-calm,
+  .portal-main .diary-home-page--ml.diary-calm,
+  .portal-main--home-ml .diary-home-page--ml.diary-calm,
+  .portal-main .diary-page--home.diary-calm,
+  .portal-main--home-ml .diary-page--home.diary-calm,
   .portal-main .diary-page--records.diary-records-calm,
+  .portal-main--home-ml .diary-page--records.diary-records-calm,
   .diary-page.diary-calm,
   .diary-page--records.diary-records-calm {
-    padding: 8px 16px 96px;
+    padding-top: 8px !important;
+    padding-bottom: 96px !important;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(16px, env(safe-area-inset-right, 0px)) !important;
+    padding-inline: max(16px, env(safe-area-inset-left, 0px))
+      max(16px, env(safe-area-inset-right, 0px)) !important;
     box-sizing: border-box;
   }
 
