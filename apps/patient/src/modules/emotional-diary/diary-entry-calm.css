@@ -384,8 +384,18 @@
 }
 
 @media (max-width: 1080px) {
+  /* Footer + tab bar ya dan el clear; no sumar otro bloque vacío bajo Guardar. */
+  .portal-main .diary-page--entry.diary-entry-calm,
+  .portal-main--home-ml .diary-page--entry.diary-entry-calm,
+  .diary-page--entry.diary-entry-calm {
+    padding-top: 8px !important;
+    padding-bottom: 12px !important;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(16px, env(safe-area-inset-right, 0px)) !important;
+  }
+
   .diary-entry-calm-wrap {
-    padding: 16px 16px 32px;
+    padding: 12px 0 8px;
   }
 
   .diary-entry-head h1 {
@@ -399,6 +409,7 @@
 
   .diary-entry-actions {
     flex-direction: column-reverse;
+    margin-top: 4px;
   }
 
   .diary-entry-calm button.diary-entry-cancel,
