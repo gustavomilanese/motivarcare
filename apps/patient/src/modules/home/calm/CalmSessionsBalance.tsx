@@ -37,7 +37,11 @@ export function CalmSessionsBalance(props: {
     >
       <strong className="calm-balance-number">{props.available}</strong>
       <div className="calm-balance-text">
-        <b>{t(props.language, { es: "sesiones disponibles", en: "sessions available", pt: "sessões disponíveis" })}</b>
+        <b>
+          {props.available === 1
+            ? t(props.language, { es: "sesión disponible", en: "session available", pt: "sessão disponível" })
+            : t(props.language, { es: "sesiones disponibles", en: "sessions available", pt: "sessões disponíveis" })}
+        </b>
         {copy ? <p className="calm-balance-copy">{copy}</p> : null}
         {total > 0 ? (
           <div className="calm-dots" aria-hidden="true">

@@ -29,6 +29,7 @@ export function CalmFirstSessionCard(props: {
   fxRates?: DisplayFxRates;
   residencyCountry: string | null;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
+  availableSessions: number;
   onBook: () => void;
   /** Solo si no quedan créditos/prueba ni reservas: un paquete no se cambia a mitad. */
   canRequestChange: boolean;
@@ -66,13 +67,13 @@ export function CalmFirstSessionCard(props: {
         <path d="M438.7 372.7 C410.4 424.2 340.8 463.3 284.5 475.3 C228.1 487.3 140.1 482.6 100.4 444.8 C60.7 407.0 42.8 312.5 46.0 248.6 C49.2 184.7 76.7 94.1 119.7 61.4 C162.7 28.6 248.1 34.5 303.8 52.0 C359.6 69.4 431.7 112.8 454.2 166.3 C476.7 219.7 467.0 321.2 438.7 372.7Z" fill="#E7F1EA" />
         <circle cx="380" cy="150" r="14" fill="#F5C33B" />
       </svg>
-      <p className="calm-chip calm-first-session__chip">
       <div className="calm-session-top">
         <p className="calm-chip calm-first-session__chip">
           {t(props.language, { es: "Tu próximo paso", en: "Your next step", pt: "Seu próximo passo" })}
         </p>
         <CalmSessionCreditsBadge language={props.language} available={props.availableSessions} />
       </div>
+      <div>
         <h2 className="calm-session-when">
           {t(props.language, {
             es: "Reservá tu primera sesión",

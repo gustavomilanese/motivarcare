@@ -57,14 +57,20 @@ export function SessionsCalmBalance(props: {
         ) : null}
       </div>
       <p className="sr-only">
-        {replaceTemplate(
-          t(props.language, {
-            es: "{count} sesiones disponibles",
-            en: "{count} sessions available",
-            pt: "{count} sessões disponíveis"
-          }),
-          { count: String(props.available) }
-        )}
+        {props.available === 1
+          ? t(props.language, {
+              es: "1 sesión disponible",
+              en: "1 session available",
+              pt: "1 sessão disponível"
+            })
+          : replaceTemplate(
+              t(props.language, {
+                es: "{count} sesiones disponibles",
+                en: "{count} sessions available",
+                pt: "{count} sessões disponíveis"
+              }),
+              { count: String(props.available) }
+            )}
       </p>
     </section>
   );
