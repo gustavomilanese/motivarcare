@@ -847,33 +847,6 @@
   white-space: nowrap;
 }
 
-.calm-dots {
-  display: flex;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.calm-dots i {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--salvia);
-  border: 1.5px solid var(--bosque);
-  box-sizing: border-box;
-}
-
-.calm-dots i.is-used {
-  background: var(--bosque);
-  border-style: solid;
-  border-color: var(--bosque);
-}
-
-.calm-dots i.is-free {
-  background: transparent;
-  border-style: dashed;
-  border-color: var(--salvia-fuerte);
-}
-
 .calm-between {
   margin-top: 24px;
 }

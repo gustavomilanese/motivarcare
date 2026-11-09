@@ -118,7 +118,31 @@
     height: 40px;
   }
 
+  /* Paquetes / historial: aire entre cards y con el listado interno; sombra flotante DS. */
   .sessions-side-card {
     border-radius: 12px;
+    padding: 18px 16px 16px;
+    border-color: transparent;
+    box-shadow: 0 30px 60px -28px rgba(30, 64, 51, 0.45);
+  }
+
+  .sessions-side-card + .sessions-side-card {
+    margin-top: 4px;
+  }
+
+  .sessions-side-card > p {
+    margin: 14px 0 4px;
+  }
+
+  .sessions-side-card ul {
+    margin-top: 12px;
+  }
+
+  .sessions-side-card li {
+    padding: 14px 0;
+  }
+
+  .sessions-side-card li + li {
+    margin-top: 2px;
   }
 }

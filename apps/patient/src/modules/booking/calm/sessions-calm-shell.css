@@ -104,6 +104,7 @@
 
 .sessions-calm-dots {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-top: 8px;
 }
@@ -113,10 +114,18 @@
   height: 10px;
   border-radius: 50%;
   background: var(--salvia);
+  border: 1px solid var(--bosque);
+  box-sizing: border-box;
 }
 
 .sessions-calm-dots i.is-used {
   background: var(--bosque);
+}
+
+.sessions-calm-dots i.is-free {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--salvia-fuerte);
 }
 
 .sessions-calm-balance-actions {
