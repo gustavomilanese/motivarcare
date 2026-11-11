@@ -189,7 +189,9 @@ export function HomePage(props: {
   const now = Date.now();
   const assignedProfessionalId = props.state.assignedProfessionalId?.trim() ?? "";
   const selectedProfessionalId = props.state.selectedProfessionalId?.trim() ?? "";
-  const upcomingConfirmedBookings = filterUpcomingPatientBookings(props.state.bookings, now);
+  const upcomingConfirmedBookings = filterUpcomingPatientBookings(props.state.bookings, now, {
+    assignedProfessionalId
+  });
   const upcomingBookingProfessionalIds = upcomingConfirmedBookings.map((booking) => booking.professionalId);
   const hasPricingProfessional = portalHasPricingProfessional({
     assignedProfessionalId: props.state.assignedProfessionalId,
@@ -321,7 +323,9 @@ export function HomePage(props: {
   }, []);
   const defaultPackagePlan =
     displayPackagePlans.find((plan) => plan.id === displayFeaturedPackageId) ?? displayPackagePlans[0] ?? null;
-  const nextBooking = pickNextPatientBooking(props.state.bookings, now);
+  const nextBooking = pickNextPatientBooking(props.state.bookings, now, {
+    assignedProfessionalId
+  });
   const confirmedBookings = props.state.bookings.filter((booking) => booking.status === "confirmed");
   const trialBookings = confirmedBookings.filter((booking) => booking.bookingMode === "trial");
   const activeTrialBooking = trialBookings

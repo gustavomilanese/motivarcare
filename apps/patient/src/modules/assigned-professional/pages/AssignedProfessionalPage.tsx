@@ -36,9 +36,9 @@ export function AssignedProfessionalPage(props: {
   }
 
   const now = Date.now();
-  const upcoming = filterUpcomingPatientBookings(props.state.bookings, now).filter(
-    (booking) => booking.professionalId === assignedId
-  );
+  const upcoming = filterUpcomingPatientBookings(props.state.bookings, now, {
+    assignedProfessionalId: assignedId
+  });
   const next = pickNextPatientBooking(upcoming, now);
   const available = countAvailablePatientSessions({
     creditsRemaining: props.state.subscription.creditsRemaining,

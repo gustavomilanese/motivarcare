@@ -18,6 +18,7 @@ export function CalmUpcomingList(props: {
   bookings: Booking[];
   professionals: Professional[];
   photoMap: Record<string, string>;
+  assignedProfessionalId?: string | null;
   /** La sesión del hero no se repite en la lista. */
   excludeBookingId?: string | null;
   limit?: number;
@@ -29,10 +30,12 @@ export function CalmUpcomingList(props: {
   const limit = props.limit ?? 3;
   const rows = useMemo(() => {
     const exclude = props.excludeBookingId?.trim() ?? "";
-    return filterUpcomingPatientBookings(props.bookings, props.now.getTime())
+    return filterUpcomingPatientBookings(props.bookings, props.now.getTime(), {
+      assignedProfessionalId: props.assignedProfessionalId
+    })
       .filter((booking) => booking.id !== exclude)
       .slice(0, limit);
-  }, [props.bookings, props.excludeBookingId, props.now, limit]);
+  }, [props.assignedProfessionalId, props.bookings, props.excludeBookingId, props.now, limit]);
 
   if (rows.length === 0) return null;
 

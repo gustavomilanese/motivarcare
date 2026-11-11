@@ -219,7 +219,9 @@ export function BookingPage(props: {
     }) ?? "";
   const now = Date.now();
 
-  const upcomingConfirmedBookings = filterUpcomingPatientBookings(props.state.bookings, now);
+  const upcomingConfirmedBookings = filterUpcomingPatientBookings(props.state.bookings, now, {
+    assignedProfessionalId
+  });
   const upcomingBookingProfessionalIds = upcomingConfirmedBookings.map((booking) => booking.professionalId);
   const UPCOMING_PAGE_SIZE = 10;
   const upcomingTotalPages = Math.max(1, Math.ceil(upcomingConfirmedBookings.length / UPCOMING_PAGE_SIZE));

@@ -205,6 +205,7 @@ export function CalmHome(props: {
               timeZone={props.timeZone}
               now={now}
               bookings={props.state.bookings}
+              assignedProfessionalId={props.activeProfessional?.id}
               professionals={props.professionals}
               photoMap={props.professionalPhotoMap}
               onImageFallback={props.onImageFallback}
@@ -224,6 +225,7 @@ export function CalmHome(props: {
               timeZone={props.timeZone}
               now={now}
               bookings={props.state.bookings}
+              assignedProfessionalId={props.activeProfessional?.id}
               professionals={props.professionals}
               photoMap={props.professionalPhotoMap}
               excludeBookingId={props.nextBooking?.id}

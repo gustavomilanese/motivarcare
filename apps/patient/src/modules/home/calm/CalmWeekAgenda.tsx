@@ -19,6 +19,7 @@ export function CalmWeekAgenda(props: {
   timeZone: string;
   now: Date;
   bookings: Booking[];
+  assignedProfessionalId?: string | null;
   professionals: Professional[];
   photoMap: Record<string, string>;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
@@ -27,9 +28,13 @@ export function CalmWeekAgenda(props: {
 }) {
   const navigate = useNavigate();
   const rows = useMemo(() => {
+    const assigned = props.assignedProfessionalId?.trim() ?? "";
+    const scoped = assigned
+      ? props.bookings.filter((booking) => booking.professionalId === assigned)
+      : props.bookings;
     const days = calendarWeek(props.now, props.timeZone);
-    return weekSessions(props.bookings, days, props.timeZone).flat();
-  }, [props.bookings, props.now, props.timeZone]);
+    return weekSessions(scoped, days, props.timeZone).flat();
+  }, [props.assignedProfessionalId, props.bookings, props.now, props.timeZone]);
 
   if (rows.length === 0) return null;
 

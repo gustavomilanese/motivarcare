@@ -40,7 +40,10 @@ export {
 } from "./resolvePatientPricingProfessional.js";
 export type { PatientPricingProfessionalInput } from "./resolvePatientPricingProfessional.js";
 export { resolveAcquireSessionsIntent } from "./acquireSessions.js";
-export type { PatientPortalBooking } from "./patientPortalBookings.js";
+export type {
+  FilterUpcomingPatientBookingsOptions,
+  PatientPortalBooking
+} from "./patientPortalBookings.js";
 export {
   compareUpcomingPatientBookings,
   countUpcomingPatientBookings,

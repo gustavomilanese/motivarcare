@@ -20,8 +20,8 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-function getNextBooking(bookings: Booking[]): Booking | null {
-  return pickNextPatientBooking(bookings);
+function getNextBooking(bookings: Booking[], assignedProfessionalId?: string | null): Booking | null {
+  return pickNextPatientBooking(bookings, undefined, { assignedProfessionalId });
 }
 
 function formatTimeOnly(params: { isoDate: string; timezone: string; language: AppLanguage }): string {
@@ -145,18 +145,26 @@ export function SessionsCalendar(props: {
   variant?: "week" | "dashboard";
   hideTitle?: boolean;
   professionals?: Professional[];
+  assignedProfessionalId?: string | null;
 }) {
   const variant = props.variant ?? "week";
+  const assignedProfessionalId = props.assignedProfessionalId?.trim() ?? "";
+  const scopedBookings = useMemo(() => {
+    if (!assignedProfessionalId) {
+      return props.bookings;
+    }
+    return props.bookings.filter((booking) => booking.professionalId === assignedProfessionalId);
+  }, [assignedProfessionalId, props.bookings]);
   const [openEventId, setOpenEventId] = useState<string | null>(null);
   const [pendingCancelEventId, setPendingCancelEventId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const hasEventActions = Boolean(props.onRescheduleBooking || props.onCancelBooking);
   const [viewDate, setViewDate] = useState(() => {
-    const nextBooking = getNextBooking(props.bookings);
+    const nextBooking = getNextBooking(scopedBookings, assignedProfessionalId);
     return nextBooking ? new Date(nextBooking.startsAt) : new Date();
   });
   const [selectedDayKey, setSelectedDayKey] = useState(() => {
-    const nextBooking = getNextBooking(props.bookings);
+    const nextBooking = getNextBooking(scopedBookings, assignedProfessionalId);
     return nextBooking
       ? getBookingDayKey(nextBooking.startsAt, props.timezone)
       : getCalendarDayKey(new Date());
@@ -168,7 +176,7 @@ export function SessionsCalendar(props: {
   );
   const bookingsByDay = useMemo(() => {
     const map = new Map<string, Booking[]>();
-    for (const booking of props.bookings) {
+    for (const booking of scopedBookings) {
       const key = getBookingDayKey(booking.startsAt, props.timezone);
       const current = map.get(key) ?? [];
       current.push(booking);
@@ -181,7 +189,7 @@ export function SessionsCalendar(props: {
       );
     }
     return map;
-  }, [props.bookings, props.timezone]);
+  }, [scopedBookings, props.timezone]);
 
   const dayNames = useMemo(
     () => [
@@ -198,10 +206,10 @@ export function SessionsCalendar(props: {
 
   const sortedBookings = useMemo(
     () =>
-      [...props.bookings]
+      [...scopedBookings]
         .filter((booking) => isPatientBookingLiveStatus(booking.status))
         .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()),
-    [props.bookings]
+    [scopedBookings]
   );
   const today = new Date();
   const todayKey = getCalendarDayKey(today);
