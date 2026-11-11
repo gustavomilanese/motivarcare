@@ -71,6 +71,19 @@ export function formatWeekday(iso: string, timeZone: string, language: AppLangua
   return label.charAt(0).toLocaleUpperCase(localeTag(language)) + label.slice(1);
 }
 
+/** Día de semana + fecha corta (ej. «Lunes 16 nov») para listas de sesiones. */
+export function formatWeekdayDate(iso: string, timeZone: string, language: AppLanguage): string {
+  const zone = safeZone(timeZone);
+  const locale = localeTag(language);
+  const label = new Intl.DateTimeFormat(locale, {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    timeZone: zone
+  }).format(new Date(iso));
+  return label.charAt(0).toLocaleUpperCase(locale) + label.slice(1);
+}
+
 export function formatShortDate(iso: string, timeZone: string, language: AppLanguage): string {
   const zone = safeZone(timeZone);
   return new Intl.DateTimeFormat(localeTag(language), {

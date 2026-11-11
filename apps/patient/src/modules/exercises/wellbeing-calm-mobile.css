@@ -17,6 +17,10 @@
   }
 
   .wellbeing-calm > .calm-toolbar-row {
+    position: static;
+    grid-area: auto;
+    justify-self: stretch;
+    width: 100%;
     margin-bottom: 10px;
     padding-left: 0;
     padding-right: 0;

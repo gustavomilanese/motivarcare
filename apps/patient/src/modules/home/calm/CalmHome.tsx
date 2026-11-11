@@ -42,20 +42,21 @@ export function CalmHome(props: {
   fxRates?: DisplayFxRates;
   residencyCountry: string | null;
   onChooseProfessional: (professionalId?: string) => void;
-  canSelfChangeProfessional: boolean;
-  onRequestProfessionalChange: () => void;
   onBookTrial: () => void;
   onOpenChat: (professionalId: string) => void;
   onOpenProfile: () => void;
   onSendChatMessage: (professionalId: string, text: string) => void | Promise<void>;
   onReserveAnother: () => void;
+  onBuyAnother: () => void;
 }) {
   const [now] = useState(() => new Date());
   const session = props.state.session;
   const firstName = patientFirstName(session?.fullName, session?.firstName);
+  // Detalle de la próxima sesión: el pro de esa reserva. Reservar/comprar: solo el vínculo (active).
   const bookingProfessional = props.nextBooking
     ? findProfessionalById(props.nextBooking.professionalId, props.professionals) ?? props.activeProfessional
     : props.activeProfessional;
+  const reserveProfessional = props.activeProfessional;
   const photoFor = (professional: Professional | null) =>
     professional ? props.professionalPhotoMap[professional.id] ?? null : null;
   const includesToday = Boolean(
@@ -118,16 +119,12 @@ export function CalmHome(props: {
             timeZone={props.timeZone}
             now={now}
             professional={bookingProfessional}
-            photoUrl={photoFor(bookingProfessional)}
-            currency={props.currency}
-            fxRates={props.fxRates}
-            residencyCountry={props.residencyCountry}
             availableSessions={props.availableSessions}
-            onImageFallback={props.onImageFallback}
-            onBook={() => props.onGoToBooking(bookingProfessional.id)}
-            canRequestChange={props.canSelfChangeProfessional}
-            onRequestChange={props.onRequestProfessionalChange}
-            onOpenProfile={props.onOpenProfile}
+            onBook={() => {
+              if (!reserveProfessional) return;
+              props.onGoToBooking(reserveProfessional.id);
+            }}
+            onBuyPackage={props.onBuyAnother}
           />
         ) : (
           <CalmSessionCard
@@ -140,9 +137,12 @@ export function CalmHome(props: {
             availableSessions={props.availableSessions}
             showJoinTour={Boolean(props.firstMeetBookingId && props.nextBooking && props.firstMeetBookingId === props.nextBooking.id)}
             onImageFallback={props.onImageFallback}
-            onOpenBookingDetail={props.onOpenBookingDetail}
             onRescheduleBooking={props.onRescheduleBooking}
-            onGoToBooking={props.onGoToBooking}
+            onGoToBooking={() => {
+              if (!reserveProfessional) return;
+              props.onGoToBooking(reserveProfessional.id);
+            }}
+            onBuySessions={props.onBuyAnother}
             onChooseProfessional={() => props.onChooseProfessional()}
             onBookTrial={props.onBookTrial}
             onOpenProfile={props.onOpenProfile}
@@ -197,7 +197,21 @@ export function CalmHome(props: {
             includesToday={includesToday}
             professional={props.activeProfessional}
             onReserveAnother={props.onReserveAnother}
+            onBuyAnother={props.onBuyAnother}
           />
+          {homeCase === "upcoming" ? (
+            <CalmWeekAgenda
+              language={props.language}
+              timeZone={props.timeZone}
+              now={now}
+              bookings={props.state.bookings}
+              professionals={props.professionals}
+              photoMap={props.professionalPhotoMap}
+              onImageFallback={props.onImageFallback}
+              onOpenBooking={props.onOpenBookingDetail}
+              onRescheduleBooking={props.onRescheduleBooking}
+            />
+          ) : null}
         </div>
         )}
       </div>
@@ -227,20 +241,10 @@ export function CalmHome(props: {
             includesToday={includesToday}
             professional={props.activeProfessional}
             onReserveAnother={props.onReserveAnother}
+            onBuyAnother={props.onBuyAnother}
             compact
           />
         </div>
-      ) : null}
-
-      {homeCase === "upcoming" ? (
-        <CalmWeekAgenda
-          language={props.language}
-          timeZone={props.timeZone}
-          now={now}
-          bookings={props.state.bookings}
-          professionals={props.professionals}
-          onOpenBooking={props.onOpenBookingDetail}
-        />
       ) : null}
 
       <CalmBetweenSessions

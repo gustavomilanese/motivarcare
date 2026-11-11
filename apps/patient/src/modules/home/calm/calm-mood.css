@@ -55,9 +55,9 @@
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
-  width: 4.75rem;
-  min-width: 4.75rem;
-  border: 0;
+  width: 5.25rem;
+  min-width: 5.25rem;
+  border: 1px solid transparent;
   border-radius: 14px;
   background: var(--superficie);
   padding: 12px 8px 10px;
@@ -73,22 +73,30 @@
 
 .calm-mood-row button:hover,
 .calm-mood-row button:focus-visible {
-  background: var(--salvia);
+  border-color: var(--bosque);
+  background: var(--superficie);
   color: var(--bosque);
 }
 
-.calm-mood-row button span {
-  display: block;
-  width: 34px;
-  height: 34px;
-  border-radius: 0;
-  background: none;
+.calm-mood-row button .calm-mood-icon-slot {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--crema, #f5f3eb);
+  color: var(--bosque, #1e4033);
 }
 
-.calm-mood-row button span svg {
+.calm-mood-row button:hover .calm-mood-icon-slot,
+.calm-mood-row button:focus-visible .calm-mood-icon-slot {
+  background: var(--menta, #e7f1ea);
+}
+
+.calm-mood-row button .calm-mood-icon-slot svg {
   display: block;
-  width: 34px;
-  height: 34px;
+  width: 26px;
+  height: 26px;
 }
 
 .calm-mood .calm-note {
@@ -128,17 +136,21 @@
   }
 
   .calm-between--phone-compact .calm-mood-row button {
-    width: 4.6rem;
-    min-width: 4.6rem;
+    width: 5rem;
+    min-width: 5rem;
     font-size: 12px;
     padding: 12px 8px 10px;
     gap: 8px;
   }
 
-  .calm-between--phone-compact .calm-mood-row button span,
-  .calm-between--phone-compact .calm-mood-row button span svg {
-    width: 32px;
-    height: 32px;
+  .calm-between--phone-compact .calm-mood-row button .calm-mood-icon-slot {
+    width: 36px;
+    height: 36px;
+  }
+
+  .calm-between--phone-compact .calm-mood-row button .calm-mood-icon-slot svg {
+    width: 24px;
+    height: 24px;
   }
 
   .calm-between--phone-compact .calm-mood .calm-note {

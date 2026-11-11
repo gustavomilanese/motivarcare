@@ -2,20 +2,6 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
 import { OnboardingDraftNotice } from "@therapy/ui";
 
-function preIntakeIntroCopy(language: AppLanguage): readonly [string, string] {
-  return [
-    textByLanguage(language, {
-      es: "A continuación te haremos unas breves preguntas para orientarte hacia el profesional más adecuado para tu necesidad particular.",
-      en: "Next, we’ll ask you a few short questions to guide you toward the professional best suited to your particular needs.",
-      pt: "Em seguida, faremos algumas perguntas breves para orientar você ao profissional mais adequado à sua necessidade."
-    }),
-    textByLanguage(language, {
-      es: "Toda la información que nos brindes es confidencial y solo se utilizará para alimentar nuestro motor de búsqueda especialmente diseñado para lograr el mejor matcheo entre profesionales y pacientes.",
-      en: "Everything you share is confidential and is only used to power our search engine, designed to achieve the best possible match between professionals and patients.",
-      pt: "Todas as informações que você compartilhar são confidenciais e serão usadas apenas para alimentar nosso motor de busca, pensado para o melhor match entre profissionais e pacientes."
-    })
-  ] as const;
-}
 import {
   PATIENT_PORTAL_RESIDENCY_CODES,
   RESIDENCY_COUNTRY_OPTIONS,
@@ -43,6 +29,9 @@ import {
 } from "../patientClinicalIntakeQuestions";
 import { PatientMainReasonStep } from "../components/PatientMainReasonStep";
 import { IntakeChoicePills } from "../components/IntakeChoicePills";
+import { IntakeApproachCards } from "../components/IntakeApproachCards";
+import { IntakeForkGuideCard } from "../components/IntakeForkGuideCard";
+import { IntakeIconTiles } from "../components/IntakeIconTiles";
 import { IntakeMarkedTitle } from "../components/IntakeMarkedTitle";
 import { AuthBrand } from "../../auth/AuthBrand";
 import { intakeOptionLabel, intakeOptionSubtext } from "../lib/intakeOptionLabels";
@@ -369,7 +358,6 @@ export function IntakeScreen(props: {
     [props.language]
   );
 
-  const introCopy = useMemo(() => preIntakeIntroCopy(props.language), [props.language]);
   const questionIds = useMemo(() => localizedQuestions.map((question) => question.id), [localizedQuestions]);
   const mainReasonCategory = useMemo(
     () =>
@@ -842,14 +830,7 @@ export function IntakeScreen(props: {
         <form className="intake-wizard-form" onSubmit={isLast ? handleSubmit : (e) => e.preventDefault()}>
           {currentWizardStep?.kind === "intro" ? (
             <div className="intake-fork" key="intake-pre-questions-intro">
-              <article className="intake-fork-card">
-                <h2>
-                  {t(props.language, { es: "Cuestionario", en: "Questionnaire", pt: "Questionario" })}
-                </h2>
-                {introCopy.map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
-                ))}
-              </article>
+              <IntakeForkGuideCard language={props.language} />
               {props.onChooseMacaChat ? (
                 <button type="button" className="intake-fork-card intake-fork-card--maca" onClick={props.onChooseMacaChat}>
                   <img src="/brand/ds/maca.svg" alt="" />
@@ -919,6 +900,37 @@ export function IntakeScreen(props: {
                 setAnswers((prev) => updateIndividualOtherDetail(prev, detail));
               }}
             />
+          ) : current?.id === "preferredApproach" ? (
+            <article className="question-card question-card--wizard" key="intake-preferred-approach">
+              <h2 className="intake-question-title">{wizardHeading(current.title)}</h2>
+              <p className="intake-question-help">{current.help}</p>
+              <IntakeApproachCards
+                language={props.language}
+                options={current.options ?? []}
+                optionSubtexts={current.optionSubtexts}
+                exclusiveOptionEs={current.exclusiveOptionEs}
+                selected={new Set(intakePieces(answers.preferredApproach ?? ""))}
+                onToggle={(option) => {
+                  setError("");
+                  setAnswers((prev) => applyIntakeOptionSelection(prev, "preferredApproach", option, true));
+                }}
+              />
+            </article>
+          ) : current?.id === "supportNetwork" || current?.id === "previousTherapy" ? (
+            <article className="question-card question-card--wizard" key={`intake-${current.id}`}>
+              <h2 className="intake-question-title">{wizardHeading(current.title)}</h2>
+              <p className="intake-question-help">{current.help}</p>
+              <IntakeIconTiles
+                language={props.language}
+                options={current.options ?? []}
+                value={answers[current.id] ?? ""}
+                columns={current.id === "previousTherapy" ? 3 : 2}
+                onSelect={(option) => {
+                  setError("");
+                  setAnswers((prev) => ({ ...prev, [current.id]: option }));
+                }}
+              />
+            </article>
           ) : current ? (
             <article
               className={`question-card question-card--wizard ${current.id === "safetyRisk" ? "question-card--safety" : ""}`}
@@ -1060,15 +1072,11 @@ export function IntakeScreen(props: {
                 <>
                   <div
                     className={`intake-option-grid${
-                      current.id === "preferredApproach"
-                        ? " intake-option-grid--cards"
-                        : current.id === "previousTherapy" || current.id === "supportNetwork"
-                          ? " intake-option-grid--wide"
-                          : current.id === "emotionalState"
-                            ? " intake-option-grid--mood"
-                            : current.id === "safetyRisk"
-                              ? " intake-option-grid--safety"
-                              : ""
+                      current.id === "emotionalState"
+                        ? " intake-option-grid--mood"
+                        : current.id === "safetyRisk"
+                          ? " intake-option-grid--safety"
+                          : " intake-option-grid--choice"
                     }`}
                     role="group"
                     aria-label={wizardHeading(current.title)}

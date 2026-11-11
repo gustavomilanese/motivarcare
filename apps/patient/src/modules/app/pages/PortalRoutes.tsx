@@ -11,6 +11,7 @@ import { ChatPage } from "./ChatPage";
 import { MatchingPage } from "./MatchingPage";
 import { ProfilePage } from "./ProfilePage";
 import { ProfessionalsShowcasePage } from "../../professionals-showcase/pages/ProfessionalsShowcasePage";
+import { AssignedProfessionalPage } from "../../assigned-professional/pages/AssignedProfessionalPage";
 import { ArticlesListPage } from "../../articles/pages/ArticlesListPage";
 import { ArticleReaderPage } from "../../articles/pages/ArticleReaderPage";
 import { ExercisesListPage } from "../../exercises/pages/ExercisesListPage";
@@ -213,9 +214,11 @@ export function PortalRoutes(props: {
     props.navigate("/matching?changeProfessional=1");
   };
 
-  const completeChangeProfessional = useCallback(
-    async (payload: { professionalId: string; professionalName: string }) => {
+  /** Matching → assign → home. Compra / prueba se sugieren en Inicio. */
+  const completeMatchingAssignment = useCallback(
+    async (payload: { professionalId: string; professionalName: string }, options?: { changeMode?: boolean }) => {
       if (
+        options?.changeMode &&
         !canPatientSelfChangeProfessional({
           creditsRemaining: props.state.subscription.creditsRemaining,
           trialRebookAvailable: props.state.trialRebookAvailable,
@@ -232,9 +235,15 @@ export function PortalRoutes(props: {
         window.alert(
           synced.error
           ?? t(props.state.language, {
-            es: "No pudimos cambiar el profesional. Probá de nuevo.",
-            en: "We couldn’t change the professional. Please try again.",
-            pt: "Nao foi possivel trocar o profissional. Tente novamente."
+            es: options?.changeMode
+              ? "No pudimos cambiar el profesional. Probá de nuevo."
+              : "No pudimos guardar el profesional. Probá de nuevo.",
+            en: options?.changeMode
+              ? "We couldn’t change the professional. Please try again."
+              : "We couldn’t save this professional. Please try again.",
+            pt: options?.changeMode
+              ? "Nao foi possivel trocar o profissional. Tente novamente."
+              : "Nao foi possivel salvar o profissional. Tente novamente."
           })
         );
         return;
@@ -242,12 +251,14 @@ export function PortalRoutes(props: {
 
       props.onStateChange((current) => ({
         ...current,
+        onboardingFinalCompleted: true,
+        therapistSelectionCompleted: true,
         selectedProfessionalId: payload.professionalId,
         assignedProfessionalId: payload.professionalId,
         assignedProfessionalName: payload.professionalName,
         activeChatProfessionalId: payload.professionalId
       }));
-      props.navigate("/sessions?flow=checkout&source=change-professional", { replace: true });
+      props.navigate("/", { replace: true });
     },
     [
       props.navigate,
@@ -256,6 +267,7 @@ export function PortalRoutes(props: {
       props.state.bookings,
       props.state.language,
       props.state.subscription.creditsRemaining,
+      props.state.trialRebookAvailable,
       props.syncActiveProfessionalAssignment
     ]
   );
@@ -359,9 +371,9 @@ export function PortalRoutes(props: {
               ? <Navigate replace to="/" />
             : (
                 <MatchingPage
+                  presentation="home"
                   language={props.state.language}
                   patientMarket={props.state.patientMarket}
-                 
                   residencyCountry={props.state.profileResidencyCountry}
                   displayCurrency={props.state.currency}
                   fxRates={props.fxRates}
@@ -389,8 +401,8 @@ export function PortalRoutes(props: {
                   onSelectProfessional={(professionalId) =>
                     props.onStateChange((current) => ({ ...current, selectedProfessionalId: professionalId }))
                   }
-                  onCompleteFirstSelection={
-                    changeProfessionalMode ? completeChangeProfessional : () => {}
+                  onCompleteFirstSelection={(payload) =>
+                    completeMatchingAssignment(payload, { changeMode: changeProfessionalMode })
                   }
                   onCreateBooking={async () => {}}
                   onReserve={props.handleReserveFromAnywhere}
@@ -441,9 +453,9 @@ export function PortalRoutes(props: {
             ? <Navigate replace to="/onboarding/final/matching" />
             : (
                 <MatchingPage
+                  presentation="home"
                   language={props.state.language}
                   patientMarket={props.state.patientMarket}
-                 
                   residencyCountry={props.state.profileResidencyCountry}
                   displayCurrency={props.state.currency}
                   fxRates={props.fxRates}
@@ -507,6 +519,27 @@ export function PortalRoutes(props: {
           props.lockToTherapistSelection
             ? <Navigate replace to="/onboarding/final/matching" />
             : <Navigate replace to="/sessions" />
+        }
+      />
+      <Route
+        path="/mi-profesional"
+        element={
+          props.lockToTherapistSelection
+            ? <Navigate replace to="/onboarding/final/matching" />
+            : (
+                <AssignedProfessionalPage
+                  state={props.stateForDisplay}
+                  language={props.state.language}
+                  professionals={props.professionalDirectory}
+                  professionalPhotoMap={props.professionalPhotoMap}
+                  onImageFallback={props.onImageFallback}
+                  onChat={props.handleChatFromAnywhere}
+                  onReserve={(professionalId) =>
+                    props.handleReserveFromAnywhere(professionalId, { returnTo: "/mi-profesional" })
+                  }
+                  onBuy={startSessionsCheckoutFromDashboard}
+                />
+              )
         }
       />
       <Route

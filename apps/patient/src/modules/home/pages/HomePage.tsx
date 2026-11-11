@@ -32,6 +32,8 @@ import { usePackageCheckout } from "../../app/hooks/usePackageCheckout";
 import type { PortalPurchaseResult } from "../../app/hooks/usePortalActions";
 import {
   portalHasPricingProfessional,
+  resolveBindingProfessionalId,
+  resolveHomeBookingProfessionalId,
   resolvePortalPricingProfessionalId
 } from "../../app/lib/patientPricingProfessional";
 import { findProfessionalById, patientHasAssignedProfessional } from "../../app/lib/professionals";
@@ -49,7 +51,6 @@ import { fetchProfessionalAvailability } from "../../matching/services/availabil
 import { useMobilePortal } from "../../app/hooks/useMobilePortal";
 import { DashboardHomePurchaseModal } from "../ml/PurchaseModal";
 import { DashboardHomeChatModal } from "../ml/ChatModal";
-import { DashboardHomeProfessionalProfileModal } from "../ml/ProfessionalProfileModal";
 import { DashboardNextActionHome } from "../ml/NextActionHome";
 import { friendlyChatSurfaceMessage } from "../../app/lib/friendlyPatientMessages";
 import { postPatientProfessionalMessage } from "../../chat/lib/postPatientProfessionalMessage";
@@ -204,12 +205,6 @@ export function HomePage(props: {
     assignedProfessionalId: props.state.assignedProfessionalId,
     nowMs: now
   });
-  const canChangeProfessionalForNewPackage =
-    !assignedProfessionalId
-    || countAvailablePatientSessions({
-      creditsRemaining: props.state.subscription.creditsRemaining,
-      trialRebookAvailable: props.state.trialRebookAvailable
-    }) <= 0;
   const pricingProfessionalId =
     resolvePortalPricingProfessionalId({
       assignedProfessionalId: props.state.assignedProfessionalId,
@@ -229,14 +224,24 @@ export function HomePage(props: {
   const [residencySaving, setResidencySaving] = useState(false);
   const [noSessionsRedirectModalOpen, setNoSessionsRedirectModalOpen] = useState(false);
   const [homeChatModalOpen, setHomeChatModalOpen] = useState(false);
-  const [homeProfileModalOpen, setHomeProfileModalOpen] = useState(false);
   const [professionalPickOpen, setProfessionalPickOpen] = useState(false);
-  const [homeBookingProfessionalId, setHomeBookingProfessionalId] = useState<string | null>(null);
-  const openHomeBooking = useCallback((professionalId: string) => {
-    const id = professionalId.trim();
+  const openAssignedProfessionalProfile = useCallback(() => {
+    const id = props.state.assignedProfessionalId?.trim() ?? "";
     if (!id) return;
-    setHomeBookingProfessionalId(id);
-  }, []);
+    props.onGoToProfessional(id);
+  }, [props.onGoToProfessional, props.state.assignedProfessionalId]);
+  const [homeBookingProfessionalId, setHomeBookingProfessionalId] = useState<string | null>(null);
+  const openHomeBooking = useCallback(
+    (_professionalId?: string) => {
+      const id = resolveHomeBookingProfessionalId({
+        assignedProfessionalId: props.state.assignedProfessionalId,
+        selectedProfessionalId: props.state.selectedProfessionalId
+      });
+      if (!id) return;
+      setHomeBookingProfessionalId(id);
+    },
+    [props.state.assignedProfessionalId, props.state.selectedProfessionalId]
+  );
   const homeBookingProfessional = homeBookingProfessionalId
     ? findProfessionalById(homeBookingProfessionalId, props.professionals)
     : null;
@@ -274,7 +279,6 @@ export function HomePage(props: {
     homePurchaseModalOpen ||
     noSessionsRedirectModalOpen ||
     homeChatModalOpen ||
-    homeProfileModalOpen ||
     trialModalOpen;
   /** `null` = aún cargando hero desde API (evita mostrar un default distinto y luego reemplazar). */
   const [landingPatientHeroImage, setLandingPatientHeroImage] = useState<string | null>(null);
@@ -339,10 +343,11 @@ export function HomePage(props: {
   const nextConfirmedBooking = nextBooking ?? confirmedBookings[0] ?? null;
   const fallbackBooking = confirmedBookings[0] ?? null;
   const activeProfessionalBooking = nextBooking ?? fallbackBooking;
-  const activeProfessional = activeProfessionalBooking
-    ? findProfessionalById(activeProfessionalBooking.professionalId, props.professionals)
-    : props.state.assignedProfessionalId
-      ? props.professionals.find((item) => item.id === props.state.assignedProfessionalId) ?? null
+  // Card “tu profesional” = el elegido (assigned). El booking solo aporta si aún no hay assign.
+  const activeProfessional = props.state.assignedProfessionalId
+    ? props.professionals.find((item) => item.id === props.state.assignedProfessionalId) ?? null
+    : activeProfessionalBooking
+      ? findProfessionalById(activeProfessionalBooking.professionalId, props.professionals)
       : null;
   const activeTrialProfessional = activeTrialBooking
     ? findProfessionalById(activeTrialBooking.professionalId, props.professionals)
@@ -599,7 +604,11 @@ export function HomePage(props: {
     pricingReady,
     packageCatalogFromApi,
     usesDlocalCheckout,
-    selectedProfessionalId: props.state.selectedProfessionalId || props.state.assignedProfessionalId,
+    selectedProfessionalId:
+      resolveBindingProfessionalId({
+        assignedProfessionalId: props.state.assignedProfessionalId,
+        selectedProfessionalId: props.state.selectedProfessionalId
+      }) ?? "",
     onPurchasePackage: props.onPurchasePackage,
     onGateBlocked: () => setAssignProModalOpen(true)
   });
@@ -635,11 +644,7 @@ export function HomePage(props: {
     () => ({
       onAssignProfessional: () => setAssignProModalOpen(true),
       onShowChoiceModal: () => {
-        if (homeVariant === "next") {
-          setHomePurchaseModalOpen(true);
-          return;
-        }
-        setAcquireSessionsModalOpen(true);
+        props.onNavigateToSessionsCheckout();
       },
       onOpenCheckout: (planId?: string | null) => {
         if (planId) {
@@ -649,18 +654,15 @@ export function HomePage(props: {
             return;
           }
         }
-        if (!pricingReady) {
+        if (!hasPricingProfessional) {
           setAssignProModalOpen(true);
           return;
         }
-        if (homeVariant === "next") {
-          setHomePurchaseModalOpen(true);
-          return;
-        }
+        // Catálogo inline en Sesiones (debajo del contenido), no PurchaseModal.
         props.onNavigateToSessionsCheckout();
       },
       onOpenIndividualCheckout: () => {
-        if (!pricingReady) {
+        if (!hasPricingProfessional) {
           setAssignProModalOpen(true);
           return;
         }
@@ -678,8 +680,7 @@ export function HomePage(props: {
     [
       displayPackagePlans,
       handleStartPackagePurchase,
-      homeVariant,
-      pricingReady,
+      hasPricingProfessional,
       pricingProfessionalId,
       openHomeBooking,
       props.onNavigateToIndividualSessions,
@@ -797,7 +798,7 @@ export function HomePage(props: {
         window.clearTimeout(endSpotlightTimer);
       }
     };
-  }, [props.state.session?.id, upcomingTourDependency, assignProModalOpen, acquireSessionsModalOpen, homePurchaseModalOpen, noSessionsRedirectModalOpen, homeChatModalOpen, homeProfileModalOpen, trialModalOpen]);
+  }, [props.state.session?.id, upcomingTourDependency, assignProModalOpen, acquireSessionsModalOpen, homePurchaseModalOpen, noSessionsRedirectModalOpen, homeChatModalOpen, trialModalOpen]);
 
   useEffect(() => {
     if (!showGoogleCalendarCta) {
@@ -895,12 +896,12 @@ export function HomePage(props: {
           onNavigateToBookTrial={props.onNavigateToBookTrial}
           trialStatus={trialStatus}
           onGoToBooking={openHomeBooking}
-          onBuySessions={() => setHomePurchaseModalOpen(true)}
-          onBookWithoutCredits={() => setNoSessionsRedirectModalOpen(true)}
+          onBuySessions={() => props.onNavigateToSessionsCheckout()}
+          onBookWithoutCredits={() => dispatchAcquireSessions("book_without_credits")}
           onOpenBookingDetail={props.onOpenBookingDetail}
           onRescheduleBooking={props.onRescheduleBooking}
           onGoToChat={openHomeChat}
-          onOpenProfessionalProfile={() => setHomeProfileModalOpen(true)}
+          onOpenProfessionalProfile={openAssignedProfessionalProfile}
           onNavigateToChangeProfessional={props.onNavigateToChangeProfessional}
           onGoToReservations={props.onGoToReservations}
           upcomingBookings={upcomingConfirmedBookings}
@@ -935,23 +936,23 @@ export function HomePage(props: {
             }
             setProfessionalPickOpen(true);
           }}
-          canSelfChangeProfessional={canSelfChangeProfessional}
-          onRequestProfessionalChange={props.onNavigateToChangeProfessional}
           onBookTrial={props.onNavigateToBookTrial}
-          onOpenChat={openHomeChat}
-          onOpenProfile={() => setHomeProfileModalOpen(true)}
+          onOpenChat={props.onGoToChat}
+          onOpenProfile={openAssignedProfessionalProfile}
           onSendChatMessage={sendHomeChatMessage}
           onReserveAnother={() => {
             if (!hasAssignedProfessional) {
               setProfessionalPickOpen(true);
               return;
             }
-            if (pricingProfessionalId && availableSessions > 0) {
-              openHomeBooking(pricingProfessionalId);
+            if (availableSessions <= 0) {
               return;
             }
-            dispatchAcquireSessions("book_without_credits");
+            if (pricingProfessionalId) {
+              openHomeBooking(pricingProfessionalId);
+            }
           }}
+          onBuyAnother={() => props.onNavigateToSessionsCheckout()}
         />
       )}
 
@@ -1336,7 +1337,11 @@ export function HomePage(props: {
           onClose={() => setNoSessionsRedirectModalOpen(false)}
           onContinueToPackages={() => {
             setNoSessionsRedirectModalOpen(false);
-            setHomePurchaseModalOpen(true);
+            if (!hasPricingProfessional) {
+              setAssignProModalOpen(true);
+              return;
+            }
+            props.onNavigateToSessionsCheckout();
           }}
         />
       ) : null}
@@ -1418,35 +1423,12 @@ export function HomePage(props: {
         />
       ) : null}
 
-      {homeProfileModalOpen && activeProfessional ? (
-        <DashboardHomeProfessionalProfileModal
-          language={props.language}
-          professional={activeProfessional}
-          photoSrc={props.professionalPhotoMap[activeProfessional.id]}
-          canSelfChangeProfessional={canSelfChangeProfessional}
-          onClose={() => setHomeProfileModalOpen(false)}
-          onChat={() => {
-            setHomeProfileModalOpen(false);
-            openHomeChat(activeProfessional.id);
-          }}
-          onChangeProfessional={() => {
-            setHomeProfileModalOpen(false);
-            props.onNavigateToChangeProfessional();
-          }}
-          onImageFallback={props.onImageFallback}
-        />
-      ) : null}
-
       {acquireSessionsModalOpen ? (
         <AcquireSessionsChoiceModal
           language={props.language}
           onClose={() => setAcquireSessionsModalOpen(false)}
           onChoosePackages={() => {
             setAcquireSessionsModalOpen(false);
-            if (homeVariant === "next") {
-              setHomePurchaseModalOpen(true);
-              return;
-            }
             props.onNavigateToSessionsCheckout();
           }}
           onChooseIndividual={props.onNavigateToIndividualSessions}
@@ -1476,7 +1458,6 @@ export function HomePage(props: {
           homePurchaseModalOpen ||
           noSessionsRedirectModalOpen ||
           homeChatModalOpen ||
-          homeProfileModalOpen ||
           trialModalOpen ||
           Boolean(homeBookingProfessionalId)
         }

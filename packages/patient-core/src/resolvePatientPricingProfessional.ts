@@ -1,10 +1,16 @@
 export type PatientPricingProfessionalInput = {
   assignedProfessionalId?: string | null;
+  /** Solo candidato pre-vínculo (matching). Con assign activo se ignora. */
   selectedProfessionalId?: string | null;
-  /** Preferir próximas reservas primero; luego el resto confirmadas. */
+  /** @deprecated El vínculo no usa reservas como fallback. Se ignora. */
   bookingProfessionalIds?: string[];
 };
 
+/**
+ * Profesional del vínculo para precio / compra / reserva.
+ * Con assign: solo ese. Sin assign: el selected del matching (aún no hay lazo).
+ * Sin fallback a reservas u otros profesionales.
+ */
 export function resolvePatientPricingProfessionalId(
   input: PatientPricingProfessionalInput
 ): string | null {
@@ -18,17 +24,10 @@ export function resolvePatientPricingProfessionalId(
     return selected;
   }
 
-  for (const rawId of input.bookingProfessionalIds ?? []) {
-    const id = rawId?.trim();
-    if (id) {
-      return id;
-    }
-  }
-
   return null;
 }
 
-/** Hay profesional de referencia para calcular tarifas (asignación, selección o reserva). */
+/** Hay profesional de referencia para calcular tarifas (asignación o selección previa al lazo). */
 export function patientHasPricingProfessional(input: PatientPricingProfessionalInput): boolean {
   return resolvePatientPricingProfessionalId(input) !== null;
 }

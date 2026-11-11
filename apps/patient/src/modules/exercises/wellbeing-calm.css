@@ -43,20 +43,24 @@
 }
 
 @media (min-width: 1081px) {
+  /*
+   * Misma grilla que Sesiones: main | side en una fila.
+   * Toolbar absoluta (calm-portal-toolbar.css); el riel baja con padding.
+   * Evita el bug de grid 2 filas + main spanning, que empujaba las rutinas ~fuera de viewport.
+   */
   .wellbeing-calm-columns {
-    align-items: stretch;
-    padding-top: 0;
-    padding-bottom: 0;
+    align-items: start;
     min-height: calc(100vh - 58px);
   }
 
   .wellbeing-calm-main {
     border-right: 1px solid #e2dfd3;
-    padding: var(--portal-chrome-top, 26px) 48px 40px 0;
+    padding-right: 48px;
   }
 
   .wellbeing-calm-side {
-    padding: var(--portal-chrome-top, 26px) 0 40px;
+    /* Debajo de campana + cuenta (absolutas). */
+    padding-top: var(--portal-toolbar-clear, calc(48px + 12px));
   }
 }
 

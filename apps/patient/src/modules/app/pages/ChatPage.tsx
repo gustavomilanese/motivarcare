@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { formatShortDate } from "../../home/calm/calmHomeFormat";
 import { SessionDetailModal } from "../../booking/components/SessionDetailModal";
-import { DashboardHomeProfessionalProfileModal } from "../../home/ml/ProfessionalProfileModal";
 import { moodMeta } from "../../emotional-diary/lib/moods";
 import { CalmPortalToolbarRow } from "../components/CalmPortalToolbarRow";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
@@ -34,7 +33,6 @@ export function ChatPage(props: {
 }) {
   const navigate = useNavigate();
   const threadRef = useRef<HTMLDivElement>(null);
-  const [profileOpen, setProfileOpen] = useState(false);
   const [sessionDetailOpen, setSessionDetailOpen] = useState(false);
   const chat = usePatientChat(props);
   const sharedEntries = useSharedDiaryEntries(props.authToken);
@@ -79,6 +77,7 @@ export function ChatPage(props: {
             professionalName={view.professionalName}
             givenName={view.givenName}
             photoSrc={view.photoSrc || null}
+            canReserve={view.availableSessions > 0}
             onImageFallback={props.onImageFallback}
             professionals={
               props.embedded
@@ -117,17 +116,13 @@ export function ChatPage(props: {
               meta={view.profileMeta}
               photoSrc={view.photoSrc}
               ratingLabel={view.ratingLabel}
-              onOpenProfile={() => setProfileOpen(true)}
+              onOpenProfile={() => navigate("/mi-profesional")}
               onImageFallback={props.onImageFallback}
               session={
                 view.sessionNotice
                   ? { when: view.sessionNotice.when, meta: view.sessionNotice.meta, credits: view.creditsLabel }
                   : null
               }
-              shared={view.sharedPanel}
-              authToken={props.authToken}
-              patientName={props.state.session?.fullName ?? null}
-              patientEmail={props.state.session?.email ?? null}
             />
           ) : null}
         </div>
@@ -156,21 +151,6 @@ export function ChatPage(props: {
         />
       ) : null}
 
-      {profileOpen && chat.threadProfessional ? (
-        <DashboardHomeProfessionalProfileModal
-          language={props.language}
-          professional={chat.threadProfessional}
-          photoSrc={view.photoSrc}
-          canSelfChangeProfessional={view.canSelfChange}
-          onClose={() => setProfileOpen(false)}
-          onChat={() => setProfileOpen(false)}
-          onChangeProfessional={() => {
-            setProfileOpen(false);
-            navigate("/matching?changeProfessional=1");
-          }}
-          onImageFallback={props.onImageFallback}
-        />
-      ) : null}
     </div>
   );
 }

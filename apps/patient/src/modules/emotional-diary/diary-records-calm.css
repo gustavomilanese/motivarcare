@@ -15,6 +15,37 @@
   padding-right: 0;
 }
 
+/* Volver arriba de la grilla: col3 alinea con el kicker «Diario», no con el back. */
+.diary-records-chrome {
+  padding: var(--portal-chrome-top, 26px) 48px 0 0;
+  box-sizing: border-box;
+}
+
+.diary-records-chrome .diary-records-back {
+  margin-bottom: 12px;
+}
+
+@media (min-width: 1081px) {
+  .diary-records-calm > .diary-calm-columns {
+    padding-top: 0;
+  }
+
+  /* Col1 alinea con el chrome «Volver»; el riel deja hueco bajo campana + cuenta. */
+  .diary-records-calm .diary-calm-main {
+    padding-top: 0;
+  }
+
+  .diary-records-calm .diary-calm-side {
+    padding-top: var(--portal-toolbar-clear, calc(var(--portal-chrome-top, 26px) + 48px + 12px));
+  }
+}
+
+@media (max-width: 1080px) {
+  .diary-records-chrome {
+    padding: 12px 16px 0;
+  }
+}
+
 .diary-records-head h1 {
   margin: 0;
   font-family: "Fraunces", Georgia, serif;

@@ -6,7 +6,7 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-/** Aviso al intentar reservar sin créditos: luego se abre el catálogo de paquetes. */
+/** Fallback si aún se intenta reservar sin créditos (la UI principal deshabilita Reservar). */
 export function NoSessionsAvailableModal(props: {
   language: AppLanguage;
   onClose: () => void;
@@ -67,16 +67,16 @@ export function NoSessionsAvailableModal(props: {
           </p>
           <h2 id="no-sessions-available-title" className="no-sessions-available-title">
             {t(props.language, {
-              es: "Sin sesiones para reservar",
-              en: "No sessions to book",
-              pt: "Sem sessoes para reservar"
+              es: "Te quedaste sin sesiones disponibles",
+              en: "You’re out of available sessions",
+              pt: "Voce ficou sem sessoes disponiveis"
             })}
           </h2>
           <p className="no-sessions-available-lead">
             {t(props.language, {
-              es: "Sumá un paquete y seguí con tu acompañamiento cuando quieras.",
-              en: "Add a package and keep going with your care whenever you’re ready.",
-              pt: "Adicione um pacote e continue seu acompanhamento quando quiser."
+              es: "Para reservar de nuevo, comprá un paquete o sesiones sueltas. Los precios son los de tu profesional.",
+              en: "To book again, buy a package or individual sessions. Prices match your professional’s rate.",
+              pt: "Para reservar de novo, compre um pacote ou sessoes avulsas. Os precos sao os do seu profissional."
             })}
           </p>
         </div>

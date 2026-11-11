@@ -1,16 +1,8 @@
-import type { SyntheticEvent } from "react";
-import {
-  type AppLanguage,
-  type DisplayFxRates,
-  type LocalizedText,
-  type SupportedCurrency,
-  textByLanguage
-} from "@therapy/i18n-config";
-import { professionalAccessibleName } from "../../app/lib/professionalDisplayName";
+import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { professionalGivenName } from "../../app/lib/professionalDisplayName";
 import type { Professional } from "../../app/types";
-import { formatSessionListMajorPrice } from "../../matching/lib/sessionListPrice";
 import { upcomingProfessionalSlots } from "./calmHomeCase";
-import { CalmPersonHit } from "./CalmPersonHit";
+import { CalmFirstSessionNextSteps } from "./CalmFirstSessionNextSteps";
 import { CalmSessionCreditsBadge } from "./CalmSessionCreditsBadge";
 import { formatClock, formatShortDate, timezoneCaption } from "./calmHomeFormat";
 import { IconSesiones } from "./calmIcons";
@@ -24,42 +16,15 @@ export function CalmFirstSessionCard(props: {
   timeZone: string;
   now: Date;
   professional: Professional;
-  photoUrl: string | null;
-  currency: SupportedCurrency;
-  fxRates?: DisplayFxRates;
-  residencyCountry: string | null;
-  onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   availableSessions: number;
   onBook: () => void;
-  /** Solo si no quedan créditos/prueba ni reservas: un paquete no se cambia a mitad. */
-  canRequestChange: boolean;
-  onRequestChange: () => void;
-  onOpenProfile: () => void;
+  /** Misma acción que `CalmSessionsBalance` en home asignada. */
+  onBuyPackage?: () => void;
 }) {
   const slots = upcomingProfessionalSlots(props.professional.slots, props.now);
-  const name = professionalAccessibleName(props.professional);
-  const given = name.split(" ")[0] || name;
-  const priceLabel =
-    props.professional.sessionPriceUsd && props.professional.sessionPriceUsd > 0
-      ? formatSessionListMajorPrice(
-          props.currency,
-          props.professional.sessionPriceUsd,
-          props.language,
-          props.fxRates,
-          props.residencyCountry
-        )
-      : "";
-  const sessionMeta = priceLabel
-    ? t(props.language, {
-        es: `Sesión de 50 min · ${priceLabel}`,
-        en: `50 min session · ${priceLabel}`,
-        pt: `Sessão de 50 min · ${priceLabel}`
-      })
-    : t(props.language, {
-        es: "Sesión de 50 min",
-        en: "50 min session",
-        pt: "Sessão de 50 min"
-      });
+  const given = professionalGivenName(props.professional);
+  const needsPurchase = props.availableSessions <= 0;
+  const primaryAction = needsPurchase && props.onBuyPackage ? props.onBuyPackage : props.onBook;
 
   return (
     <article className="calm-card calm-session calm-first-session">
@@ -75,11 +40,17 @@ export function CalmFirstSessionCard(props: {
       </div>
       <div>
         <h2 className="calm-session-when">
-          {t(props.language, {
-            es: "Reservá tu primera sesión",
-            en: "Book your first session",
-            pt: "Reserve sua primeira sessão"
-          })}
+          {needsPurchase
+            ? t(props.language, {
+                es: "Comprá y reservá tu primera sesión",
+                en: "Buy and book your first session",
+                pt: "Compre e reserve sua primeira sessão"
+              })
+            : t(props.language, {
+                es: "Reservá tu primera sesión",
+                en: "Book your first session",
+                pt: "Reserve sua primeira sessão"
+              })}
         </h2>
         <p className="calm-session-meta calm-first-session__meta">
           {slots.length > 0
@@ -95,59 +66,43 @@ export function CalmFirstSessionCard(props: {
               })}
         </p>
       </div>
-      <CalmPersonHit
-        className="calm-first-session__person"
-        name={name}
-        meta={sessionMeta}
-        metaClassName="calm-first-session__price"
-        photoUrl={props.photoUrl}
-        onImageFallback={props.onImageFallback}
-        onOpenProfile={props.onOpenProfile}
-      />
       {slots.length > 0 ? (
-        <div className="calm-slot-row calm-first-session__slots">
-          {slots.map((slot) => (
-            <button key={slot.id} type="button" className="calm-slot" onClick={props.onBook}>
-              {formatClock(slot.startsAt, props.timeZone, props.language)}
-              <small>{formatShortDate(slot.startsAt, props.timeZone, props.language)}</small>
-            </button>
-          ))}
-          <button type="button" className="calm-slot calm-slot--more" onClick={props.onBook}>
+        <div className="calm-first-session__slots">
+          <div className="calm-slot-row">
+            {slots.map((slot) => (
+              <button key={slot.id} type="button" className="calm-slot" onClick={primaryAction}>
+                {formatClock(slot.startsAt, props.timeZone, props.language)}
+                <small>{formatShortDate(slot.startsAt, props.timeZone, props.language)}</small>
+              </button>
+            ))}
+          </div>
+          <button type="button" className="calm-text-link calm-first-session__more-slots" onClick={primaryAction}>
             {t(props.language, { es: "Ver más horarios", en: "See more times", pt: "Ver mais horários" })}
           </button>
         </div>
       ) : null}
       <div className="calm-session-actions calm-first-session__actions">
-        <button className="calm-btn calm-btn--yellow calm-btn--large calm-first-session__cta" type="button" onClick={props.onBook}>
+        <button className="calm-btn calm-btn--yellow calm-btn--large calm-first-session__cta" type="button" onClick={primaryAction}>
           <IconSesiones size={18} />
-          <span className="calm-first-session__cta-desktop">
-            {t(props.language, { es: "Reservar sesión", en: "Book a session", pt: "Reservar sessão" })}
-          </span>
-          <span className="calm-first-session__cta-mobile">
-            {t(props.language, {
-              es: "Ver todos los horarios",
-              en: "See all available times",
-              pt: "Ver todos os horários"
-            })}
-          </span>
+          {needsPurchase ? (
+            t(props.language, { es: "Comprar", en: "Buy", pt: "Comprar" })
+          ) : (
+            <>
+              <span className="calm-first-session__cta-desktop">
+                {t(props.language, { es: "Reservar sesión", en: "Book a session", pt: "Reservar sessão" })}
+              </span>
+              <span className="calm-first-session__cta-mobile">
+                {t(props.language, {
+                  es: "Ver todos los horarios",
+                  en: "See all available times",
+                  pt: "Ver todos os horários"
+                })}
+              </span>
+            </>
+          )}
         </button>
-        {priceLabel ? (
-          <p className="calm-first-session__pay-note">
-            {t(props.language, {
-              es: `Sesión de 50 min · ${priceLabel} · pagás al reservar`,
-              en: `50 min session · ${priceLabel} · pay when you book`,
-              pt: `Sessão de 50 min · ${priceLabel} · você paga ao reservar`
-            })}
-          </p>
-        ) : null}
-        {props.canRequestChange ? (
-          <button type="button" className="calm-text-link calm-session-change-link" onClick={props.onRequestChange}>
-            {t(props.language, {
-              es: "Pedir un cambio de profesional",
-              en: "Request a professional change",
-              pt: "Pedir uma troca de profissional"
-            })}
-          </button>
+        {props.onBuyPackage ? (
+          <CalmFirstSessionNextSteps language={props.language} onBuyPackage={props.onBuyPackage} />
         ) : null}
       </div>
     </article>

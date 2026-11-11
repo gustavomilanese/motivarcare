@@ -1,13 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
-import { IconCandado, MoodFace } from "../../home/calm/calmIcons";
+import { IconCandado } from "../../home/calm/calmIcons";
+import { MoodClimateIcon } from "../../home/calm/MoodClimateIcon";
 import { MOOD_OPTIONS } from "../lib/moods";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-/** Escala climática del diario, con las caras del design system. */
+/** Escala climática del diario (misma definición que home). */
 export function DiaryMoodCheckin(props: { language: AppLanguage }) {
   const navigate = useNavigate();
 
@@ -30,8 +31,8 @@ export function DiaryMoodCheckin(props: { language: AppLanguage }) {
             type="button"
             onClick={() => navigate(`/diario/nueva?mood=${mood.id}`)}
           >
-            <span aria-hidden="true">
-              <MoodFace face={mood.id} />
+            <span className="calm-mood-icon-slot" aria-hidden="true">
+              <MoodClimateIcon mood={mood.id} />
             </span>
             {t(props.language, { es: mood.labelEs, en: mood.labelEn, pt: mood.labelPt })}
           </button>

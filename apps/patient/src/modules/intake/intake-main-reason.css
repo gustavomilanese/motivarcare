@@ -1,0 +1,246 @@
+/* Motivos · tags + tipo de terapia. Hover a prueba de button:hover global. */
+
+.intake-shell--ask .intake-main-reason-step {
+  --pareja-rosa: #fff1f7;
+  --pareja-rosa-2: #fce7f3;
+  --pareja-borde: #f9a8d4;
+  --pareja-tinta: #9d174d;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.intake-shell--ask .intake-main-reason-block {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.intake-shell--ask .intake-main-reason-kicker {
+  margin: 0;
+  color: var(--verde-medio, #2f6b51);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.intake-shell--ask .intake-main-reason-categories {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.intake-shell--ask .intake-main-reason-category,
+.intake-shell--ask .intake-main-reason-category:hover,
+.intake-shell--ask .intake-main-reason-category:focus-visible,
+.intake-shell--ask .intake-main-reason-category--couples,
+.intake-shell--ask .intake-main-reason-category--couples:hover,
+.intake-shell--ask .intake-main-reason-category--couples:focus-visible {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 18px 20px;
+  border: 1px solid var(--linea, #e2dfd3);
+  border-radius: 18px;
+  background: var(--superficie, #fff);
+  color: var(--bosque, #1e4033);
+  text-align: left;
+  box-shadow: none;
+  transform: none;
+}
+
+.intake-shell--ask .intake-main-reason-category:hover,
+.intake-shell--ask .intake-main-reason-category:focus-visible {
+  border-color: var(--bosque, #1e4033);
+  background: var(--menta, #e7f1ea);
+  color: var(--bosque, #1e4033);
+}
+
+.intake-shell--ask .intake-main-reason-category--couples,
+.intake-shell--ask .intake-main-reason-category--couples:hover,
+.intake-shell--ask .intake-main-reason-category--couples:focus-visible {
+  border-color: rgba(244, 114, 182, 0.35);
+  background: linear-gradient(180deg, #ffffff 0%, var(--pareja-rosa) 100%);
+  color: var(--pareja-tinta);
+}
+
+.intake-shell--ask .intake-main-reason-category--couples:hover,
+.intake-shell--ask .intake-main-reason-category--couples:focus-visible {
+  border-color: var(--pareja-borde);
+  background: var(--pareja-rosa-2);
+  color: var(--pareja-tinta);
+}
+
+.intake-shell--ask .intake-main-reason-category--couples .intake-main-reason-category-label {
+  color: var(--pareja-tinta);
+}
+
+.intake-shell--ask .intake-main-reason-category--couples .intake-main-reason-category-hint {
+  color: rgba(157, 23, 77, 0.72);
+}
+
+/* Activo individual: bosque. Hover no puede blanquear. */
+.intake-shell--ask .intake-main-reason-category--active,
+.intake-shell--ask .intake-main-reason-category--active:hover,
+.intake-shell--ask .intake-main-reason-category--active:focus-visible {
+  border-color: transparent;
+  background: var(--bosque, #1e4033);
+  color: var(--crema, #f5f3eb);
+  box-shadow: none;
+}
+
+.intake-shell--ask .intake-main-reason-category--active .intake-main-reason-category-label,
+.intake-shell--ask .intake-main-reason-category--active:hover .intake-main-reason-category-label,
+.intake-shell--ask .intake-main-reason-category--active .intake-main-reason-category-hint,
+.intake-shell--ask .intake-main-reason-category--active:hover .intake-main-reason-category-hint {
+  color: var(--crema, #f5f3eb);
+}
+
+.intake-shell--ask .intake-main-reason-category--active .intake-main-reason-category-hint,
+.intake-shell--ask .intake-main-reason-category--active:hover .intake-main-reason-category-hint {
+  color: rgba(245, 243, 235, 0.78);
+}
+
+/* Activo pareja: rosa. */
+.intake-shell--ask .intake-main-reason-category--couples.intake-main-reason-category--active,
+.intake-shell--ask .intake-main-reason-category--couples.intake-main-reason-category--active:hover,
+.intake-shell--ask .intake-main-reason-category--couples.intake-main-reason-category--active:focus-visible {
+  border-color: transparent;
+  background: linear-gradient(180deg, #be185d 0%, #9d174d 100%);
+  color: #fff;
+  box-shadow: none;
+}
+
+.intake-shell--ask .intake-main-reason-category--couples.intake-main-reason-category--active .intake-main-reason-category-label,
+.intake-shell--ask .intake-main-reason-category--couples.intake-main-reason-category--active:hover .intake-main-reason-category-label,
+.intake-shell--ask .intake-main-reason-category--couples.intake-main-reason-category--active .intake-main-reason-category-hint,
+.intake-shell--ask .intake-main-reason-category--couples.intake-main-reason-category--active:hover .intake-main-reason-category-hint {
+  color: #fff;
+}
+
+.intake-shell--ask .intake-main-reason-category--couples.intake-main-reason-category--active .intake-main-reason-category-hint,
+.intake-shell--ask .intake-main-reason-category--couples.intake-main-reason-category--active:hover .intake-main-reason-category-hint {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.intake-shell--ask .intake-main-reason-category-label {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.intake-shell--ask .intake-main-reason-category-hint {
+  display: block;
+  color: var(--tinta-suave, #5d6a63);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.intake-shell--ask .intake-main-reason-panel,
+.intake-shell--ask .intake-main-reason-panel--couples {
+  display: grid;
+  gap: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.intake-shell--ask .intake-main-reason-panel-lead {
+  display: block;
+  margin: 0;
+  max-width: 40ch;
+  color: var(--tinta-suave, #5d6a63);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.intake-shell--ask .intake-main-reason-panel-sub {
+  margin: -8px 0 0;
+  color: var(--tinta-tenue, #8a958f);
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.intake-shell--ask .intake-main-reason-tags {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.intake-shell--ask .intake-main-reason-tags .intake-reason-tag,
+.intake-shell--ask .intake-main-reason-tags .intake-reason-tag:hover,
+.intake-shell--ask .intake-main-reason-tags .intake-reason-tag:focus-visible {
+  width: auto !important;
+  min-height: 44px;
+  justify-content: center;
+  padding: 11px 16px;
+  border: 1px solid var(--linea, #e2dfd3);
+  border-radius: 10px;
+  background: var(--superficie, #fff);
+  color: var(--bosque, #1e4033);
+  box-shadow: none;
+  text-align: center;
+}
+
+.intake-shell--ask .intake-main-reason-tags .intake-reason-tag:hover,
+.intake-shell--ask .intake-main-reason-tags .intake-reason-tag:focus-visible {
+  border-color: var(--bosque, #1e4033);
+  background: var(--menta, #e7f1ea);
+  color: var(--bosque, #1e4033);
+}
+
+.intake-shell--ask .intake-main-reason-tags .intake-reason-tag.is-active,
+.intake-shell--ask .intake-main-reason-tags .intake-reason-tag.is-active:hover,
+.intake-shell--ask .intake-main-reason-tags .intake-reason-tag.is-active:focus-visible {
+  border-color: transparent;
+  background: var(--bosque, #1e4033);
+  color: var(--crema, #f5f3eb);
+  box-shadow: none;
+}
+
+.intake-shell--ask .intake-main-reason-step--couples .intake-main-reason-tags .intake-reason-tag:hover,
+.intake-shell--ask .intake-main-reason-step--couples .intake-main-reason-tags .intake-reason-tag:focus-visible {
+  border-color: var(--pareja-borde);
+  background: var(--pareja-rosa);
+  color: var(--pareja-tinta);
+}
+
+.intake-shell--ask .intake-main-reason-step--couples .intake-main-reason-tags .intake-reason-tag.is-active,
+.intake-shell--ask .intake-main-reason-step--couples .intake-main-reason-tags .intake-reason-tag.is-active:hover,
+.intake-shell--ask .intake-main-reason-step--couples .intake-main-reason-tags .intake-reason-tag.is-active:focus-visible {
+  border-color: transparent;
+  background: var(--pareja-tinta);
+  color: #fff;
+}
+
+.intake-shell--ask .intake-main-reason-tags .intake-option-chip-label {
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.intake-shell--ask .intake-main-reason-step .intake-other-followup {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--menta, #e7f1ea);
+}
+
+.intake-shell--ask .intake-main-reason-step--couples .intake-other-followup {
+  background: var(--pareja-rosa);
+}
+
+@media (max-width: 520px) {
+  .intake-shell--ask .intake-main-reason-categories {
+    grid-template-columns: 1fr;
+  }
+}

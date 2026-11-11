@@ -1,0 +1,115 @@
+/* Misma holgura superior que Home calm: título a la altura de campana/cuenta. */
+
+.assigned-pro-page {
+  --crema: #f5f3eb;
+  --superficie: #fff;
+  --tinta: #1b2a23;
+  --tinta-suave: #5d6a63;
+  --tinta-tenue: #8a958f;
+  --linea: #e2dfd3;
+  --bosque: #1e4033;
+  --bosque-2: #2a5543;
+  --verde-medio: #2f6b51;
+  --salvia: #d6e7dc;
+  --menta: #e7f1ea;
+  --amarillo: #f5c33b;
+  --serif: "Fraunces", Georgia, serif;
+  --sans: "Manrope", system-ui, sans-serif;
+  --radio: 12px;
+  --radio-grande: 24px;
+
+  position: relative;
+  color: var(--tinta);
+  font-family: var(--sans);
+  background: var(--crema);
+  min-height: 100%;
+  padding: 8px 8px 88px;
+  box-sizing: border-box;
+}
+
+.portal-shell.portal-shell--home-ml:has(.assigned-pro-page),
+.portal-main:has(.assigned-pro-page) {
+  --dashboard-ml-page: #f5f3eb;
+  background: #f5f3eb;
+}
+
+.assigned-pro-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 20px;
+}
+
+.assigned-pro-kicker {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: var(--verde-medio);
+}
+
+.assigned-pro-head h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 42px;
+  line-height: 1.08;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--bosque);
+}
+
+.assigned-pro-head h1 em {
+  font-style: italic;
+  font-weight: 500;
+  color: var(--bosque-2);
+}
+
+.assigned-pro-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.assigned-pro-main,
+.assigned-pro-side {
+  min-width: 0;
+}
+
+.assigned-pro-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-self: start;
+}
+
+@media (min-width: 1081px) {
+  .portal-shell:has(.assigned-pro-page) .assigned-pro-page {
+    padding: var(--portal-chrome-top, 26px) 48px 20px;
+  }
+
+  .portal-shell:has(.assigned-pro-page) .assigned-pro-page > .calm-toolbar-row {
+    position: absolute;
+    top: var(--portal-chrome-top, 26px);
+    right: 48px;
+    margin: 0;
+    min-height: 0;
+    z-index: 2;
+  }
+
+  .portal-shell:has(.assigned-pro-page) .assigned-pro-page .calm-toolbar {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 1080px) {
+  .assigned-pro-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .assigned-pro-head h1 {
+    font-size: 32px;
+  }
+}

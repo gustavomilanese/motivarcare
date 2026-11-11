@@ -16,6 +16,8 @@ export function professionalDisplayNameLines(professional: {
   return { line1: professional.fullName, line2: null };
 }
 
+const TITLE_TOKEN = /^(dr|dra|lic|licda|psic|mr|mrs|ms|sr|sra)\.?$/i;
+
 /** Nombre de pila para cards compactas (evita dos líneas / apellido). */
 export function professionalFirstName(professional: {
   firstName?: string;
@@ -31,6 +33,22 @@ export function professionalFirstName(professional: {
     return "";
   }
   return full.split(/\s+/)[0] ?? full;
+}
+
+/** Nombre de pila sin título (Dr./Lic.) para copy de UI. */
+export function professionalGivenName(professional: {
+  firstName?: string;
+  lastName?: string;
+  fullName: string;
+}): string {
+  const first = professionalFirstName(professional).trim();
+  if (first && !TITLE_TOKEN.test(first)) {
+    return first;
+  }
+  const parts = professionalAccessibleName(professional)
+    .split(/\s+/)
+    .filter((token) => token.length > 0 && !TITLE_TOKEN.test(token));
+  return parts[0] || first || professionalAccessibleName(professional);
 }
 
 export function professionalAccessibleName(professional: {

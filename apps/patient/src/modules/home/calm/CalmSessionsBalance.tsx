@@ -15,6 +15,8 @@ export function CalmSessionsBalance(props: {
   includesToday: boolean;
   professional: Professional | null;
   onReserveAnother: () => void;
+  /** Sin saldo: mismo botón amarillo abre compra de paquetes. */
+  onBuyAnother?: () => void;
   /** Compacta para el stack mobile debajo de la card de sesión. */
   compact?: boolean;
 }) {
@@ -27,6 +29,10 @@ export function CalmSessionsBalance(props: {
       : "");
   const today = t(props.language, { es: "una es hoy", en: "one is today", pt: "uma é hoje" });
   const copy = props.includesToday ? (withName ? `${withName} · ${today}` : today) : withName;
+  const needsPurchase = props.available <= 0;
+  const onPrimary = needsPurchase
+    ? (props.onBuyAnother ?? props.onReserveAnother)
+    : props.onReserveAnother;
 
   return (
     <article
@@ -49,8 +55,10 @@ export function CalmSessionsBalance(props: {
           variant="home"
         />
       </div>
-      <button className="calm-btn calm-btn--yellow" type="button" onClick={props.onReserveAnother}>
-        {t(props.language, { es: "Reservar otra", en: "Book another", pt: "Reservar outra" })}
+      <button className="calm-btn calm-btn--yellow" type="button" onClick={onPrimary}>
+        {needsPurchase
+          ? t(props.language, { es: "Comprar otra", en: "Buy another", pt: "Comprar outra" })
+          : t(props.language, { es: "Reservar otra", en: "Book another", pt: "Reservar outra" })}
       </button>
     </article>
   );

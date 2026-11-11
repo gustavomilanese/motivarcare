@@ -20,11 +20,18 @@ export function usePortalNavigation(params: {
 }) {
   return {
     handleReserveFromAnywhere: (professionalId: string, options?: { returnTo?: string }) => {
-      params.onStateChange((current) => ({
-        ...current,
-        therapistSelectionCompleted: true,
-        selectedProfessionalId: professionalId
-      }));
+      const requested = professionalId.trim();
+      params.onStateChange((current) => {
+        const assigned = current.assignedProfessionalId?.trim() ?? "";
+        // Si ya hay profesional elegido, la reserva/compra es de ese (no del click en otro del matching).
+        const binding = assigned || requested;
+        return {
+          ...current,
+          therapistSelectionCompleted: true,
+          selectedProfessionalId: binding,
+          ...(assigned ? {} : requested ? { assignedProfessionalId: requested } : {})
+        };
+      });
       const returnTo = safeInternalReturnPath(options?.returnTo ?? null);
       if (returnTo) {
         persistBookingReturnTo(returnTo);
@@ -49,11 +56,17 @@ export function usePortalNavigation(params: {
       );
     },
     handleGoToProfessional: (professionalId: string) => {
-      params.onStateChange((current) => ({
-        ...current,
-        selectedProfessionalId: professionalId
-      }));
-      params.navigate("/sessions");
+      const requested = professionalId.trim();
+      params.onStateChange((current) => {
+        const assigned = current.assignedProfessionalId?.trim() ?? "";
+        // Perfil del vínculo: siempre el assigned si existe.
+        const binding = assigned || requested;
+        return {
+          ...current,
+          selectedProfessionalId: binding
+        };
+      });
+      params.navigate("/mi-profesional");
     },
     handleChatFromAnywhere: (professionalId: string) => {
       params.onStateChange((current) => ({

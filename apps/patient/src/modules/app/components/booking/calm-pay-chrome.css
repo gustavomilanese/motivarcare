@@ -8,6 +8,9 @@
   background: #fff;
   box-shadow: none;
   outline: none;
+  /* Separar del listado de sesiones (el margin-block: 12px del panel legacy queda corto). */
+  margin-top: 32px;
+  margin-bottom: 12px;
 }
 
 .checkout-residency-confirm {

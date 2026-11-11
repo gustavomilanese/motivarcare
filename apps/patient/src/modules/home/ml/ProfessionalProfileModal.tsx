@@ -10,6 +10,7 @@ import { ProfessionalNameStack, professionalPhotoAlt } from "../../app/component
 import { professionalAccessibleName } from "../../app/lib/professionalDisplayName";
 import { professionalPhotoSrc } from "../../app/services/api";
 import type { Professional } from "../../app/types";
+import { IconCheck } from "../calm/calmIcons";
 import { ProfileExpandableText } from "./ProfileExpandableText";
 
 function t(language: AppLanguage, values: LocalizedText): string {

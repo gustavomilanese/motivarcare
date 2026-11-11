@@ -97,6 +97,11 @@
   text-decoration: none;
 }
 
+button.chat-ds-reserve:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .chat-ds-icon-btn {
   margin-left: auto;
   width: 42px;
@@ -110,9 +115,14 @@
   flex: none;
 }
 
-.chat-ds-icon-btn:hover {
+.chat-ds-icon-btn:hover:not(:disabled) {
   background: var(--menta);
   border-color: transparent;
+}
+
+.chat-ds-icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .chat-ds-switch {

@@ -407,8 +407,8 @@ export function MainPortal(props: {
       }
       const professionalIdToAssign =
         pending?.professionalId?.trim()
-        || props.state.selectedProfessionalId?.trim()
         || props.state.assignedProfessionalId?.trim()
+        || props.state.selectedProfessionalId?.trim()
         || "";
       props.onStateChange((current) => {
         const next: typeof current = {
@@ -484,8 +484,8 @@ export function MainPortal(props: {
     shouldLockToTherapistSelection && !checkoutReturnActive && !trialReturnActive;
 
   /**
-   * Si ya hay créditos y un profesional seleccionado en matching, pero el assign
-   * no quedó persistido (bug histórico post-dLocal), promoverlo a assigned.
+   * Heal post-pago: solo si hay créditos, no hay assign, y selected está set
+   * (ya no auto-escribimos matching[0] en selected).
    */
   const healedAssignmentRef = useRef<string | null>(null);
   useEffect(() => {
@@ -494,6 +494,9 @@ export function MainPortal(props: {
     const hasCredits =
       props.state.subscription.creditsRemaining > 0 || props.state.subscription.creditsTotal > 0;
     if (!selected || assigned || !hasCredits) {
+      return;
+    }
+    if (!props.state.therapistSelectionCompleted) {
       return;
     }
     if (healedAssignmentRef.current === selected) {
@@ -518,6 +521,7 @@ export function MainPortal(props: {
   }, [
     props.state.selectedProfessionalId,
     props.state.assignedProfessionalId,
+    props.state.therapistSelectionCompleted,
     props.state.subscription.creditsRemaining,
     props.state.subscription.creditsTotal,
     props.professionalDirectory,

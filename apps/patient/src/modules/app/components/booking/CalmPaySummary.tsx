@@ -48,7 +48,7 @@ export function CalmPaySummary(props: {
         </p>
       ) : null}
       <p className="calm-pay-total">
-        <span>{t(props.language, { es: "Total a pagar ahora", en: "Total due now", pt: "Total a pagar agora" })}</span>
+        <span>{t(props.language, { es: "Total", en: "Total", pt: "Total" })}</span>
         <b>{selected.total}</b>
       </p>
       <button type="button" className="calm-pay-continue" disabled={props.blocked} onClick={props.onContinue}>

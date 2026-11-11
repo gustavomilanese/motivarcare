@@ -14,6 +14,8 @@ body:has(.calm-sidebar) {
 /* Tope compartido: logo (sidebar), título de página y campana/menú. */
 .portal-shell:has(.calm-sidebar) {
   --portal-chrome-top: 26px;
+  /* Alto útil de campana + pastilla de cuenta + aire bajo el chrome. */
+  --portal-toolbar-clear: calc(var(--portal-chrome-top, 26px) + 48px + 12px);
 }
 
 .portal-shell:has(.calm-sidebar) .portal-account-tools.header-actions .header-icon-link {

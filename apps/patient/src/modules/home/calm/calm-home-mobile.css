@@ -16,6 +16,27 @@
 
 .calm-first-session__slots {
   order: 3;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.calm-first-session__more-slots {
+  align-self: flex-end;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--superficie, #fff);
+  color: var(--bosque, #1e4033);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration-color: var(--amarillo, #f5c33b);
+  box-shadow: 0 1px 0 rgba(30, 64, 51, 0.06);
 }
 
 .calm-first-session__person {
@@ -27,6 +48,8 @@
   flex-direction: column;
   align-items: flex-start;
   width: 100%;
+  /* 40% menos aire entre horarios y Comprar (gap base 18px). */
+  margin-top: -7px;
 }
 
 .calm-first-session__price {
@@ -42,6 +65,29 @@
   font-size: 14px;
   font-weight: 500;
   color: var(--bosque);
+}
+
+.calm-first-session__packages-line {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--tinta-suave, #5d6a63);
+}
+
+.calm-first-session__packages-line .calm-text-link {
+  display: inline;
+  padding: 0;
+  font-size: inherit;
+  font-weight: 700;
+  vertical-align: baseline;
+}
+
+@media (min-width: 1081px) {
+  .calm-first-session__meta,
+  .calm-first-session__packages-line {
+    white-space: nowrap;
+  }
 }
 
 .calm-first-session__cta-mobile {
@@ -121,13 +167,20 @@
 
   .calm-first-session__slots {
     order: 4;
+    gap: 6px;
+  }
+
+  .calm-first-session__slots .calm-slot-row {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
   }
 
-  .calm-first-session__slots .calm-slot:nth-child(n + 4),
-  .calm-first-session__slots .calm-slot--more {
+  .calm-first-session__slots .calm-slot:nth-child(n + 4) {
+    display: none;
+  }
+
+  .calm-first-session__more-slots {
     display: none;
   }
 

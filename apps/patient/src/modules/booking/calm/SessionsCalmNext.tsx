@@ -7,7 +7,7 @@ import type { Booking, Professional } from "../../app/types";
 import { IconVideo } from "../../home/calm/calmIcons";
 import {
   formatClock,
-  formatWeekday,
+  formatWeekdayDate,
   isSameZonedDay,
   sessionChipLabel,
   sessionTiming
@@ -36,7 +36,7 @@ export function SessionsCalmNext(props: {
   const clock = formatClock(props.booking.startsAt, props.timeZone, props.language);
   const when = sameDay
     ? t(props.language, { es: `Hoy · ${clock}`, en: `Today · ${clock}`, pt: `Hoje · ${clock}` })
-    : `${formatWeekday(props.booking.startsAt, props.timeZone, props.language)} · ${clock}`;
+    : `${formatWeekdayDate(props.booking.startsAt, props.timeZone, props.language)} · ${clock}`;
   const join = bookingJoinUrl(props.booking);
   const canMove = canPatientRescheduleBooking(props.booking.startsAt, professional?.cancellationHours);
 

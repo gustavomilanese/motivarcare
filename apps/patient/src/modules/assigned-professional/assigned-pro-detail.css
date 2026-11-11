@@ -1,0 +1,212 @@
+/* Ficha principal — reusa clases calm de matching dentro de .assigned-pro-page */
+
+.assigned-pro-page .assigned-pro-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 20px 18px 16px;
+  background: var(--superficie);
+  border: 1px solid var(--bosque);
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px var(--bosque);
+}
+
+.assigned-pro-page .patient-therapist-best {
+  position: absolute;
+  top: -11px;
+  left: 18px;
+  background: var(--amarillo);
+  color: var(--bosque);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 8px;
+  padding: 4px 10px;
+}
+
+/* Rubro: arriba a la derecha del card (espejo del badge “Tu profesional”). */
+.assigned-pro-role-chip {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  margin: 0;
+  padding: 7px 12px;
+  border-radius: 8px;
+  background: #e6edc4;
+  color: var(--bosque);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+
+.assigned-pro-role-chip-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--amarillo);
+}
+
+.assigned-pro-page .calm-pro-top {
+  padding-right: 7.5rem;
+}
+
+.assigned-pro-page .calm-pro-who {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.assigned-pro-page .patient-therapist-avatar,
+.assigned-pro-page .calm-pro-initials {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.assigned-pro-page .calm-pro-initials {
+  display: grid;
+  place-items: center;
+  background: #d6e7dc;
+  color: var(--bosque);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.assigned-pro-page .patient-therapist-name-single {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  font-weight: 500;
+  color: var(--bosque);
+  line-height: 1.2;
+}
+
+.assigned-pro-page .calm-pro-rating {
+  margin: 4px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--tinta-suave);
+  font-size: 13px;
+}
+
+.assigned-pro-rating-btn {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.assigned-pro-rating-btn:focus-visible {
+  outline: 2px solid var(--bosque);
+  outline-offset: 2px;
+}
+
+.assigned-pro-page .calm-pro-stars i {
+  font-style: normal;
+  color: #c8c4b8;
+}
+
+.assigned-pro-page .calm-pro-stars i.is-on {
+  color: var(--amarillo);
+}
+
+.assigned-pro-page .calm-pro-years,
+.assigned-pro-page .calm-pro-focus,
+.assigned-pro-compat,
+.assigned-pro-verified,
+.assigned-pro-rating-empty {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--tinta-suave);
+}
+
+.assigned-pro-verified {
+  color: var(--verde-medio);
+  font-weight: 700;
+}
+
+.assigned-pro-section {
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--linea);
+}
+
+.assigned-pro-section h3 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--verde-medio);
+}
+
+.assigned-pro-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.assigned-pro-tags li {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--menta);
+  color: var(--bosque);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.assigned-pro-page .patient-therapist-calm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.assigned-pro-page .patient-therapist-choose {
+  border: 0;
+  border-radius: 8px;
+  background: var(--amarillo);
+  color: var(--bosque);
+  font-weight: 800;
+  font-size: 14px;
+  padding: 12px 16px;
+  cursor: pointer;
+}
+
+.assigned-pro-page .patient-therapist-choose:hover {
+  filter: brightness(0.97);
+}
+
+.assigned-pro-page .patient-therapist-choose:focus-visible {
+  outline: 2px solid var(--bosque);
+  outline-offset: 2px;
+}

@@ -5,7 +5,7 @@ import { useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
 import { DiaryEntriesTimeline } from "../components/DiaryEntriesTimeline";
 import { DiaryEntryDetailModal } from "../components/DiaryEntryDetailModal";
 import { DiaryRecordsChart } from "../components/DiaryRecordsChart";
-import { DiaryRecordsHead } from "../components/DiaryRecordsHead";
+import { DiaryRecordsBack, DiaryRecordsHead } from "../components/DiaryRecordsHead";
 import { DiaryRecordsInsights } from "../components/DiaryRecordsInsights";
 import { DiaryRecordsSession } from "../components/DiaryRecordsSession";
 import { DiaryRecordsStats } from "../components/DiaryRecordsStats";
@@ -26,6 +26,9 @@ export function DiaryRecordsPage(props: DiaryRecordsPageProps) {
     <DiaryShell language={props.language} className="diary-page--records diary-calm diary-records-calm">
       <div data-section-top-anchor className="diary-page-top-anchor" aria-hidden="true" />
       <CalmPortalToolbarRow mountId="diary-hero-toolbar-mount" />
+      <div className="diary-records-chrome">
+        <DiaryRecordsBack language={props.language} />
+      </div>
       <div className="diary-calm-columns">
         <div className="diary-calm-main">
           <DiaryRecordsHead language={props.language} />

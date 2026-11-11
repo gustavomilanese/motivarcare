@@ -1,0 +1,53 @@
+/* Superficies DS 0.1 en la nueva entrada: menta / lima-suave / blanco. */
+
+.diary-entry-calm .diary-entry-card--menta,
+.diary-entry-calm .diary-entry-card--menta:hover,
+.diary-entry-calm .diary-entry-card--menta:focus-within {
+  background: #e7f1ea; /* menta */
+  border-color: transparent;
+}
+
+.diary-entry-calm .diary-entry-card--lima,
+.diary-entry-calm .diary-entry-card--lima:hover,
+.diary-entry-calm .diary-entry-card--lima:focus-within {
+  background: #f2f5e0; /* lima-suave */
+  border-color: transparent;
+}
+
+/* Controles blancos sobre menta/lima para que sigan leyéndose como chips/cards. */
+.diary-entry-calm .diary-entry-card--menta .diary-entry-climate-btn,
+.diary-entry-calm .diary-entry-card--menta .diary-entry-climate-btn:hover,
+.diary-entry-calm .diary-entry-card--menta .diary-entry-climate-btn:focus-visible,
+.diary-entry-calm .diary-entry-card--lima .diary-entry-chip,
+.diary-entry-calm .diary-entry-card--lima .diary-entry-chip:hover,
+.diary-entry-calm .diary-entry-card--lima .diary-entry-chip:focus-visible,
+.diary-entry-calm .diary-entry-card--menta .diary-entry-visibility-option,
+.diary-entry-calm .diary-entry-card--menta .diary-entry-visibility-option:hover {
+  background: #fff;
+  border-color: #e2dfd3;
+}
+
+.diary-entry-calm .diary-entry-card--menta .diary-entry-climate-btn.is-active,
+.diary-entry-calm .diary-entry-card--menta .diary-entry-climate-btn.is-active:hover,
+.diary-entry-calm .diary-entry-card--menta .diary-entry-climate-btn.is-active:focus-visible {
+  border-color: #1e4033;
+  background: #fff;
+}
+
+.diary-entry-calm .diary-entry-card--lima .diary-entry-chip.is-active,
+.diary-entry-calm .diary-entry-card--lima .diary-entry-chip.is-active:hover,
+.diary-entry-calm .diary-entry-card--lima .diary-entry-chip.is-active:focus-visible {
+  border-color: transparent;
+  background: #e6edc4; /* lima */
+}
+
+.diary-entry-calm .diary-entry-card--menta .diary-entry-visibility-option.is-active,
+.diary-entry-calm .diary-entry-card--menta .diary-entry-visibility-option.is-active:hover {
+  border-color: #1e4033;
+  background: #fff;
+}
+
+.diary-entry-calm .diary-entry-card--menta .diary-entry-field-ico,
+.diary-entry-calm .diary-entry-card--lima .diary-entry-field-ico {
+  background: #fff;
+}

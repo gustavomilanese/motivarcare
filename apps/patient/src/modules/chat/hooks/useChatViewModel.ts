@@ -153,6 +153,7 @@ export function useChatViewModel(params: {
     sharedForTimeline,
     upcomingBooking,
     sessionNotice,
+    availableSessions,
     creditsLabel,
     sharedPanel: params.sharedEntries.map((entry) => ({
       id: entry.id,

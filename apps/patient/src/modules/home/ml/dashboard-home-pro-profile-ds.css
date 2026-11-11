@@ -15,6 +15,23 @@
   font-weight: 500;
 }
 
+/* “Dr. Michael Rivera” en una sola línea (no apilar el título). */
+.dashboard-home-pro-profile-title .professional-name-stack {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35em;
+}
+
+.dashboard-home-pro-profile-title .professional-name-line1,
+.dashboard-home-pro-profile-title .professional-name-line2 {
+  display: inline;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
 .dashboard-home-pro-profile-role {
   color: #5d6a63;
 }

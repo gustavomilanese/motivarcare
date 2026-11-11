@@ -1,0 +1,128 @@
+/* Bifurcación intro: cuestionario vs Maca. */
+
+.intake-shell--ask .intake-fork {
+  display: grid;
+  gap: 14px;
+}
+
+@media (min-width: 720px) {
+  .intake-shell--ask .intake-fork {
+    grid-template-columns: 1.25fr 0.75fr;
+    align-items: stretch;
+  }
+}
+
+.intake-shell--ask .intake-fork-card {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid var(--linea, #e2dfd3);
+  background: var(--superficie, #fff);
+  color: var(--tinta, #1b2a23);
+  text-align: left;
+  font: inherit;
+}
+
+.intake-shell--ask .intake-fork-card h2,
+.intake-shell--ask .intake-fork-card strong {
+  margin: 0;
+  font-family: var(--sans, "Manrope", system-ui, sans-serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--bosque, #1e4033);
+}
+
+.intake-shell--ask .intake-fork-card p,
+.intake-shell--ask .intake-fork-card em {
+  margin: 0;
+  font-style: normal;
+  color: var(--tinta-suave, #5d6a63);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* Guía de lectura: menta + jerarquía tipográfica (DS 0.1). */
+.intake-shell--ask .intake-fork-card--guide {
+  gap: 14px;
+  padding: 22px 20px;
+  border-color: transparent;
+  background: var(--menta, #e7f1ea);
+  border-radius: 24px;
+}
+
+.intake-fork-guide-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.intake-fork-guide-ico {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 10px;
+  background: var(--superficie, #fff);
+  color: var(--bosque, #1e4033);
+}
+
+.intake-shell--ask .intake-fork-card--guide h2 {
+  font-family: var(--serif, "Fraunces", Georgia, serif);
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.intake-fork-guide-lead {
+  margin: 0;
+  max-width: 38ch;
+  color: var(--tinta, #1b2a23) !important;
+  font-size: 16px !important;
+  font-weight: 500;
+  line-height: 1.55 !important;
+}
+
+.intake-fork-guide-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--verde-medio, #2f6b51) !important;
+  font-size: 13.5px !important;
+  font-weight: 600;
+  line-height: 1.45 !important;
+}
+
+.intake-fork-guide-note svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--verde-medio, #2f6b51);
+}
+
+.intake-shell--ask .intake-fork-card--maca {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border-style: dashed;
+  background: transparent;
+  cursor: pointer;
+}
+
+.intake-shell--ask .intake-fork-card--maca img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.intake-shell--ask .intake-fork-card--maca span {
+  display: grid;
+  gap: 4px;
+}

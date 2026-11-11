@@ -38,9 +38,9 @@ export function CalmSessionCard(props: {
   availableSessions: number;
   showJoinTour: boolean;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
-  onOpenBookingDetail: (bookingId: string) => void;
   onRescheduleBooking: (bookingId: string) => void;
   onGoToBooking: (professionalId: string) => void;
+  onBuySessions?: () => void;
   onChooseProfessional: () => void;
   onBookTrial: () => void;
   onOpenProfile: () => void;
@@ -70,8 +70,20 @@ export function CalmSessionCard(props: {
         </h2>
         <div className="calm-session-actions">
           {professional ? (
-            <button className="calm-btn calm-btn--yellow" type="button" onClick={() => props.onGoToBooking(professional.id)}>
-              {t(language, { es: "Reservar sesión", en: "Book a session", pt: "Reservar sessão" })}
+            <button
+              className="calm-btn calm-btn--yellow"
+              type="button"
+              onClick={() => {
+                if (props.availableSessions <= 0) {
+                  props.onBuySessions?.();
+                  return;
+                }
+                props.onGoToBooking(professional.id);
+              }}
+            >
+              {props.availableSessions <= 0
+                ? t(language, { es: "Comprar otra", en: "Buy another", pt: "Comprar outra" })
+                : t(language, { es: "Reservar sesión", en: "Book a session", pt: "Reservar sessão" })}
             </button>
           ) : (
             <button className="calm-btn calm-btn--yellow" type="button" onClick={props.onChooseProfessional}>
@@ -160,25 +172,19 @@ export function CalmSessionCard(props: {
             })}
           </button>
         )}
-        {isMobilePortal ? (
-          <div className="calm-session-secondary calm-session-secondary--solo">
-            <button
-              className="calm-btn calm-btn--outline"
-              type="button"
-              disabled={!canReschedule}
-              onClick={() => props.onRescheduleBooking(booking.id)}
-            >
-              {t(language, { es: "Reprogramar", en: "Reschedule", pt: "Reagendar" })}
-            </button>
-          </div>
-        ) : (
-          <div className="calm-session-secondary">
-            <button className="calm-btn calm-btn--outline" type="button" onClick={() => props.onOpenBookingDetail(booking.id)}>
-              {t(language, { es: "Ver detalle", en: "View details", pt: "Ver detalhe" })}
-            </button>
+        <div className={`calm-session-secondary${isMobilePortal ? " calm-session-secondary--solo" : ""}`}>
+          <button
+            className="calm-btn calm-btn--outline"
+            type="button"
+            disabled={!canReschedule}
+            onClick={() => props.onRescheduleBooking(booking.id)}
+          >
+            {t(language, { es: "Reprogramar", en: "Reschedule", pt: "Reagendar" })}
+          </button>
+          {isMobilePortal ? null : (
             <DeviceTestLink language={language} className="calm-text-link calm-session-av-test" />
-          </div>
-        )}
+          )}
+        </div>
       </div>
       <p className="sr-only">
         {t(language, {

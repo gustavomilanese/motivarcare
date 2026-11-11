@@ -1,0 +1,98 @@
+/* Esta semana · card baja al estilo sesiones disponibles (riel derecho, web). */
+
+.calm-week-sessions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  min-width: 0;
+}
+
+.calm-week-sessions-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.calm-week-sessions-number {
+  font-family: var(--serif);
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-size: 34px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--bosque);
+  flex: none;
+}
+
+.calm-week-sessions-label {
+  flex: 1;
+  min-width: 0;
+  color: var(--bosque);
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.calm-week-sessions-month {
+  flex: none;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.calm-week-sessions .calm-upcoming-list {
+  margin: 0;
+}
+
+.calm-side .calm-week-sessions .calm-upcoming-row {
+  padding: 8px 10px;
+  gap: 8px;
+}
+
+.calm-side .calm-week-sessions .calm-upcoming-row img {
+  width: 36px;
+  height: 36px;
+}
+
+.calm-side .calm-week-sessions .calm-upcoming-row-copy.is-inline {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.calm-side .calm-week-sessions .calm-upcoming-row-copy.is-inline b,
+.calm-side .calm-week-sessions .calm-upcoming-row-copy.is-inline span {
+  display: inline;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calm-side .calm-week-sessions .calm-upcoming-row-copy.is-inline b {
+  flex: none;
+  max-width: 55%;
+}
+
+.calm-side .calm-week-sessions .calm-upcoming-row-copy.is-inline > span:not(.calm-upcoming-row-sep) {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.calm-side .calm-week-sessions .calm-upcoming-row-sep {
+  flex: none;
+  color: var(--tinta-tenue, #8a958f);
+}
+
+.calm-side .calm-week-sessions .calm-upcoming-row .calm-text-link {
+  font-size: 12.5px;
+}
+
+@media (max-width: 1080px) {
+  /* En phone ya está “Próximas”; esta card es el reemplazo desktop de la agenda alta. */
+  .calm-week-sessions {
+    display: none;
+  }
+}

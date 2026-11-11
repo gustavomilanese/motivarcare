@@ -1,0 +1,37 @@
+---
+description: Ley del vínculo paciente–profesional — compra y reserva solo con el elegido; paquetes no se mezclan
+alwaysApply: true
+---
+
+# Vínculo paciente–profesional (ley del modelo)
+
+Antes de tocar compra, checkout, créditos, reserva, matching o assign: releé esto.
+
+## Hoy (un solo elegido)
+
+1. El paciente **elige** un profesional → queda el **lazo / assigned**.
+2. Ese vínculo es **irrompible** hasta que el paciente **decida cambiarlo**. Nada más (saldo en 0, browse, otra reserva, checkout, selected) lo sustituye ni lo bypasséa.
+3. **Comprar** y **reservar** solo con ese profesional. Sin fallback a `selected`, próxima reserva, browse ni otro id.
+4. **No existe paquete sin profesional elegido.** Precio, checkout y créditos viven atados al vínculo.
+5. Cambiar de profesional (producto a futuro): solo entonces se corta el lazo y pasa al **nuevo**; compra y reserva siguen al nuevo. No se mezclan créditos entre profesionales.
+
+## A futuro (varios activos)
+
+- Puede haber **más de un** profesional activo (ej. individual + pareja).
+- Cada uno tiene **sus** paquetes / sesiones.
+- **No se mezclan** entre profesionales: ni compra, ni saldo, ni reserva.
+- Toda operación pide el profesional del vínculo al que pertenece el crédito/paquete.
+
+## Al modificar código
+
+- ¿Esta compra/reserva/cotización puede resolverse a un profesional distinto del lazo? → **mal**.
+- ¿Hay fallback “si no hay assign, usá booking/selected/otro”? Con lazo activo → **mal**. Sin lazo → primero elegir profesional, no inventar uno.
+- ¿Un crédito o paquete queda huérfano de profesional? → **mal**.
+- Multi-pro: un crédito de A no agenda ni paga nada de B.
+
+## Anclas en código
+
+- Assign: `patient-active-assignments` / `assignedProfessionalId`
+- Resolve vínculo UI: `resolveBindingProfessionalId`, `resolvePatientPricingProfessionalId`
+- API reserva: mismatch → `PROFESSIONAL_ASSIGNMENT_MISMATCH`
+- Checkout: cotizar/cobrar con el profesional del assign, no con un requested distinto

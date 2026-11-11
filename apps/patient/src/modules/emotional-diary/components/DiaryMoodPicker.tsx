@@ -1,5 +1,5 @@
 import { type AppLanguage } from "@therapy/i18n-config";
-import { MoodFace } from "../../home/calm/calmIcons";
+import { MoodClimateIcon } from "../../home/calm/MoodClimateIcon";
 import { t } from "../lib/labels";
 import { MOOD_OPTIONS } from "../lib/moods";
 import type { MoodLevel } from "../types";
@@ -23,8 +23,8 @@ export function DiaryMoodPicker(props: {
             onClick={() => props.onSelect(option.id)}
             aria-pressed={active}
           >
-            <span aria-hidden="true">
-              <MoodFace face={option.id} />
+            <span className="diary-entry-climate-icon" aria-hidden="true">
+              <MoodClimateIcon mood={option.id} />
             </span>
             <span>
               {t(props.language, { es: option.labelEs, en: option.labelEn, pt: option.labelPt })}

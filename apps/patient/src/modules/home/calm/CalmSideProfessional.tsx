@@ -60,7 +60,7 @@ function ratingLabel(rating: number, language: AppLanguage): string {
   return rating.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
-/** Columna derecha del inicio con sesión: ficha de app-usuario/index.html, estado 5. */
+/** Columna derecha del inicio con sesión: ficha compacta (nombre → perfil). */
 export function CalmSideProfessional(props: {
   language: AppLanguage;
   timeZone: string;
@@ -88,19 +88,25 @@ export function CalmSideProfessional(props: {
         <img
           src={professionalPhotoSrc(props.photoUrl)}
           alt=""
-          width={60}
-          height={60}
+          width={48}
+          height={48}
           onError={props.onImageFallback}
         />
-        <div>
+        <div className="calm-side-pro-id">
           <span>{t(props.language, { es: "Tu profesional", en: "Your professional", pt: "Seu profissional" })}</span>
-          <strong>{name}</strong>
+          <button type="button" className="calm-side-pro-name" onClick={props.onProfile}>
+            {name}
+          </button>
           {rating ? (
             <p>
               <em>★</em> {rating}
             </p>
           ) : null}
         </div>
+        <button type="button" className="calm-btn calm-btn--outline calm-side-pro-chat" onClick={props.onChat}>
+          <IconChat size={18} />
+          {t(props.language, { es: "Escribile", en: "Write", pt: "Escreva" })}
+        </button>
       </div>
       {latest ? (
         <p className="calm-side-pro-note">
@@ -110,15 +116,6 @@ export function CalmSideProfessional(props: {
           </span>
         </p>
       ) : null}
-      <div className="calm-side-pro-actions">
-        <button type="button" className="calm-btn calm-btn--outline" onClick={props.onChat}>
-          <IconChat size={18} />
-          {t(props.language, { es: "Escribile", en: "Write", pt: "Escreva" })}
-        </button>
-        <button type="button" className="calm-text-link" onClick={props.onProfile}>
-          {t(props.language, { es: "Ver perfil", en: "View profile", pt: "Ver perfil" })}
-        </button>
-      </div>
     </article>
   );
 }

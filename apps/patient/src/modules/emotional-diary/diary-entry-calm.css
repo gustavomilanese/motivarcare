@@ -63,6 +63,7 @@
   font-weight: 700;
   cursor: pointer;
   box-shadow: none;
+  text-decoration: none;
 }
 
 .diary-entry-card {
@@ -70,6 +71,13 @@
   border: 1px solid #e2dfd3;
   border-radius: 24px;
   background: #fff;
+}
+
+/* Contenedores grandes: sin hover (el legacy `.diary-entry-card:hover` los teñía). */
+.diary-entry-calm .diary-entry-card:hover,
+.diary-entry-calm .diary-entry-card:focus-within {
+  background: #fff;
+  cursor: default;
 }
 
 .diary-entry-card h2 {
@@ -150,10 +158,26 @@
   color: #1e4033;
 }
 
-.diary-entry-climate-btn svg {
+.diary-entry-climate-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f5f3eb;
+  color: #1e4033;
+}
+
+.diary-entry-calm button.diary-entry-climate-btn.is-active .diary-entry-climate-icon,
+.diary-entry-calm button.diary-entry-climate-btn:hover .diary-entry-climate-icon,
+.diary-entry-calm button.diary-entry-climate-btn:focus-visible .diary-entry-climate-icon {
+  background: #e7f1ea;
+}
+
+.diary-entry-climate-btn .diary-entry-climate-icon svg {
   display: block;
-  width: 34px;
-  height: 34px;
+  width: 26px;
+  height: 26px;
 }
 
 .diary-entry-selected,
@@ -276,11 +300,7 @@
   box-shadow: none;
 }
 
-.diary-entry-calm button.diary-entry-need:hover,
-.diary-entry-calm button.diary-entry-need:focus-visible {
-  background: #f5f3eb;
-}
-
+/* Needs: sin hover; solo estado activo. */
 .diary-entry-calm button.diary-entry-need.is-active,
 .diary-entry-calm button.diary-entry-need.is-active:hover,
 .diary-entry-calm button.diary-entry-need.is-active:focus-visible {
@@ -296,7 +316,9 @@
   border: 0;
 }
 
-.diary-entry-visibility-option {
+.diary-entry-visibility-option,
+.diary-entry-visibility-option:hover,
+.diary-entry-visibility-option:focus-within {
   display: grid;
   gap: 4px;
   padding: 14px 16px;
@@ -306,7 +328,9 @@
   cursor: pointer;
 }
 
-.diary-entry-visibility-option.is-active {
+.diary-entry-visibility-option.is-active,
+.diary-entry-visibility-option.is-active:hover,
+.diary-entry-visibility-option.is-active:focus-within {
   border-color: #1e4033;
   background: #e7f1ea;
 }
@@ -352,11 +376,6 @@
   box-shadow: none;
 }
 
-.diary-entry-calm button.diary-entry-cancel:hover,
-.diary-entry-calm button.diary-entry-cancel:focus-visible {
-  background: #e7f1ea;
-}
-
 .diary-entry-calm button.diary-entry-save,
 .diary-entry-calm button.diary-entry-save:hover,
 .diary-entry-calm button.diary-entry-save:focus-visible {
@@ -371,11 +390,6 @@
   font-weight: 700;
   cursor: pointer;
   box-shadow: none;
-}
-
-.diary-entry-calm button.diary-entry-save:hover,
-.diary-entry-calm button.diary-entry-save:focus-visible {
-  background: #f0b81f;
 }
 
 .diary-entry-calm button:disabled {

@@ -1,0 +1,182 @@
+/* Enfoques · mosaico de tiles (ícono arriba), no lista. DS 0.1 */
+
+.intake-shell--ask .intake-approach {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.intake-shell--ask .intake-approach-mosaic {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.intake-shell--ask .intake-approach-cell {
+  margin: 0;
+  min-width: 0;
+}
+
+.intake-shell--ask .intake-approach-cell--wide {
+  grid-column: 1 / -1;
+}
+
+.intake-shell--ask .intake-approach-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 20px 18px 18px;
+  border: 1px solid var(--linea, #e2dfd3);
+  border-radius: 18px;
+  background: var(--superficie, #fff);
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  box-shadow: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.intake-shell--ask .intake-approach-tile:hover,
+.intake-shell--ask .intake-approach-tile:focus-visible {
+  border-color: var(--bosque, #1e4033);
+  background: var(--superficie, #fff);
+  color: inherit;
+  outline: none;
+}
+
+.intake-shell--ask .intake-approach-tile.is-active,
+.intake-shell--ask .intake-approach-tile.is-active:hover,
+.intake-shell--ask .intake-approach-tile.is-active:focus-visible {
+  border-color: transparent;
+  background: var(--bosque, #1e4033);
+  color: var(--crema, #f5f3eb);
+}
+
+.intake-shell--ask .intake-approach-tile.is-active:hover strong,
+.intake-shell--ask .intake-approach-tile.is-active:focus-visible strong {
+  color: var(--crema, #f5f3eb);
+}
+
+.intake-shell--ask .intake-approach-tile.is-active:hover em,
+.intake-shell--ask .intake-approach-tile.is-active:focus-visible em {
+  color: rgba(245, 243, 235, 0.78);
+}
+
+.intake-shell--ask .intake-approach-tile.is-active:hover .intake-approach-ico,
+.intake-shell--ask .intake-approach-tile.is-active:focus-visible .intake-approach-ico {
+  background: rgba(245, 243, 235, 0.16);
+  color: var(--crema, #f5f3eb);
+}
+
+.intake-shell--ask .intake-approach-tile.is-provisional,
+.intake-shell--ask .intake-approach-tile.is-provisional:hover,
+.intake-shell--ask .intake-approach-tile.is-provisional:focus-visible {
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  border-style: dashed;
+  border-color: var(--linea, #e2dfd3);
+  background: var(--lima-suave, #f2f5e0);
+  color: inherit;
+}
+
+.intake-shell--ask .intake-approach-tile.is-provisional.is-active,
+.intake-shell--ask .intake-approach-tile.is-provisional.is-active:hover,
+.intake-shell--ask .intake-approach-tile.is-provisional.is-active:focus-visible {
+  border-style: solid;
+  border-color: transparent;
+  background: var(--bosque, #1e4033);
+  color: var(--crema, #f5f3eb);
+}
+
+.intake-shell--ask .intake-approach-ico {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  color: var(--bosque, #1e4033);
+  flex: none;
+}
+
+.intake-shell--ask .intake-approach-ico--menta {
+  background: var(--menta, #e7f1ea);
+}
+
+.intake-shell--ask .intake-approach-ico--lima {
+  background: var(--lima, #e6edc4);
+}
+
+.intake-shell--ask .intake-approach-ico--salvia {
+  background: var(--salvia, #d6e7dc);
+}
+
+.intake-shell--ask .intake-approach-ico--amarillo {
+  background: var(--amarillo-suave, #fbe9b0);
+}
+
+.intake-shell--ask .intake-approach-tile.is-active .intake-approach-ico {
+  background: rgba(245, 243, 235, 0.16);
+  color: var(--crema, #f5f3eb);
+}
+
+.intake-shell--ask .intake-approach-tile strong {
+  color: var(--bosque, #1e4033);
+  font-size: 15.5px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.intake-shell--ask .intake-approach-tile em {
+  margin-top: -4px;
+  color: var(--tinta-suave, #5d6a63);
+  font-style: normal;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.intake-shell--ask .intake-approach-tile.is-active strong,
+.intake-shell--ask .intake-approach-tile.is-active em {
+  color: inherit;
+}
+
+.intake-shell--ask .intake-approach-tile.is-active em {
+  color: rgba(245, 243, 235, 0.78);
+}
+
+.intake-shell--ask .intake-approach-tile.is-provisional strong {
+  flex: 1;
+  min-width: 0;
+}
+
+.intake-shell--ask .intake-approach-tile.is-provisional em {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .intake-shell--ask .intake-approach-mosaic {
+    grid-template-columns: 1fr;
+  }
+
+  .intake-shell--ask .intake-approach-cell--wide {
+    grid-column: auto;
+  }
+
+  .intake-shell--ask .intake-approach-tile.is-provisional em {
+    display: block;
+  }
+
+  .intake-shell--ask .intake-approach-tile.is-provisional {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

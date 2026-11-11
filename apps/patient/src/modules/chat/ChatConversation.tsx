@@ -12,6 +12,7 @@ export function ChatConversation(props: {
   professionalName: string | null;
   givenName: string;
   photoSrc: string | null;
+  canReserve?: boolean;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   professionals: Array<{ id: string; name: string; unread: number }>;
   activeProfessionalId: string | null;

@@ -85,8 +85,9 @@
     padding: var(--portal-chrome-top, 26px) 48px 40px 0;
   }
 
+  /* Toolbar absoluta (campana + cuenta) sobre el riel: bajar las cards. */
   .diary-calm-side {
-    padding: var(--portal-chrome-top, 26px) 0 40px;
+    padding: var(--portal-toolbar-clear, calc(var(--portal-chrome-top, 26px) + 48px + 12px)) 0 40px;
   }
 }
 
@@ -114,7 +115,38 @@
 }
 
 .diary-calm .calm-mood {
+  width: 100%;
+  max-width: none;
   height: auto;
+  box-sizing: border-box;
+}
+
+/* Web: la fila de ánimos llena el ancho del bloque menta. */
+@media (min-width: 1081px) {
+  .diary-calm .calm-mood-row {
+    width: 100%;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .diary-calm .calm-mood-row button {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+}
+
+.diary-calm-recent {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 22px;
+  border: 1px solid var(--linea, #e2dfd3);
+  border-radius: 12px;
+  background: var(--superficie, #fff);
 }
 
 .diary-calm-recent-head {
@@ -144,6 +176,7 @@
 .diary-calm button.diary-calm-new,
 .diary-calm button.diary-calm-new:hover,
 .diary-calm button.diary-calm-new:focus-visible {
+  flex: none;
   height: 44px;
   padding: 0 22px;
   border: 0;

@@ -418,6 +418,16 @@
 .intake-safety-frequent-modal .intake-safety-frequent-subhead {
   font-weight: 600;
 }
+/* En popup (fondo menta) no usar el sticky blanco del wizard de intake. */
+.session-modal .intake-wizard-actions,
+.intake-safety-frequent-modal .intake-wizard-actions {
+  position: static;
+  bottom: auto;
+  margin-top: 16px;
+  padding-top: 0;
+  padding-bottom: 0;
+  background: transparent;
+}
 .intake-textarea-touch {
   margin-top: 14px;
   min-height: 120px;
@@ -1608,68 +1618,7 @@
   color: var(--bosque);
 }
 
-.intake-shell--ask .intake-fork {
-  display: grid;
-  gap: 12px;
-}
-
-@media (min-width: 720px) {
-  .intake-shell--ask .intake-fork {
-    grid-template-columns: 1.2fr 0.8fr;
-  }
-}
-
-.intake-shell--ask .intake-fork-card {
-  margin: 0;
-  display: grid;
-  gap: 8px;
-  align-content: start;
-  padding: 18px;
-  border-radius: 18px;
-  border: 1px solid var(--linea);
-  background: var(--superficie);
-  color: var(--tinta);
-  text-align: left;
-  font: inherit;
-}
-
-.intake-shell--ask .intake-fork-card h2,
-.intake-shell--ask .intake-fork-card strong {
-  margin: 0;
-  font-family: var(--sans);
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--bosque);
-}
-
-.intake-shell--ask .intake-fork-card p,
-.intake-shell--ask .intake-fork-card em {
-  margin: 0;
-  font-style: normal;
-  color: var(--tinta-suave);
-  font-size: 14px;
-  line-height: 1.45;
-}
-
-.intake-shell--ask .intake-fork-card--maca {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  border-style: dashed;
-  background: transparent;
-  cursor: pointer;
-}
-
-.intake-shell--ask .intake-fork-card--maca img {
-  width: 64px;
-  height: 64px;
-  object-fit: contain;
-}
-
-.intake-shell--ask .intake-fork-card--maca span {
-  display: grid;
-  gap: 4px;
-}
+/* Bifurcación intro → intake-fork.css */
 
 .intake-shell--ask .intake-wizard-actions {
   justify-content: space-between;

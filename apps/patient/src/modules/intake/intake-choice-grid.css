@@ -1,0 +1,56 @@
+/* Opciones genéricas (ej. “lograr”) · misma dinámica de tags que motivos. */
+
+.intake-shell--ask .intake-option-grid--choice {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+.intake-shell--ask .intake-option-grid--choice .intake-option-chip,
+.intake-shell--ask .intake-option-grid--choice .intake-option-chip:hover,
+.intake-shell--ask .intake-option-grid--choice .intake-option-chip:focus-visible {
+  width: auto !important;
+  min-height: 44px;
+  justify-content: center;
+  align-items: center;
+  padding: 11px 16px;
+  border: 1px solid var(--linea, #e2dfd3);
+  border-radius: 10px;
+  background: var(--superficie, #fff);
+  color: var(--bosque, #1e4033);
+  box-shadow: none;
+  text-align: center;
+}
+
+.intake-shell--ask .intake-option-grid--choice .intake-option-chip:hover,
+.intake-shell--ask .intake-option-grid--choice .intake-option-chip:focus-visible {
+  border-color: var(--bosque, #1e4033);
+  background: var(--menta, #e7f1ea);
+  color: var(--bosque, #1e4033);
+}
+
+.intake-shell--ask .intake-option-grid--choice .intake-option-chip--selected,
+.intake-shell--ask .intake-option-grid--choice .intake-option-chip--selected:hover,
+.intake-shell--ask .intake-option-grid--choice .intake-option-chip--selected:focus-visible,
+.intake-shell--ask .intake-option-grid--choice .intake-option-chip[aria-pressed="true"],
+.intake-shell--ask .intake-option-grid--choice .intake-option-chip[aria-pressed="true"]:hover,
+.intake-shell--ask .intake-option-grid--choice .intake-option-chip[aria-pressed="true"]:focus-visible {
+  border-color: transparent;
+  background: var(--bosque, #1e4033);
+  color: var(--crema, #f5f3eb);
+  box-shadow: none;
+}
+
+.intake-shell--ask .intake-option-grid--choice .intake-option-chip-label {
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.intake-shell--ask .intake-option-grid--choice .intake-option-chip-sub {
+  display: none;
+}

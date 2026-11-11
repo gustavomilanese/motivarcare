@@ -1,8 +1,8 @@
 .calm-side-pro {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 24px;
+  gap: 10px;
+  padding: 12px 14px;
   height: auto;
   flex: none;
 }
@@ -10,42 +10,91 @@
 .calm-side-pro-row {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+  min-width: 0;
 }
 
 .calm-side-pro-row img {
-  width: 60px;
-  height: 60px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   object-fit: cover;
   flex: none;
   background: var(--salvia);
 }
 
-.calm-side-pro-row span {
+.calm-side-pro-id {
+  flex: 1;
+  min-width: 0;
+}
+
+.calm-side-pro-id span {
   display: block;
   color: var(--tinta-tenue);
-  font-size: 13.5px;
+  font-size: 12.5px;
+  line-height: 1.2;
 }
 
-.calm-side-pro-row strong {
+.calm-side-pro-name {
   display: block;
+  width: 100%;
+  margin: 2px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
   color: var(--bosque);
-  font-size: 16.5px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  cursor: pointer;
+  text-decoration: none;
 }
 
-.calm-side-pro-row p {
+/* DS: bosque-2 es la variante de hover (no subrayado de enlace). */
+.calm-side-pro-name:hover,
+.calm-side-pro-name:focus-visible {
+  color: var(--bosque-2);
+  text-decoration: none;
+  background: transparent;
+}
+
+.calm-side-pro-name:focus-visible {
+  outline: 2px solid var(--bosque);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.calm-side-pro-id p {
   display: flex;
   gap: 6px;
   align-items: center;
-  margin: 3px 0 0;
+  margin: 2px 0 0;
   color: var(--tinta-suave);
-  font-size: 13.5px;
+  font-size: 13px;
 }
 
-.calm-side-pro-row em {
+.calm-side-pro-id em {
   color: var(--amarillo);
   font-style: normal;
+}
+
+.calm-side-pro-chat {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+.calm-side-pro-chat svg {
+  flex: none;
+  display: block;
 }
 
 .calm-side-pro-note {
@@ -54,8 +103,8 @@
   align-items: flex-start;
   margin: 0;
   color: var(--tinta-suave);
-  font-size: 13.5px;
-  line-height: 1.45;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .calm-side-pro-note i {
@@ -72,26 +121,4 @@
 .calm-side-pro-note b {
   color: var(--tinta);
   font-weight: 700;
-}
-
-.calm-side-pro-actions {
-  /* Mock `.pro .botones`: juntos a la izquierda, no space-between. */
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.calm-side-pro-actions .calm-btn,
-.calm-side-pro-actions button.calm-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.calm-side-pro-actions .calm-btn svg {
-  flex: none;
-  display: block;
 }

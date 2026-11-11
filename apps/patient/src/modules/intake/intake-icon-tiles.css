@@ -1,0 +1,135 @@
+/* Red de apoyo / terapia previa · tiles con ícono DS. */
+
+.intake-shell--ask .intake-icon-tiles-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.intake-shell--ask .intake-icon-tiles--2 .intake-icon-tiles-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.intake-shell--ask .intake-icon-tiles--3 .intake-icon-tiles-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.intake-shell--ask .intake-icon-tiles-item {
+  margin: 0;
+  min-width: 0;
+}
+
+.intake-shell--ask .intake-icon-tiles-item.is-wide {
+  grid-column: 1 / -1;
+}
+
+.intake-shell--ask .intake-icon-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 20px 18px;
+  border: 1px solid var(--linea, #e2dfd3);
+  border-radius: 18px;
+  background: var(--superficie, #fff);
+  color: var(--bosque, #1e4033);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  box-shadow: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.intake-shell--ask .intake-icon-tile:hover,
+.intake-shell--ask .intake-icon-tile:focus-visible {
+  border-color: var(--bosque, #1e4033);
+  background: var(--superficie, #fff);
+  color: var(--bosque, #1e4033);
+  outline: none;
+}
+
+.intake-shell--ask .intake-icon-tile.is-active,
+.intake-shell--ask .intake-icon-tile.is-active:hover,
+.intake-shell--ask .intake-icon-tile.is-active:focus-visible {
+  border-color: transparent;
+  background: var(--bosque, #1e4033);
+  color: var(--crema, #f5f3eb);
+}
+
+.intake-shell--ask .intake-icon-tile.is-provisional,
+.intake-shell--ask .intake-icon-tile.is-provisional:hover,
+.intake-shell--ask .intake-icon-tile.is-provisional:focus-visible {
+  flex-direction: row;
+  align-items: center;
+  border-style: dashed;
+  background: var(--lima-suave, #f2f5e0);
+  color: var(--bosque, #1e4033);
+}
+
+.intake-shell--ask .intake-icon-tile.is-provisional.is-active,
+.intake-shell--ask .intake-icon-tile.is-provisional.is-active:hover,
+.intake-shell--ask .intake-icon-tile.is-provisional.is-active:focus-visible {
+  border-style: solid;
+  border-color: transparent;
+  background: var(--bosque, #1e4033);
+  color: var(--crema, #f5f3eb);
+}
+
+.intake-shell--ask .intake-icon-tile-ico {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  color: var(--bosque, #1e4033);
+  flex: none;
+}
+
+.intake-shell--ask .intake-icon-tile-ico--menta {
+  background: var(--menta, #e7f1ea);
+}
+
+.intake-shell--ask .intake-icon-tile-ico--lima {
+  background: var(--lima, #e6edc4);
+}
+
+.intake-shell--ask .intake-icon-tile-ico--salvia {
+  background: var(--salvia, #d6e7dc);
+}
+
+.intake-shell--ask .intake-icon-tile-ico--amarillo {
+  background: var(--amarillo-suave, #fbe9b0);
+}
+
+.intake-shell--ask .intake-icon-tile.is-active .intake-icon-tile-ico,
+.intake-shell--ask .intake-icon-tile.is-active:hover .intake-icon-tile-ico {
+  background: rgba(245, 243, 235, 0.16);
+  color: var(--crema, #f5f3eb);
+}
+
+.intake-shell--ask .intake-icon-tile strong {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+@media (max-width: 720px) {
+  .intake-shell--ask .intake-icon-tiles--2 .intake-icon-tiles-list,
+  .intake-shell--ask .intake-icon-tiles--3 .intake-icon-tiles-list {
+    grid-template-columns: 1fr;
+  }
+
+  .intake-shell--ask .intake-icon-tiles-item.is-wide {
+    grid-column: auto;
+  }
+
+  .intake-shell--ask .intake-icon-tile.is-provisional {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

@@ -1,7 +1,10 @@
 import type { AppLanguage } from "@therapy/i18n-config";
 import type { MoodLevel } from "../types";
 
-/** Escala “El clima de tu día”. Los glifos de clima no están en el sprite del DS; se usan las caras. */
+/**
+ * Escala “El clima de tu día”.
+ * Íconos de línea (definición Alternativa A) viven en `MoodClimateIcon` — no están en el sprite `i-*` del DS.
+ */
 export const MOOD_OPTIONS: {
   id: MoodLevel;
   emoji: string;

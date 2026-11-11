@@ -140,6 +140,13 @@
   font-size: 18px;
 }
 
+@media (min-width: 1081px) {
+  .calm-home[data-calm-case="assigned"] .calm-lead {
+    max-width: none;
+    white-space: nowrap;
+  }
+}
+
 .calm-toolbar {
   display: flex;
   justify-content: flex-end;
@@ -265,9 +272,46 @@
   /* Como `.columna` del mock app-usuario: apila fichas a altura natural. */
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
   min-width: 0;
   align-self: start;
+}
+
+/* Riel derecho web: créditos más bajos. */
+@media (min-width: 1081px) {
+  .calm-side .calm-balance {
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .calm-side .calm-balance-number {
+    font-size: 34px;
+  }
+
+  .calm-side .calm-balance-text b {
+    font-size: 14.5px;
+  }
+
+  .calm-side .calm-balance-copy {
+    font-size: 13px;
+  }
+
+  .calm-side .calm-balance .calm-btn--yellow {
+    height: 40px;
+    padding: 0 14px;
+    font-size: 14px;
+    border-radius: 8px;
+  }
+
+  .calm-side .calm-dots {
+    gap: 5px;
+    margin-top: 6px;
+  }
+
+  .calm-side .calm-dots i {
+    width: 16px;
+    height: 16px;
+  }
 }
 
 .calm-card {
@@ -306,7 +350,9 @@
 .calm-session-clock,
 .calm-session-meta,
 .calm-person,
-.calm-session-actions {
+.calm-session-actions,
+.calm-slot-row,
+.calm-first-session__slots {
   position: relative;
   z-index: 1;
 }
@@ -446,7 +492,8 @@
   max-width: 100%;
   padding: 0;
   border: 0;
-  background: none;
+  background: transparent;
+  box-shadow: none;
   text-align: left;
   justify-content: flex-start; /* pisa button global con justify-content: center */
   font: inherit;
@@ -455,10 +502,19 @@
   border-radius: 8px;
 }
 
+/* Evita button:hover global (#f8fbff) que blanquea toda la fila. */
+.calm-person--hit:hover,
+.calm-person--hit:focus-visible {
+  background: transparent !important;
+  box-shadow: none;
+  border-color: transparent;
+}
+
+/* DS: hover de nombre → bosque-2 (no subrayado de enlace). */
 .calm-person--hit:hover strong,
 .calm-person--hit:focus-visible strong {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  color: var(--bosque-2);
+  text-decoration: none;
 }
 
 .calm-person--hit:focus-visible {
@@ -541,6 +597,29 @@
   gap: 12px;
   width: 100%;
   min-height: 44px;
+}
+
+@media (min-width: 1081px) {
+  .calm-session-actions {
+    flex-wrap: nowrap;
+    gap: 12px;
+  }
+
+  /* Entrar ~30% más ancho; Reprogramar queda en la misma fila. */
+  .calm-session-actions > .calm-btn--large,
+  .calm-session-actions > a.calm-btn--yellow,
+  .calm-session-actions > button.calm-btn--yellow {
+    flex: 0 0 auto;
+    min-width: 13.5rem;
+    padding-left: 36px;
+    padding-right: 36px;
+  }
+
+  .calm-session-secondary {
+    width: auto;
+    flex: 1 1 auto;
+    min-height: 52px;
+  }
 }
 
 .calm-session-secondary .calm-btn--outline {
@@ -1318,7 +1397,12 @@ body:has(.calm-match) .treatment-chat-fab__icon svg {
 
   .portal-shell:has(.calm-home) .calm-home {
     position: relative;
-    padding: var(--portal-chrome-top, 26px) 48px 40px;
+    padding: var(--portal-chrome-top, 26px) 48px 20px;
+  }
+
+  /* Menos aire entre «Entre sesiones» y el footer. */
+  .portal-shell:has(.calm-home).portal-shell--site-footer > .portal-site-footer {
+    margin-top: 20px;
   }
 
   .portal-shell:has(.calm-home) .calm-toolbar-row {
@@ -1334,7 +1418,7 @@ body:has(.calm-match) .treatment-chat-fab__icon svg {
     min-height: 0;
   }
 
-  .portal-shell:has(.calm-sidebar):not(:has(.calm-home))
+  .portal-shell:has(.calm-sidebar):not(:has(.calm-home)):not(:has(.assigned-pro-page)):not(:has(.calm-match))
     > .portal-main:not(.portal-main--chat):not(.portal-main--exercises-home):not(.portal-main--sessions-home):not(.portal-main--diary-home):not(.portal-main--dashboard-home):not(.portal-main--wellbeing-relax) {
     padding: 18px 28px 40px;
     min-width: 0;

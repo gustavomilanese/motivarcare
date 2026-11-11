@@ -53,6 +53,12 @@
   color: inherit;
 }
 
+/* Evita button:hover global (#f8fbff) sobre toda la fila. */
+.sessions-calm-row-main:hover,
+.sessions-calm-row-main:focus-visible {
+  background: none;
+}
+
 .sessions-calm-row-main img {
   width: 44px;
   height: 44px;
@@ -67,6 +73,11 @@
   color: var(--bosque);
   font-size: 15px;
   font-weight: 700;
+}
+
+.sessions-calm-row-main:hover b,
+.sessions-calm-row-main:focus-visible b {
+  color: var(--bosque-2);
 }
 
 .sessions-calm-row-main span {

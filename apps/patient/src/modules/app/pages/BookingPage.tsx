@@ -18,6 +18,7 @@ import { patientUsesDlocalCheckout } from "../lib/patientDlocalCheckout";
 import { DLOCAL_CHECKOUT_UNAVAILABLE_ERROR } from "@therapy/types";
 import {
   portalHasPricingProfessional,
+  resolveBindingProfessionalId,
   resolvePortalPricingProfessionalId
 } from "../lib/patientPricingProfessional";
 import { SessionsCalmPage } from "../../booking/calm/SessionsCalmPage";
@@ -210,15 +211,12 @@ export function BookingPage(props: {
 
   const assignedProfessionalId = props.state.assignedProfessionalId?.trim() ?? "";
   const selectedProfessionalId = props.state.selectedProfessionalId?.trim() ?? "";
-  const canChangeProfessionalForNewPackage =
-    !assignedProfessionalId
-    || countAvailablePatientSessions({
-      creditsRemaining: props.state.subscription.creditsRemaining,
-      trialRebookAvailable: props.state.trialRebookAvailable
-    }) <= 0;
-  const effectiveProfessionalId = canChangeProfessionalForNewPackage
-    ? selectedProfessionalId || assignedProfessionalId
-    : assignedProfessionalId || selectedProfessionalId;
+  // Lazo único: con assign no se compra/agenda con otro (ni sin créditos).
+  const effectiveProfessionalId =
+    resolveBindingProfessionalId({
+      assignedProfessionalId,
+      selectedProfessionalId
+    }) ?? "";
   const now = Date.now();
 
   const upcomingConfirmedBookings = filterUpcomingPatientBookings(props.state.bookings, now);
@@ -517,9 +515,10 @@ export function BookingPage(props: {
         const purchased = await props.onPurchasePackage(plan);
         if (purchased.checkoutUrl) {
           const professionalId =
-            props.state.selectedProfessionalId?.trim()
-            || props.state.assignedProfessionalId?.trim()
-            || "";
+            resolveBindingProfessionalId({
+              assignedProfessionalId: props.state.assignedProfessionalId,
+              selectedProfessionalId: props.state.selectedProfessionalId
+            }) ?? "";
           savePendingCheckoutDlocalReturn({
             kind: "package",
             packageId: plan.id,
@@ -575,7 +574,11 @@ export function BookingPage(props: {
     pricingReady,
     packageCatalogFromApi,
     usesDlocalCheckout,
-    selectedProfessionalId: props.state.selectedProfessionalId || props.state.assignedProfessionalId,
+    selectedProfessionalId:
+      resolveBindingProfessionalId({
+        assignedProfessionalId: props.state.assignedProfessionalId,
+        selectedProfessionalId: props.state.selectedProfessionalId
+      }) ?? "",
     onPurchasePackage: props.onPurchasePackage,
     onGateBlocked: openAssignProfessionalPrompt
   });
@@ -755,14 +758,23 @@ export function BookingPage(props: {
       resetIndividualPurchaseUi();
     }
 
+    const openCheckoutInline =
+      pendingSessions <= 0 && !props.state.trialRebookAvailable;
+
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete("focus");
-    nextParams.delete("flow");
-    nextParams.delete("plan");
-    nextParams.delete("purchase");
     nextParams.delete("source");
     nextParams.delete("returnTo");
     nextParams.delete("trial");
+    if (openCheckoutInline) {
+      nextParams.set("flow", "checkout");
+      nextParams.delete("plan");
+      nextParams.delete("purchase");
+    } else {
+      nextParams.delete("flow");
+      nextParams.delete("plan");
+      nextParams.delete("purchase");
+    }
     setSearchParams(nextParams, { replace: true });
 
     setEditingBookingId(null);
@@ -770,13 +782,17 @@ export function BookingPage(props: {
     setBookingActionError("");
     setTrialRebookMode(openAsTrialRebook);
 
-    // Créditos o prueba pagada → abrir reserva. Sin nada → popup (no banner rojo).
-    if (pendingSessions > 0 || props.state.trialRebookAvailable) {
+    // Créditos o prueba pagada → abrir reserva. Sin nada → catálogo inline.
+    if (openCheckoutInline) {
+      setNoSessionsModalOpen(false);
+      setPanelMode(null);
+      setCheckoutPaymentLoading(false);
+      setCheckoutPaymentPlanId(null);
+      setCheckoutPaymentError("");
+      resetIndividualPurchaseUi();
+    } else {
       setNoSessionsModalOpen(false);
       setPanelMode("new");
-    } else {
-      setPanelMode(null);
-      setNoSessionsModalOpen(true);
     }
   }, [isCheckoutFlow, pendingSessions, props.state.trialRebookAvailable, searchParams, setSearchParams]);
 
@@ -1201,7 +1217,7 @@ export function BookingPage(props: {
   const acquireSessionsHandlers = useMemo(
     () => ({
       onAssignProfessional: () => openAssignProfessionalPrompt(),
-      onShowChoiceModal: () => setAcquireSessionsModalOpen(true),
+      onShowChoiceModal: () => openCheckoutCatalog(),
       onOpenCheckout: openCheckoutCatalog,
       onOpenIndividualCheckout: openIndividualSessionsCheckoutFromModal,
       onShowNoCreditsAlert: () => setNoSessionsModalOpen(true),
@@ -1256,7 +1272,7 @@ export function BookingPage(props: {
           setTrialRebookMode(true);
           return "new";
         }
-        dispatchAcquireSessions("book_without_credits");
+        // Reservar deshabilitado sin saldo; Comprar abre el catálogo.
         return null;
       }
       setNoSessionsModalOpen(false);
@@ -1326,9 +1342,10 @@ export function BookingPage(props: {
         const checkoutUrl = purchased.checkoutUrl?.trim() ?? "";
         if (/^https?:\/\//i.test(checkoutUrl)) {
           const professionalId =
-            props.state.selectedProfessionalId?.trim()
-            || props.state.assignedProfessionalId?.trim()
-            || "";
+            resolveBindingProfessionalId({
+              assignedProfessionalId: props.state.assignedProfessionalId,
+              selectedProfessionalId: props.state.selectedProfessionalId
+            }) ?? "";
           savePendingCheckoutDlocalReturn({
             kind: "individual",
             sessionCount: n,
@@ -1739,7 +1756,7 @@ export function BookingPage(props: {
               openAssignProfessionalPrompt();
               return;
             }
-            dispatchAcquireSessions("buy_cta");
+            openCheckoutCatalog();
           }}
         />
       ) : null}

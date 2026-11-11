@@ -152,12 +152,19 @@
   gap: 8px;
 }
 
-.sessions-calm button.sessions-calm-book:hover,
+.sessions-calm button.sessions-calm-book:hover:not(:disabled),
 .sessions-calm a.sessions-calm-join:hover,
-.sessions-calm button.sessions-calm-book:focus-visible,
+.sessions-calm button.sessions-calm-book:focus-visible:not(:disabled),
 .sessions-calm a.sessions-calm-join:focus-visible {
   background: #f0b81f;
   color: var(--bosque);
+}
+
+.sessions-calm button.sessions-calm-book:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #e2dfd3;
+  color: #8a958f;
 }
 
 .sessions-calm button.sessions-calm-buy,

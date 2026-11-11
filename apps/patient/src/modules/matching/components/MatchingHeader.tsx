@@ -73,18 +73,35 @@ export function MatchingHeader(props: {
 }) {
   const sectionClass = `content-card patient-matching-hero ${props.minimal ? "minimal" : ""} ${props.onboardingAccent ? "patient-matching-hero--onboarding" : ""}`;
 
-  if (props.onboardingAccent) {
+  /* Home / matching calm: head full-bleed. Sort (Compatibilidad/Precio) va en la col. de lista. */
+  if (props.pillSort) {
     return (
       <>
-      {props.pillSort ? (
-        <CalmPortalToolbarRow mountId="dashboard-hero-toolbar-mount" mountClassName="calm-pick-tools calm-toolbar" />
-      ) : null}
-      <section className={sectionClass}>
-        {props.pillSort ? (
-          <p className="calm-pick-step">
+        <CalmPortalToolbarRow mountId="dashboard-hero-toolbar-mount" />
+        <header className="calm-head patient-matching-hero patient-matching-hero--home">
+          <p className="calm-kicker calm-pick-step">
             {props.t({ es: "Paso 2 de 4", en: "Step 2 of 4", pt: "Passo 2 de 4" })}
           </p>
-        ) : null}
+          <h1>
+            <MarkedHeading text={props.heading} mark={props.headingMark} />
+          </h1>
+          {props.filters}
+          {props.description ? <p className="calm-lead patient-matching-hero-desc">{props.description}</p> : null}
+        </header>
+        <SortSheet
+          sortOpen={props.sortOpen}
+          sortMode={props.sortMode}
+          sortOptions={props.sortOptions}
+          onSortModeChange={props.onSortModeChange}
+          t={props.t}
+        />
+      </>
+    );
+  }
+
+  if (props.onboardingAccent) {
+    return (
+      <section className={sectionClass}>
         <div className="patient-matching-hero-headrow">
           <div className="patient-matching-hero-headrow-main">
             <h2>
@@ -95,31 +112,15 @@ export function MatchingHeader(props: {
           </div>
           <div className="patient-matching-hero-toolbar" role="toolbar" aria-label={props.t({ es: "Acciones de la lista", en: "List actions", pt: "Acoes da lista" })}>
             {props.countLabel ? <span className="patient-matching-count">{props.countLabel}</span> : null}
-            {props.pillSort ? (
-              <div className="patient-matching-sort-pills" role="group" aria-label={props.t({ es: "Ordenar por", en: "Sort by", pt: "Ordenar por" })}>
-                {props.sortOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={`patient-matching-sort-pill ${props.sortMode === option.value ? "is-active" : ""}`}
-                    aria-pressed={props.sortMode === option.value}
-                    onClick={() => props.onSortModeChange(option.value)}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <button
-                type="button"
-                className={`patient-matching-sort-compact ${props.sortOpen ? "active" : ""}`}
-                onClick={props.onToggleSort}
-                aria-expanded={props.sortOpen}
-              >
-                <span aria-hidden="true">↕</span>
-                {props.t({ es: "Ordenar", en: "Sort", pt: "Ordenar" })}
-              </button>
-            )}
+            <button
+              type="button"
+              className={`patient-matching-sort-compact ${props.sortOpen ? "active" : ""}`}
+              onClick={props.onToggleSort}
+              aria-expanded={props.sortOpen}
+            >
+              <span aria-hidden="true">↕</span>
+              {props.t({ es: "Ordenar", en: "Sort", pt: "Ordenar" })}
+            </button>
             {props.onDeferTherapistSelection ? (
               <button type="button" className="patient-matching-defer-link" onClick={() => void props.onDeferTherapistSelection?.()}>
                 {props.t({
@@ -139,7 +140,6 @@ export function MatchingHeader(props: {
           t={props.t}
         />
       </section>
-      </>
     );
   }
 

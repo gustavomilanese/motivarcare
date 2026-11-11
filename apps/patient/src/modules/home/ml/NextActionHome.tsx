@@ -53,6 +53,8 @@ function BenefitCard(props: {
   cta: string;
   icon: BenefitIconKind;
   onClick: () => void;
+  disabled?: boolean;
+  disabledTitle?: string;
   tourAttr?: string;
   ctaTourAttr?: string;
   variant?: "default" | "buy" | "book";
@@ -81,6 +83,8 @@ function BenefitCard(props: {
       className={`dashboard-ml-benefit-card${variantClass}${toneClass}`}
       data-tour={props.tourAttr}
       onClick={props.onClick}
+      disabled={props.disabled}
+      title={props.disabled ? props.disabledTitle : undefined}
     >
       <h3 className="dashboard-ml-benefit-title">{props.title}</h3>
       <div className="dashboard-ml-benefit-icon" aria-hidden="true">
@@ -510,9 +514,9 @@ export function DashboardNextActionHome(props: {
     props.onGoToReservations();
   };
 
-  const runBookSession = () => {
+  const runBookOrBuySession = () => {
     if (props.availableSessions <= 0) {
-      props.onBookWithoutCredits();
+      props.onBuySessions();
       return;
     }
     if (props.pricingProfessionalId) {
@@ -522,13 +526,16 @@ export function DashboardNextActionHome(props: {
     props.onNavigateToAssignProfessional();
   };
 
-  const [promoTone, setPromoTone] = useState<"care" | "access" | "match">("care");
+  const bookOrBuyLabel =
+    props.availableSessions <= 0
+      ? t(props.language, { es: "Comprar otra", en: "Buy another", pt: "Comprar outra" })
+      : t(props.language, {
+          es: "Reservar sesión",
+          en: "Book a session",
+          pt: "Reservar sessao"
+        });
 
-  const bookSessionLabel = t(props.language, {
-    es: "Reservar sesión",
-    en: "Book a session",
-    pt: "Reservar sessao"
-  });
+  const [promoTone, setPromoTone] = useState<"care" | "access" | "match">("care");
 
   const showTrialCallout = props.trialStatus === "pending" || props.trialStatus === "rebook";
 
@@ -661,18 +668,8 @@ export function DashboardNextActionHome(props: {
                 +
               </button>
             ) : (
-              <button
-                type="button"
-                className="dashboard-ml-book-cta"
-                onClick={() => {
-                  if (props.availableSessions <= 0) {
-                    props.onBuySessions();
-                    return;
-                  }
-                  runBookSession();
-                }}
-              >
-                {bookSessionLabel}
+              <button type="button" className="dashboard-ml-book-cta" onClick={runBookOrBuySession}>
+                {bookOrBuyLabel}
               </button>
             )}
           </div>
@@ -689,22 +686,38 @@ export function DashboardNextActionHome(props: {
             <BenefitCard
               icon="book"
               variant="book"
-              title={t(props.language, {
-                es: "Reservar sesión",
-                en: "Book a session",
-                pt: "Reservar sessao"
-              })}
-              body={t(props.language, {
-                es: "Elegí un horario con tu profesional.",
-                en: "Pick a time with your professional.",
-                pt: "Escolha um horario com seu profissional."
-              })}
-              cta={t(props.language, {
-                es: "Reservar ahora",
-                en: "Book now",
-                pt: "Reservar agora"
-              })}
-              onClick={runBookSession}
+              title={
+                props.availableSessions <= 0
+                  ? t(props.language, { es: "Comprar otra", en: "Buy another", pt: "Comprar outra" })
+                  : t(props.language, {
+                      es: "Reservar sesión",
+                      en: "Book a session",
+                      pt: "Reservar sessao"
+                    })
+              }
+              body={
+                props.availableSessions <= 0
+                  ? t(props.language, {
+                      es: "Sumá un paquete para seguir reservando.",
+                      en: "Add a package to keep booking.",
+                      pt: "Adicione um pacote para continuar reservando."
+                    })
+                  : t(props.language, {
+                      es: "Elegí un horario con tu profesional.",
+                      en: "Pick a time with your professional.",
+                      pt: "Escolha um horario com seu profissional."
+                    })
+              }
+              cta={
+                props.availableSessions <= 0
+                  ? t(props.language, { es: "Ver paquetes", en: "View packages", pt: "Ver pacotes" })
+                  : t(props.language, {
+                      es: "Reservar ahora",
+                      en: "Book now",
+                      pt: "Reservar agora"
+                    })
+              }
+              onClick={runBookOrBuySession}
             />
           ) : null}
           <ProfessionalBenefitCard
@@ -868,8 +881,12 @@ export function DashboardNextActionHome(props: {
           <div className="dashboard-ml-sessions-pack">
             {!props.isMobilePortal ? (
               <div className="dashboard-ml-sessions-pack-actions">
-                <button type="button" className="dashboard-ml-sessions-pack-btn dashboard-ml-sessions-pack-btn--primary" onClick={runBookSession}>
-                  {bookSessionLabel}
+                <button
+                  type="button"
+                  className="dashboard-ml-sessions-pack-btn dashboard-ml-sessions-pack-btn--primary"
+                  onClick={runBookOrBuySession}
+                >
+                  {bookOrBuyLabel}
                 </button>
                 <button
                   type="button"

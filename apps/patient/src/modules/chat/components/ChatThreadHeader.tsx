@@ -12,8 +12,11 @@ export function ChatThreadHeader(props: {
   mobile?: boolean;
   name: string | null;
   photoSrc: string | null;
+  /** Con saldo → Reservar; sin saldo → Comprar otra (paquetes). */
+  canReserve?: boolean;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
 }) {
+  const canReserve = props.canReserve !== false;
   const replyHint = props.mobile
     ? t(props.language, { es: "Suele responder en el día", en: "Usually replies the same day", pt: "Costuma responder no dia" })
     : t(props.language, {
@@ -22,6 +25,9 @@ export function ChatThreadHeader(props: {
         pt: "Costuma responder no dia, de segunda a sexta"
       });
   const reserveLabel = t(props.language, { es: "Reservar sesión", en: "Book a session", pt: "Reservar sessão" });
+  const buyLabel = t(props.language, { es: "Comprar otra", en: "Buy another", pt: "Comprar outra" });
+  const actionLabel = canReserve ? reserveLabel : buyLabel;
+  const actionTo = canReserve ? "/sessions" : "/sessions?flow=checkout";
 
   return (
     <header className="chat-ds-head">
@@ -42,13 +48,13 @@ export function ChatThreadHeader(props: {
       </div>
       {props.name ? (
         props.mobile ? (
-          <Link className="chat-ds-icon-btn" to="/sessions" aria-label={reserveLabel}>
+          <Link className="chat-ds-icon-btn" to={actionTo} aria-label={actionLabel}>
             <IconSesiones size={22} />
           </Link>
         ) : (
-          <Link className="calm-btn calm-btn--outline chat-ds-reserve" to="/sessions">
+          <Link className="calm-btn calm-btn--outline chat-ds-reserve" to={actionTo}>
             <IconSesiones size={18} />
-            {reserveLabel}
+            {actionLabel}
           </Link>
         )
       ) : null}

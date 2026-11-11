@@ -16,6 +16,14 @@ export function SessionsCalmBalance(props: {
   onBook: () => void;
   onBuy: () => void;
 }) {
+  const needsPurchase = !props.bookingOpen && props.available <= 0;
+  const primaryAction = needsPurchase ? props.onBuy : props.onBook;
+  const primaryLabel = props.bookingOpen
+    ? t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })
+    : needsPurchase
+      ? t(props.language, { es: "Comprar otra", en: "Buy another", pt: "Comprar outra" })
+      : t(props.language, { es: "Reservar", en: "Book", pt: "Reservar" });
+
   return (
     <section className="sessions-calm-balance">
       <div className="sessions-calm-balance-info">
@@ -39,17 +47,13 @@ export function SessionsCalmBalance(props: {
         <button
           type="button"
           className={props.bookPrimary ? "sessions-calm-book" : "sessions-calm-book is-outline"}
-          onClick={props.onBook}
+          onClick={primaryAction}
         >
-          {props.bookingOpen
-            ? t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })
-            : t(props.language, { es: "Reservar", en: "Book", pt: "Reservar" })}
+          {primaryLabel}
         </button>
-        {props.canBuy ? (
+        {props.canBuy && !needsPurchase ? (
           <button type="button" className="sessions-calm-buy" onClick={props.onBuy}>
-            {props.available > 0
-              ? t(props.language, { es: "Comprar más", en: "Buy more", pt: "Comprar mais" })
-              : t(props.language, { es: "Comprar sesiones", en: "Buy sessions", pt: "Comprar sessões" })}
+            {t(props.language, { es: "Comprar más", en: "Buy more", pt: "Comprar mais" })}
           </button>
         ) : null}
       </div>

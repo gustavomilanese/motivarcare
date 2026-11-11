@@ -21,9 +21,23 @@ function NeedIcon(props: { name: DiaryNeedIcon }) {
   return <IconClip size={22} />;
 }
 
-function FieldCard(props: { icon: ReactNode; title: string; help?: string; children: ReactNode }) {
+type DiaryEntrySurface = "white" | "menta" | "lima";
+
+function FieldCard(props: {
+  icon: ReactNode;
+  title: string;
+  help?: string;
+  surface?: DiaryEntrySurface;
+  children: ReactNode;
+}) {
+  const surfaceClass =
+    props.surface === "menta"
+      ? " diary-entry-card--menta"
+      : props.surface === "lima"
+        ? " diary-entry-card--lima"
+        : "";
   return (
-    <article className="diary-entry-card">
+    <article className={`diary-entry-card${surfaceClass}`}>
       <h2>
         <span className="diary-entry-field-ico" aria-hidden="true">
           {props.icon}
@@ -77,6 +91,7 @@ export function DiaryEntryFeelings(props: {
 }) {
   return (
     <FieldCard
+      surface="lima"
       icon={<IconCorazon size={20} />}
       title={t(props.language, { es: "¿Qué sentiste?", en: "What did you feel?", pt: "O que sentiu?" })}
     >
@@ -167,7 +182,7 @@ export function DiaryEntryVisibility(props: {
   onChange: (value: "private" | "for_psychologist") => void;
 }) {
   return (
-    <article className="diary-entry-card">
+    <article className="diary-entry-card diary-entry-card--menta">
       <h2>
         {t(props.language, {
           es: "¿Quién puede ver esta entrada?",

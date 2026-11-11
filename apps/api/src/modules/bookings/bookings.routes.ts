@@ -511,6 +511,27 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
     }
   }
 
+  // Profesional elegido es vinculante: no se reserva con otro mientras haya assign activo.
+  {
+    const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
+    const assignmentConfig = await prisma.systemConfig.findUnique({
+      where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY }
+    });
+    const raw = assignmentConfig?.value;
+    const assigned =
+      raw && typeof raw === "object" && !Array.isArray(raw)
+        ? (raw as Record<string, unknown>)[patientProfileId]
+        : null;
+    const assignedId = typeof assigned === "string" ? assigned.trim() : "";
+    if (assignedId && assignedId !== parsed.data.professionalId) {
+      return res.status(409).json({
+        error: "Booking professional must match the patient's active professional.",
+        code: "PROFESSIONAL_ASSIGNMENT_MISMATCH",
+        assignedProfessionalId: assignedId
+      });
+    }
+  }
+
   const professional = await prisma.professionalProfile.findUnique({
     where: { id: parsed.data.professionalId },
     include: { user: { select: { id: true, fullName: true, email: true } } }

@@ -229,6 +229,9 @@ export function PortalNavigation(props: {
   const dashboardHomeImmersive = location.pathname === "/" && !props.homeMlChrome;
   const homeMlFloatingToolbar = Boolean(props.homeMlChrome) && location.pathname === "/";
   const sessionsHomeImmersive = location.pathname === "/sessions" && !props.homeMlChrome;
+  const assignedProImmersive = location.pathname === "/mi-profesional";
+  const matchingImmersive =
+    (location.pathname === "/matching" || location.pathname === "/favorites") && !props.homeMlChrome;
   const exercisesHomeImmersive = location.pathname.startsWith("/ejercicios") && !props.homeMlChrome;
   const wellbeingRelaxImmersive = location.pathname === "/bienestar/musica" && !props.homeMlChrome;
   const chatImmersive = location.pathname === "/chat";
@@ -237,6 +240,8 @@ export function PortalNavigation(props: {
     dashboardHomeImmersive ||
     homeMlFloatingToolbar ||
     sessionsHomeImmersive ||
+    assignedProImmersive ||
+    matchingImmersive ||
     exercisesHomeImmersive ||
     wellbeingRelaxImmersive ||
     chatImmersive ||
@@ -247,6 +252,7 @@ export function PortalNavigation(props: {
   const [dashboardHomeChromeEpoch, setDashboardHomeChromeEpoch] = useState(0);
   const [calmPickNav, setCalmPickNav] = useState(() => document.body.dataset.patientHome === "pick");
   const [sessionsHeroToolbarMount, setSessionsHeroToolbarMount] = useState<HTMLElement | null>(null);
+  const [assignedProToolbarMount, setAssignedProToolbarMount] = useState<HTMLElement | null>(null);
   const [wellbeingRelaxToolbarMount, setWellbeingRelaxToolbarMount] = useState<HTMLElement | null>(null);
   const [wellbeingHeroToolbarMount, setWellbeingHeroToolbarMount] = useState<HTMLElement | null>(null);
   const [chatHeroToolbarMount, setChatHeroToolbarMount] = useState<HTMLElement | null>(null);
@@ -339,7 +345,7 @@ export function PortalNavigation(props: {
   }, []);
 
   useLayoutEffect(() => {
-    if (!dashboardHomeImmersive && !homeMlFloatingToolbar) {
+    if (!dashboardHomeImmersive && !homeMlFloatingToolbar && !matchingImmersive) {
       setDashboardHeroToolbarMount(null);
       return;
     }
@@ -364,8 +370,14 @@ export function PortalNavigation(props: {
     return () => {
       cancelled = true;
     };
-  }, [dashboardHomeImmersive, homeMlFloatingToolbar, location.pathname, dashboardHomeChromeEpoch, calmPickNav]);
-
+  }, [
+    dashboardHomeImmersive,
+    homeMlFloatingToolbar,
+    matchingImmersive,
+    location.pathname,
+    dashboardHomeChromeEpoch,
+    calmPickNav
+  ]);
   useLayoutEffect(() => {
     if (!sessionsHomeImmersive) {
       setSessionsHeroToolbarMount(null);
@@ -390,6 +402,34 @@ export function PortalNavigation(props: {
       cancelled = true;
     };
   }, [sessionsHomeImmersive, location.pathname]);
+
+  useLayoutEffect(() => {
+    if (!assignedProImmersive) {
+      setAssignedProToolbarMount(null);
+      return;
+    }
+    let cancelled = false;
+    let frames = 0;
+    const resolveMount = () => {
+      if (cancelled) return;
+      const mount = document.getElementById("assigned-pro-toolbar-mount");
+      if (mount && mount.isConnected) {
+        setAssignedProToolbarMount(mount);
+        return;
+      }
+      if (frames < 40) {
+        frames += 1;
+        requestAnimationFrame(resolveMount);
+      } else {
+        setAssignedProToolbarMount(null);
+      }
+    };
+    setAssignedProToolbarMount(null);
+    resolveMount();
+    return () => {
+      cancelled = true;
+    };
+  }, [assignedProImmersive, location.pathname]);
 
   useLayoutEffect(() => {
     if (!wellbeingRelaxImmersive) {
@@ -1083,7 +1123,7 @@ export function PortalNavigation(props: {
       ) : null}
 
       <div
-        className={`portal-main${diaryHomeImmersive ? " portal-main--diary-home" : ""}${dashboardHomeImmersive ? " portal-main--dashboard-home" : ""}${props.homeMlChrome ? " portal-main--home-ml" : ""}${sessionsHomeImmersive ? " portal-main--sessions-home" : ""}${exercisesHomeImmersive ? " portal-main--exercises-home" : ""}${wellbeingRelaxImmersive ? " portal-main--wellbeing-relax" : ""}${chatImmersive ? " portal-main--chat" : ""}`}
+        className={`portal-main${diaryHomeImmersive ? " portal-main--diary-home" : ""}${dashboardHomeImmersive || matchingImmersive ? " portal-main--dashboard-home" : ""}${props.homeMlChrome ? " portal-main--home-ml" : ""}${sessionsHomeImmersive ? " portal-main--sessions-home" : ""}${exercisesHomeImmersive ? " portal-main--exercises-home" : ""}${wellbeingRelaxImmersive ? " portal-main--wellbeing-relax" : ""}${chatImmersive ? " portal-main--chat" : ""}`}
       >
         {props.homeMlChrome ? renderHomeMlChrome() : null}
         {!immersivePortalHome ? (
@@ -1207,7 +1247,7 @@ export function PortalNavigation(props: {
               </nav>
             </div>
             <nav
-              className={`portal-mobile-nav${calmPickNav ? " portal-mobile-nav--calm" : ""}${calmAppNav ? " portal-mobile-nav--app" : ""}`}
+              className={`portal-mobile-nav${calmPickNav || matchingImmersive ? " portal-mobile-nav--calm" : ""}${calmAppNav ? " portal-mobile-nav--app" : ""}`}
               aria-label={t(props.language, {
                 es: "Navegación principal",
                 en: "Main navigation",
@@ -1336,6 +1376,9 @@ export function PortalNavigation(props: {
           : null}
         {sessionsHomeImmersive && sessionsHeroToolbarMount
           ? createPortal(renderHeaderActions(true), sessionsHeroToolbarMount)
+          : null}
+        {assignedProImmersive && assignedProToolbarMount
+          ? createPortal(renderHeaderActions(true), assignedProToolbarMount)
           : null}
         {exercisesHomeImmersive && wellbeingHeroToolbarMount
           ? createPortal(renderHeaderActions(true), wellbeingHeroToolbarMount)

@@ -8,12 +8,12 @@
 
 .calm-pay-option {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) auto 18px;
-  gap: 14px;
+  grid-template-columns: 76px minmax(0, 1fr) auto 18px;
+  gap: 16px;
   align-items: center;
   width: 100%;
   margin: 0;
-  padding: 16px 18px;
+  padding: 18px 20px;
   border-radius: 12px;
   border: 1px solid var(--linea);
   background: var(--superficie);
@@ -31,7 +31,7 @@
   border: 2px solid var(--bosque);
   background: var(--menta);
   box-shadow: 0 0 0 3px rgba(47, 107, 81, 0.12);
-  padding: 15px 17px;
+  padding: 17px 19px;
 }
 
 .calm-pay button.calm-pay-option:hover,
@@ -47,8 +47,8 @@
 
 .calm-pay-mancha {
   position: relative;
-  width: 52px;
-  height: 52px;
+  width: 76px;
+  height: 76px;
   display: grid;
   place-items: center;
   color: var(--crema);
@@ -70,7 +70,7 @@
 .calm-pay-mancha-count {
   margin: 0;
   font-family: var(--serif);
-  font-size: 22px;
+  font-size: 30px;
   font-weight: 560;
   line-height: 1;
   color: var(--crema);
@@ -172,9 +172,18 @@
 
 .calm-pay-summary-head {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
+  grid-template-columns: 64px minmax(0, 1fr);
   gap: 12px;
   align-items: center;
+}
+
+.calm-pay-summary-head .calm-pay-mancha {
+  width: 64px;
+  height: 64px;
+}
+
+.calm-pay-summary-head .calm-pay-mancha-count {
+  font-size: 26px;
 }
 
 .calm-pay-summary-kicker {
@@ -281,7 +290,7 @@
 
 @media (max-width: 640px) {
   .calm-pay-option {
-    grid-template-columns: 44px minmax(0, 1fr) 18px;
+    grid-template-columns: 58px minmax(0, 1fr) 18px;
     grid-template-areas:
       "mancha copy radio"
       "mancha price radio";
@@ -290,12 +299,25 @@
 
   .calm-pay-mancha {
     grid-area: mancha;
-    width: 44px;
-    height: 44px;
+    width: 58px;
+    height: 58px;
   }
 
   .calm-pay-mancha-count {
-    font-size: 18px;
+    font-size: 24px;
+  }
+
+  .calm-pay-summary-head {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .calm-pay-summary-head .calm-pay-mancha {
+    width: 52px;
+    height: 52px;
+  }
+
+  .calm-pay-summary-head .calm-pay-mancha-count {
+    font-size: 22px;
   }
 
   .calm-pay-copy {

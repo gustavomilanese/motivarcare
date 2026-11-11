@@ -39,8 +39,9 @@
     padding: var(--portal-chrome-top, 26px) 48px 40px 0;
   }
 
+  /* Toolbar absoluta (campana + cuenta); el riel baja debajo. */
   .sessions-calm-side {
-    padding: var(--portal-chrome-top, 26px) 0 40px;
+    padding: var(--portal-toolbar-clear, calc(var(--portal-chrome-top, 26px) + 48px + 12px)) 0 40px;
   }
 }
 

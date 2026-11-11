@@ -1,4 +1,3 @@
-import { pickDefaultPurchasePlan } from "./packageCatalog.js";
 import type { SessionPackagePlan } from "./sessionPackagePlan.js";
 
 /** Cómo se presenta la UI (web desktop, web mobile, app nativa). */
@@ -33,10 +32,12 @@ export type AcquireSessionsIntent =
  */
 export function resolveAcquireSessionsIntent(
   trigger: AcquireSessionsTrigger,
-  presentation: AcquireSessionsPresentation,
+  _presentation: AcquireSessionsPresentation,
   ctx: AcquireSessionsContext
 ): AcquireSessionsIntent {
-  if (!ctx.hasAssignedProfessional || !ctx.pricingReady) {
+  // Solo pedir profesional si no hay uno de referencia.
+  // pricingReady=false (catálogo cargando / sin tarifa) no implica “elegí profesional”.
+  if (!ctx.hasAssignedProfessional) {
     return { type: "navigate_assign_professional" };
   }
 
@@ -46,29 +47,17 @@ export function resolveAcquireSessionsIntent(
     case "choose_individual":
       return { type: "open_individual_checkout" };
     case "buy_cta":
-      if (presentation === "desktop") {
-        return { type: "show_purchase_choice_modal" };
-      }
-      return resolveMobileQuickCheckout(ctx);
+      // Sin modal intermedio: el catálogo de paquetes ya incluye paquete e individual.
+      return { type: "open_checkout", planId: null };
     case "book_without_credits":
       if (ctx.creditsRemaining > 0) {
         return { type: "open_new_booking_panel" };
       }
-      if (presentation === "desktop") {
-        return { type: "show_no_credits_alert" };
-      }
+      // Sin saldo: ir a comprar (Reservar queda deshabilitado en UI; esto es fallback).
       return { type: "open_checkout", planId: null };
     default: {
       const exhaustive: never = trigger;
       return exhaustive;
     }
   }
-}
-
-function resolveMobileQuickCheckout(ctx: AcquireSessionsContext): AcquireSessionsIntent {
-  const plan = pickDefaultPurchasePlan(ctx.plans, ctx.featuredPackageId);
-  if (plan) {
-    return { type: "open_checkout", planId: plan.id };
-  }
-  return { type: "open_checkout", planId: null };
 }

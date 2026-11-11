@@ -1,60 +1,14 @@
 import { useMemo, type SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { canPatientRescheduleBooking, textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
+import { textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
 import { filterUpcomingPatientBookings } from "@therapy/patient-core";
 import { findProfessionalById } from "../../app/lib/professionals";
-import { professionalAccessibleName } from "../../app/lib/professionalDisplayName";
-import { professionalPhotoSrc } from "../../app/services/api";
 import type { Booking, Professional } from "../../app/types";
-import { calmGivenName, formatClock, formatWeekday, isSameZonedDay } from "./calmHomeFormat";
+import { CalmUpcomingRow } from "./CalmUpcomingRow";
 import { IconFlecha } from "./calmIcons";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
-}
-
-function CalmUpcomingRow(props: {
-  booking: Booking;
-  language: AppLanguage;
-  timeZone: string;
-  now: Date;
-  professional: Professional | null;
-  photoUrl: string | null;
-  onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
-  onOpen: (bookingId: string) => void;
-  onReschedule: (bookingId: string) => void;
-}) {
-  const name = props.professional ? professionalAccessibleName(props.professional) : "";
-  const given = props.professional ? calmGivenName(props.professional) : "";
-  const today = isSameZonedDay(new Date(props.booking.startsAt), props.now, props.timeZone);
-  const clock = formatClock(props.booking.startsAt, props.timeZone, props.language);
-  const when = today
-    ? t(props.language, { es: `Hoy · ${clock}`, en: `Today · ${clock}`, pt: `Hoje · ${clock}` })
-    : `${formatWeekday(props.booking.startsAt, props.timeZone, props.language)} · ${clock}`;
-  const canMove = canPatientRescheduleBooking(props.booking.startsAt, props.professional?.cancellationHours);
-
-  return (
-    <article className={`calm-upcoming-row${today ? " is-today" : ""}`}>
-      <button type="button" className="calm-upcoming-row-main" onClick={() => props.onOpen(props.booking.id)}>
-        <img
-          src={professionalPhotoSrc(props.photoUrl)}
-          alt=""
-          width={44}
-          height={44}
-          onError={props.onImageFallback}
-        />
-        <div>
-          <b>{when}</b>
-          <span>{name || given}</span>
-        </div>
-      </button>
-      {canMove ? (
-        <button type="button" className="calm-text-link" onClick={() => props.onReschedule(props.booking.id)}>
-          {t(props.language, { es: "Reprogramar", en: "Reschedule", pt: "Reagendar" })}
-        </button>
-      ) : null}
-    </article>
-  );
 }
 
 export function CalmUpcomingList(props: {

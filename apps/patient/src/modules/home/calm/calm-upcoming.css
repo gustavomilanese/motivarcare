@@ -68,6 +68,12 @@
   color: inherit;
 }
 
+/* Evita button:hover global (#f8fbff) sobre toda la fila. */
+.calm-upcoming-row-main:hover,
+.calm-upcoming-row-main:focus-visible {
+  background: none;
+}
+
 .calm-upcoming-row-main img {
   width: 44px;
   height: 44px;
@@ -77,11 +83,20 @@
   background: var(--salvia);
 }
 
+.calm-upcoming-row-copy {
+  min-width: 0;
+}
+
 .calm-upcoming-row-main b {
   display: block;
   color: var(--bosque);
   font-size: 15px;
   font-weight: 700;
+}
+
+.calm-upcoming-row-main:hover b,
+.calm-upcoming-row-main:focus-visible b {
+  color: var(--bosque-2);
 }
 
 .calm-upcoming-row-main span {
@@ -116,10 +131,6 @@
 @media (max-width: 1080px) {
   .calm-mobile-follow {
     display: flex;
-  }
-
-  .calm-agenda {
-    display: none;
   }
 }
 

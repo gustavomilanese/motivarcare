@@ -4,7 +4,7 @@ import { findProfessionalById } from "../../app/lib/professionals";
 import { professionalAccessibleName } from "../../app/lib/professionalDisplayName";
 import { professionalPhotoSrc } from "../../app/services/api";
 import type { Booking, Professional } from "../../app/types";
-import { calmGivenName, formatClock, formatWeekday, isSameZonedDay } from "../../home/calm/calmHomeFormat";
+import { calmGivenName, formatClock, formatWeekdayDate, isSameZonedDay } from "../../home/calm/calmHomeFormat";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -29,7 +29,7 @@ export function SessionsCalmRow(props: {
   const clock = formatClock(props.booking.startsAt, props.timeZone, props.language);
   const when = today
     ? t(props.language, { es: `Hoy · ${clock}`, en: `Today · ${clock}`, pt: `Hoje · ${clock}` })
-    : `${formatWeekday(props.booking.startsAt, props.timeZone, props.language)} · ${clock}`;
+    : `${formatWeekdayDate(props.booking.startsAt, props.timeZone, props.language)} · ${clock}`;
   const canMove = canPatientRescheduleBooking(props.booking.startsAt, professional?.cancellationHours);
 
   return (

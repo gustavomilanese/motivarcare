@@ -63,7 +63,11 @@ export function CheckoutPackagesPanel(props: {
   const bundlePlans = props.packagePlans.filter((plan) => plan.credits > 1);
   const canIndividualCta =
     props.pricingReady && !props.packagesLoading && props.unitPriceMajor !== null && (singleSessionPlan !== null || bundlePlans.length > 0);
-  const showChooseProfessionalCta = !props.pricingReady;
+  const hasBoundProfessional = Boolean(
+    props.professionalFirstName?.trim() || props.professionalName?.trim()
+  );
+  // Con profesional ya asignado no pedimos “elegí profesional” aunque el catálogo aún cargue.
+  const showChooseProfessionalCta = !props.pricingReady && !hasBoundProfessional;
 
   const individualLinkLabel = t(props.language, {
     es: "Comprar sesiones individuales",

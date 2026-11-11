@@ -48,143 +48,160 @@ export function PatientMainReasonStep(props: {
       <h2 className="intake-question-title">{props.title}</h2>
       <p className="intake-question-help">{props.help}</p>
 
-      <div className="intake-main-reason-categories" role="tablist" aria-label={props.title}>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={category === "individual"}
-          className={`intake-main-reason-category${category === "individual" ? " intake-main-reason-category--active" : ""}`}
-          onClick={() => props.onCategoryChange("individual")}
-        >
-          <span className="intake-main-reason-category-label">
-            {t(props.language, {
-              es: "Terapia individual",
-              en: "Individual therapy",
-              pt: "Terapia individual"
-            })}
-          </span>
-          <span className="intake-main-reason-category-hint">
-            {t(props.language, {
-              es: "Para vos",
-              en: "For you",
-              pt: "Para voce"
-            })}
-          </span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={category === "couples"}
-          className={`intake-main-reason-category intake-main-reason-category--couples${
-            category === "couples" ? " intake-main-reason-category--active" : ""
-          }`}
-          onClick={() => props.onCategoryChange("couples")}
-        >
-          <span className="intake-main-reason-category-label">
-            {t(props.language, {
-              es: "Terapia de pareja",
-              en: "Couples therapy",
-              pt: "Terapia de casal"
-            })}
-          </span>
-          <span className="intake-main-reason-category-hint">
-            {t(props.language, {
-              es: "Con tu pareja",
-              en: "With your partner",
-              pt: "Com seu par"
-            })}
-          </span>
-        </button>
-      </div>
+      <section className="intake-main-reason-block" aria-label={t(props.language, {
+        es: "Tipo de terapia",
+        en: "Therapy type",
+        pt: "Tipo de terapia"
+      })}>
+        <p className="intake-main-reason-kicker">
+          {t(props.language, { es: "Tipo de terapia", en: "Therapy type", pt: "Tipo de terapia" })}
+        </p>
+        <div className="intake-main-reason-categories" role="tablist" aria-label={props.title}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={category === "individual"}
+            className={`intake-main-reason-category${category === "individual" ? " intake-main-reason-category--active" : ""}`}
+            onClick={() => props.onCategoryChange("individual")}
+          >
+            <span className="intake-main-reason-category-label">
+              {t(props.language, {
+                es: "Terapia individual",
+                en: "Individual therapy",
+                pt: "Terapia individual"
+              })}
+            </span>
+            <span className="intake-main-reason-category-hint">
+              {t(props.language, {
+                es: "Para vos",
+                en: "For you",
+                pt: "Para voce"
+              })}
+            </span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={category === "couples"}
+            className={`intake-main-reason-category intake-main-reason-category--couples${
+              category === "couples" ? " intake-main-reason-category--active" : ""
+            }`}
+            onClick={() => props.onCategoryChange("couples")}
+          >
+            <span className="intake-main-reason-category-label">
+              {t(props.language, {
+                es: "Terapia de pareja",
+                en: "Couples therapy",
+                pt: "Terapia de casal"
+              })}
+            </span>
+            <span className="intake-main-reason-category-hint">
+              {t(props.language, {
+                es: "Con tu pareja",
+                en: "With your partner",
+                pt: "Com seu par"
+              })}
+            </span>
+          </button>
+        </div>
+      </section>
 
       {category === "individual" ? (
-        <div className="intake-main-reason-panel" role="tabpanel">
-          <p className="intake-main-reason-panel-lead">
-            {t(props.language, {
-              es: "Marcá uno o varios motivos de consulta.",
-              en: "Select one or more reasons for seeking support.",
-              pt: "Marque um ou mais motivos de consulta."
-            })}
+        <section className="intake-main-reason-block" aria-labelledby="intake-main-reason-motives-title">
+          <p className="intake-main-reason-kicker" id="intake-main-reason-motives-title">
+            {t(props.language, { es: "Motivos", en: "Reasons", pt: "Motivos" })}
           </p>
-          <div className="intake-option-grid" role="group" aria-multiselectable>
-            {PATIENT_INDIVIDUAL_MAIN_REASON_OPTIONS_ES.map((option) => {
-              const selected =
-                individualSelected.includes(option)
-                || (option === OTHER_OPTION_ES
-                  && individualSelected.some((piece) => piece.startsWith(`${OTHER_OPTION_ES}:`)));
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  className={`intake-option-chip ${selected ? "intake-option-chip--selected" : ""}`}
-                  aria-pressed={selected}
-                  onClick={() => props.onToggleIndividual(option)}
-                >
-                  <span className="intake-option-chip-label">{intakeOptionLabel(props.language, option)}</span>
-                </button>
-              );
-            })}
+          <div className="intake-main-reason-panel" role="tabpanel">
+            <p className="intake-main-reason-panel-lead">
+              {t(props.language, {
+                es: "Marcá uno o varios. Podés combinarlos.",
+                en: "Pick one or more. You can combine them.",
+                pt: "Marque um ou mais. Pode combinar."
+              })}
+            </p>
+            <div className="intake-main-reason-tags" role="group" aria-multiselectable>
+              {PATIENT_INDIVIDUAL_MAIN_REASON_OPTIONS_ES.map((option) => {
+                const selected =
+                  individualSelected.includes(option)
+                  || (option === OTHER_OPTION_ES
+                    && individualSelected.some((piece) => piece.startsWith(`${OTHER_OPTION_ES}:`)));
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    className={`intake-reason-tag${selected ? " is-active" : ""}`}
+                    aria-pressed={selected}
+                    onClick={() => props.onToggleIndividual(option)}
+                  >
+                    <span className="intake-option-chip-label">{intakeOptionLabel(props.language, option)}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {showOtherFollowup ? (
+              <label className="intake-other-followup">
+                <span className="intake-question-help">
+                  {t(props.language, {
+                    es: "Detalle (obligatorio si elegiste «Otro»)",
+                    en: "Details (required if you picked “Other”)",
+                    pt: "Detalhes (obrigatorio se escolheu “Outro”)"
+                  })}
+                </span>
+                <textarea
+                  className="intake-textarea-touch"
+                  rows={3}
+                  value={otherDetail}
+                  onChange={(event) => props.onOtherDetailChange(event.target.value)}
+                  placeholder={t(props.language, {
+                    es: "Escribí brevemente…",
+                    en: "Briefly describe…",
+                    pt: "Descreva brevemente…"
+                  })}
+                />
+              </label>
+            ) : null}
           </div>
-          {showOtherFollowup ? (
-            <label className="intake-other-followup">
-              <span className="intake-question-help">
-                {t(props.language, {
-                  es: "Detalle (obligatorio si elegiste «Otro»)",
-                  en: "Details (required if you picked “Other”)",
-                  pt: "Detalhes (obrigatorio se escolheu “Outro”)"
-                })}
-              </span>
-              <textarea
-                className="intake-textarea-touch"
-                rows={3}
-                value={otherDetail}
-                onChange={(event) => props.onOtherDetailChange(event.target.value)}
-                placeholder={t(props.language, {
-                  es: "Escribí brevemente…",
-                  en: "Briefly describe…",
-                  pt: "Descreva brevemente…"
-                })}
-              />
-            </label>
-          ) : null}
-        </div>
+        </section>
       ) : (
-        <div className="intake-main-reason-panel intake-main-reason-panel--couples" role="tabpanel">
-          <p className="intake-main-reason-panel-lead">
-            {t(props.language, {
-              es: "¿Qué aspectos de la pareja querés trabajar?",
-              en: "What aspects of your relationship do you want to work on?",
-              pt: "Quais aspectos do casal voce quer trabalhar?"
-            })}
+        <section className="intake-main-reason-block" aria-labelledby="intake-main-reason-couples-title">
+          <p className="intake-main-reason-kicker" id="intake-main-reason-couples-title">
+            {t(props.language, { es: "Enfoque de pareja", en: "Couples focus", pt: "Foco do casal" })}
           </p>
-          <p className="intake-main-reason-panel-sub">
-            {t(props.language, {
-              es: "Elegí uno o varios. Nos ayuda a orientar el match con tu profesional.",
-              en: "Pick one or more. This helps us guide your match with a professional.",
-              pt: "Escolha um ou mais. Isso nos ajuda a orientar o match com seu profissional."
-            })}
-          </p>
-          <div className="intake-option-grid" role="group" aria-multiselectable>
-            {PATIENT_COUPLES_THERAPY_FOCUS_OPTIONS_ES.map((optionEs) => {
-              const isSelected = couplesSelected.includes(optionEs);
-              return (
-                <button
-                  key={optionEs}
-                  type="button"
-                  className={`intake-option-chip intake-option-chip--couples ${
-                    isSelected ? "intake-option-chip--selected" : ""
-                  }`}
-                  aria-pressed={isSelected}
-                  onClick={() => props.onToggleCouplesFocus(optionEs)}
-                >
-                  <span className="intake-option-chip-label">
-                    {intakeOptionLabel(props.language, optionEs)}
-                  </span>
-                </button>
-              );
-            })}
+          <div className="intake-main-reason-panel intake-main-reason-panel--couples" role="tabpanel">
+            <p className="intake-main-reason-panel-lead">
+              {t(props.language, {
+                es: "¿Qué aspectos querés trabajar?",
+                en: "What aspects do you want to work on?",
+                pt: "Quais aspectos voce quer trabalhar?"
+              })}
+            </p>
+            <p className="intake-main-reason-panel-sub">
+              {t(props.language, {
+                es: "Elegí uno o varios. Nos ayuda a orientar el match.",
+                en: "Pick one or more. This helps guide your match.",
+                pt: "Escolha um ou mais. Isso ajuda a orientar o match."
+              })}
+            </p>
+            <div className="intake-main-reason-tags" role="group" aria-multiselectable>
+              {PATIENT_COUPLES_THERAPY_FOCUS_OPTIONS_ES.map((optionEs) => {
+                const isSelected = couplesSelected.includes(optionEs);
+                return (
+                  <button
+                    key={optionEs}
+                    type="button"
+                    className={`intake-reason-tag${isSelected ? " is-active" : ""}`}
+                    aria-pressed={isSelected}
+                    onClick={() => props.onToggleCouplesFocus(optionEs)}
+                  >
+                    <span className="intake-option-chip-label">
+                      {intakeOptionLabel(props.language, optionEs)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </section>
       )}
     </article>
   );

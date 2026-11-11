@@ -170,8 +170,17 @@ export async function resolveIndividualSessionsPurchaseQuote(params: {
   ]);
 
   const assignments = parsePatientAssignments(assignmentConfig?.value);
+  const assignedProfessionalId = assignments[patient.id]?.trim() || null;
   const requestedProfessionalId = params.professionalId?.trim() || null;
-  const activeProfessionalId = requestedProfessionalId ?? assignments[patient.id] ?? null;
+  // Lazo único: con assign solo ese profesional; pedir otro es error.
+  if (
+    assignedProfessionalId
+    && requestedProfessionalId
+    && requestedProfessionalId !== assignedProfessionalId
+  ) {
+    throw new Error("PROFESSIONAL_ASSIGNMENT_MISMATCH");
+  }
+  const activeProfessionalId = assignedProfessionalId ?? requestedProfessionalId ?? null;
   const activeProfessional = activeProfessionalId
     ? await prisma.professionalProfile.findUnique({
         where: { id: activeProfessionalId },

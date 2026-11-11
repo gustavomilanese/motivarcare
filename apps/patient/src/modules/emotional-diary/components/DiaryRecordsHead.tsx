@@ -4,19 +4,26 @@ import { navigateToSectionTop } from "../../app/lib/navigateSectionTop";
 import { IconAtras } from "../../home/calm/calmIcons";
 import { t } from "../lib/labels";
 
+/** Volver: fila full-width arriba de las columnas (la col3 alinea con «Diario»). */
+export function DiaryRecordsBack(props: { language: AppLanguage }) {
+  const navigate = useNavigate();
+  return (
+    <button
+      type="button"
+      className="diary-records-back"
+      onClick={() => navigateToSectionTop(navigate, "/diario")}
+    >
+      <IconAtras size={18} />
+      {t(props.language, { es: "Volver al diario", en: "Back to diary", pt: "Voltar ao diário" })}
+    </button>
+  );
+}
+
 export function DiaryRecordsHead(props: { language: AppLanguage }) {
   const navigate = useNavigate();
 
   return (
     <header className="diary-records-head">
-      <button
-        type="button"
-        className="diary-records-back"
-        onClick={() => navigateToSectionTop(navigate, "/diario")}
-      >
-        <IconAtras size={18} />
-        {t(props.language, { es: "Volver al diario", en: "Back to diary", pt: "Voltar ao diário" })}
-      </button>
       <div className="diary-records-head-row">
         <div>
           <p className="diary-calm-kicker">{t(props.language, { es: "Diario", en: "Diary", pt: "Diário" })}</p>

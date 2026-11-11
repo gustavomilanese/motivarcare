@@ -1,5 +1,6 @@
 import { type AppLanguage } from "@therapy/i18n-config";
-import { IconCandado, MoodFace } from "../../home/calm/calmIcons";
+import { IconCandado } from "../../home/calm/calmIcons";
+import { MoodClimateIcon } from "../../home/calm/MoodClimateIcon";
 import { DiaryMoodPicker } from "./DiaryMoodPicker";
 import { t } from "../lib/labels";
 import { moodMeta } from "../lib/moods";
@@ -13,7 +14,7 @@ export function DiaryEntryClimateCard(props: {
   const selected = moodMeta(props.mood);
 
   return (
-    <article className="diary-entry-card">
+    <article className="diary-entry-card diary-entry-card--menta">
       <h2>{t(props.language, { es: "¿Cómo está tu día?", en: "How is your day?", pt: "Como está o seu dia?" })}</h2>
       <p className="diary-entry-help">
         {t(props.language, {
@@ -33,7 +34,7 @@ export function DiaryEntryClimateCard(props: {
         })}
       />
       <p className="diary-entry-selected">
-        <MoodFace face={props.mood} />
+        <MoodClimateIcon mood={props.mood} size={22} />
         {t(props.language, { es: selected.labelEs, en: selected.labelEn, pt: selected.labelPt })}
       </p>
       <p className="diary-entry-privacy">

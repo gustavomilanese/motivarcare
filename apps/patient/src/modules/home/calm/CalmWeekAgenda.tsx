@@ -1,90 +1,82 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo, type SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
-import type { Booking, Professional } from "../../app/types";
 import { findProfessionalById } from "../../app/lib/professionals";
-import { calmGivenName, formatClock, isSameZonedDay } from "./calmHomeFormat";
+import type { Booking, Professional } from "../../app/types";
+import { CalmUpcomingRow } from "./CalmUpcomingRow";
 import { calendarWeek, weekSessions } from "./calmWeek";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-function dayNumber(day: Date, timeZone: string): string {
-  try {
-    return new Intl.DateTimeFormat("es-AR", { day: "numeric", timeZone }).format(day);
-  } catch {
-    return new Intl.DateTimeFormat("es-AR", { day: "numeric", timeZone: "UTC" }).format(day);
-  }
-}
+/** Web: máx. 2 filas para no empujar el riel; el resto va a Sesiones. */
+const WEEK_LIST_LIMIT = 2;
 
-function dayName(day: Date, timeZone: string, language: AppLanguage): string {
-  const locale = language === "en" ? "en-US" : language === "pt" ? "pt-BR" : "es-AR";
-  try {
-    return new Intl.DateTimeFormat(locale, { weekday: "short", timeZone }).format(day).replace(".", "");
-  } catch {
-    return new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" }).format(day).replace(".", "");
-  }
-}
-
+/** Card compacta (estilo créditos): sesiones de la semana calendario actual. */
 export function CalmWeekAgenda(props: {
   language: AppLanguage;
   timeZone: string;
   now: Date;
   bookings: Booking[];
   professionals: Professional[];
+  photoMap: Record<string, string>;
+  onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onOpenBooking: (bookingId: string) => void;
+  onRescheduleBooking: (bookingId: string) => void;
 }) {
   const navigate = useNavigate();
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const days = useMemo(() => {
-    const next = [...props.bookings]
-      .filter((booking) => booking.status === "confirmed" && new Date(booking.startsAt).getTime() >= props.now.getTime() - 3_600_000)
-      .sort((left, right) => left.startsAt.localeCompare(right.startsAt))[0];
-    return calendarWeek(next ? new Date(next.startsAt) : props.now, props.timeZone);
+  const rows = useMemo(() => {
+    const days = calendarWeek(props.now, props.timeZone);
+    return weekSessions(props.bookings, days, props.timeZone).flat();
   }, [props.bookings, props.now, props.timeZone]);
-  const grouped = useMemo(
-    () => weekSessions(props.bookings, days, props.timeZone),
-    [days, props.bookings, props.timeZone]
-  );
 
-  useEffect(() => {
-    const today = scrollerRef.current?.querySelector<HTMLElement>(".calm-agenda-day.is-today");
-    today?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
-  }, [days]);
+  if (rows.length === 0) return null;
 
-  if (grouped.every((day) => day.length === 0)) return null;
+  const visible = rows.slice(0, WEEK_LIST_LIMIT);
+  const count = rows.length;
+  const label =
+    count === 1
+      ? t(props.language, { es: "sesión esta semana", en: "session this week", pt: "sessão esta semana" })
+      : t(props.language, { es: "sesiones esta semana", en: "sessions this week", pt: "sessões esta semana" });
 
   return (
-    <section className="calm-agenda" aria-label={t(props.language, { es: "Esta semana", en: "This week", pt: "Esta semana" })}>
-      <header>
-        <h2>{t(props.language, { es: "Esta semana", en: "This week", pt: "Esta semana" })}</h2>
-        <button type="button" className="calm-text-link" onClick={() => navigate("/sessions?focus=month")}>
-          {t(props.language, { es: "Ver el mes", en: "See the month", pt: "Ver o mês" })}
-        </button>
-      </header>
-      <div className="calm-agenda-days" ref={scrollerRef}>
-        {days.map((day, index) => {
-          const sessions = grouped[index] ?? [];
-          const today = isSameZonedDay(day, props.now, props.timeZone);
+    <article className="calm-card calm-week-sessions" aria-labelledby="calm-week-sessions-title">
+      <div className="calm-week-sessions-top">
+        <strong className="calm-week-sessions-number">{count}</strong>
+        <b id="calm-week-sessions-title" className="calm-week-sessions-label">
+          {label}
+        </b>
+        {count > WEEK_LIST_LIMIT ? (
+          <button
+            type="button"
+            className="calm-text-link calm-week-sessions-month"
+            onClick={() => navigate("/sessions")}
+          >
+            {t(props.language, { es: "Ver más", en: "See more", pt: "Ver mais" })}
+          </button>
+        ) : null}
+      </div>
+      <div className="calm-upcoming-list">
+        {visible.map((booking) => {
+          const professional = findProfessionalById(booking.professionalId, props.professionals);
           return (
-            <div key={day.toISOString()} className={`calm-agenda-day${today ? " is-today" : ""}`}>
-              <span>{today ? t(props.language, { es: "Hoy", en: "Today", pt: "Hoje" }) : dayName(day, props.timeZone, props.language)}</span>
-              <b>{dayNumber(day, props.timeZone)}</b>
-              {sessions.map((booking) => {
-                const professional = findProfessionalById(booking.professionalId, props.professionals);
-                const given = professional ? calmGivenName(professional) : "";
-                return (
-                  <button key={booking.id} type="button" className="calm-agenda-session" onClick={() => props.onOpenBooking(booking.id)}>
-                    {given ? <span className="calm-agenda-session-name">{given}</span> : null}
-                    <span className="calm-agenda-session-time">{formatClock(booking.startsAt, props.timeZone, props.language)}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <CalmUpcomingRow
+              key={booking.id}
+              layout="inline"
+              booking={booking}
+              language={props.language}
+              timeZone={props.timeZone}
+              now={props.now}
+              professional={professional}
+              photoUrl={professional ? props.photoMap[professional.id] ?? null : null}
+              onImageFallback={props.onImageFallback}
+              onOpen={props.onOpenBooking}
+              onReschedule={props.onRescheduleBooking}
+            />
           );
         })}
       </div>
-    </section>
+    </article>
   );
 }

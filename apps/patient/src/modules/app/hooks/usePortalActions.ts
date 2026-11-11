@@ -12,7 +12,10 @@ import {
 } from "../lib/dlocalCheckoutIdempotency";
 import { armCheckoutCreditProtection } from "../lib/checkoutCreditProtection";
 import { patientUsesDlocalCheckout } from "../lib/patientDlocalCheckout";
-import { resolvePortalPricingProfessionalId } from "../lib/patientPricingProfessional";
+import {
+  resolveBindingProfessionalId,
+  resolvePortalPricingProfessionalId
+} from "../lib/patientPricingProfessional";
 import { findProfessionalById, findSlotIdForBooking } from "../lib/professionals";
 import type {
   Booking,
@@ -91,6 +94,10 @@ export function usePortalActions(params: {
     }
 
     const selectedProfessionalId = params.state.selectedProfessionalId;
+    const bindingProfessionalId = resolveBindingProfessionalId({
+      assignedProfessionalId: params.state.assignedProfessionalId,
+      selectedProfessionalId: params.state.selectedProfessionalId
+    });
     const authToken = params.state.authToken;
     let purchasedPackage: PurchasePackageApiResponse["purchase"] | null = null;
     let lastError = "";
@@ -159,33 +166,42 @@ export function usePortalActions(params: {
       return { ok: false, error: lastError || "Purchase failed" };
     }
 
-    params.onStateChange((current) => ({
-      ...current,
-      therapistSelectionCompleted: true,
-      onboardingFinalCompleted: true,
-      assignedProfessionalId: current.selectedProfessionalId,
-      subscription: {
-        packageId: purchasedPackage?.packageId ?? plan.id,
-        packageName: purchasedPackage?.packageName ?? plan.name,
-        creditsTotal: purchasedPackage?.totalCredits ?? current.subscription.creditsTotal + plan.credits,
-        creditsRemaining: purchasedPackage?.remainingCredits ?? current.subscription.creditsRemaining + plan.credits,
-        purchasedAt: purchasedPackage?.purchasedAt ?? new Date().toISOString(),
-        purchaseHistory: [
-          {
-            id: purchasedPackage?.id ?? `local-${Date.now().toString(36)}`,
-            name: purchasedPackage?.packageName ?? plan.name,
-            credits: plan.credits,
-            purchasedAt: purchasedPackage?.purchasedAt ?? new Date().toISOString(),
-            priceCents: purchasedPackage?.packagePriceCents ?? plan.priceCents ?? null,
-            currency: purchasedPackage?.packageCurrency ?? plan.currency ?? null
-          },
-          ...current.subscription.purchaseHistory
-        ].slice(0, 20)
-      }
-    }));
+    params.onStateChange((current) => {
+      const keepAssigned =
+        current.assignedProfessionalId?.trim()
+        || bindingProfessionalId
+        || current.selectedProfessionalId
+        || null;
+      return {
+        ...current,
+        therapistSelectionCompleted: true,
+        onboardingFinalCompleted: true,
+        // Nunca pisar un assign existente con un selected de browse/matching.
+        assignedProfessionalId: keepAssigned,
+        selectedProfessionalId: keepAssigned ?? current.selectedProfessionalId,
+        subscription: {
+          packageId: purchasedPackage?.packageId ?? plan.id,
+          packageName: purchasedPackage?.packageName ?? plan.name,
+          creditsTotal: purchasedPackage?.totalCredits ?? current.subscription.creditsTotal + plan.credits,
+          creditsRemaining: purchasedPackage?.remainingCredits ?? current.subscription.creditsRemaining + plan.credits,
+          purchasedAt: purchasedPackage?.purchasedAt ?? new Date().toISOString(),
+          purchaseHistory: [
+            {
+              id: purchasedPackage?.id ?? `local-${Date.now().toString(36)}`,
+              name: purchasedPackage?.packageName ?? plan.name,
+              credits: plan.credits,
+              purchasedAt: purchasedPackage?.purchasedAt ?? new Date().toISOString(),
+              priceCents: purchasedPackage?.packagePriceCents ?? plan.priceCents ?? null,
+              currency: purchasedPackage?.packageCurrency ?? plan.currency ?? null
+            },
+            ...current.subscription.purchaseHistory
+          ].slice(0, 20)
+        }
+      };
+    });
 
-    if (selectedProfessionalId) {
-      void syncActiveProfessionalAssignment(selectedProfessionalId);
+    if (bindingProfessionalId && !params.state.assignedProfessionalId?.trim()) {
+      void syncActiveProfessionalAssignment(bindingProfessionalId);
     }
 
     return { ok: true };
@@ -205,7 +221,10 @@ export function usePortalActions(params: {
     const selectedProfessionalId = params.state.selectedProfessionalId;
     let purchasedPackage: PurchasePackageApiResponse["purchase"] | null = null;
     let lastError = "";
-
+    const bindingProfessionalId = resolveBindingProfessionalId({
+      assignedProfessionalId: params.state.assignedProfessionalId,
+      selectedProfessionalId: params.state.selectedProfessionalId
+    });
     if (authToken) {
       if (usesDlocalCheckout(params.state)) {
         const idempotencyScope = dlocalIndividualIdempotencyScope(sessionCount);
@@ -278,33 +297,41 @@ export function usePortalActions(params: {
       return { ok: false, error: lastError || "Purchase failed" };
     }
 
-    params.onStateChange((current) => ({
-      ...current,
-      therapistSelectionCompleted: true,
-      onboardingFinalCompleted: true,
-      assignedProfessionalId: current.selectedProfessionalId,
-      subscription: {
-        packageId: purchasedPackage?.packageId ?? current.subscription.packageId,
-        packageName: purchasedPackage?.packageName ?? current.subscription.packageName,
-        creditsTotal: purchasedPackage?.totalCredits ?? current.subscription.creditsTotal + sessionCount,
-        creditsRemaining: purchasedPackage?.remainingCredits ?? current.subscription.creditsRemaining + sessionCount,
-        purchasedAt: purchasedPackage?.purchasedAt ?? new Date().toISOString(),
-        purchaseHistory: [
-          {
-            id: purchasedPackage?.id ?? `local-ind-${Date.now().toString(36)}`,
-            name: purchasedPackage?.packageName ?? `${sessionCount} sesiones`,
-            credits: sessionCount,
-            purchasedAt: purchasedPackage?.purchasedAt ?? new Date().toISOString(),
-            priceCents: purchasedPackage?.packagePriceCents ?? null,
-            currency: purchasedPackage?.packageCurrency ?? null
-          },
-          ...current.subscription.purchaseHistory
-        ].slice(0, 20)
-      }
-    }));
+    params.onStateChange((current) => {
+      const keepAssigned =
+        current.assignedProfessionalId?.trim()
+        || bindingProfessionalId
+        || current.selectedProfessionalId
+        || null;
+      return {
+        ...current,
+        therapistSelectionCompleted: true,
+        onboardingFinalCompleted: true,
+        assignedProfessionalId: keepAssigned,
+        selectedProfessionalId: keepAssigned ?? current.selectedProfessionalId,
+        subscription: {
+          packageId: purchasedPackage?.packageId ?? current.subscription.packageId,
+          packageName: purchasedPackage?.packageName ?? current.subscription.packageName,
+          creditsTotal: purchasedPackage?.totalCredits ?? current.subscription.creditsTotal + sessionCount,
+          creditsRemaining: purchasedPackage?.remainingCredits ?? current.subscription.creditsRemaining + sessionCount,
+          purchasedAt: purchasedPackage?.purchasedAt ?? new Date().toISOString(),
+          purchaseHistory: [
+            {
+              id: purchasedPackage?.id ?? `local-ind-${Date.now().toString(36)}`,
+              name: purchasedPackage?.packageName ?? `${sessionCount} sesiones`,
+              credits: sessionCount,
+              purchasedAt: purchasedPackage?.purchasedAt ?? new Date().toISOString(),
+              priceCents: purchasedPackage?.packagePriceCents ?? null,
+              currency: purchasedPackage?.packageCurrency ?? null
+            },
+            ...current.subscription.purchaseHistory
+          ].slice(0, 20)
+        }
+      };
+    });
 
-    if (selectedProfessionalId) {
-      void syncActiveProfessionalAssignment(selectedProfessionalId);
+    if (bindingProfessionalId && !params.state.assignedProfessionalId?.trim()) {
+      void syncActiveProfessionalAssignment(bindingProfessionalId);
     }
 
     return { ok: true };
