@@ -21,7 +21,7 @@ export function SessionsCalmBalance(props: {
   const primaryLabel = props.bookingOpen
     ? t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })
     : needsPurchase
-      ? t(props.language, { es: "Comprar otra", en: "Buy another", pt: "Comprar outra" })
+      ? t(props.language, { es: "Comprar", en: "Buy", pt: "Comprar" })
       : t(props.language, { es: "Reservar", en: "Book", pt: "Reservar" });
 
   return (

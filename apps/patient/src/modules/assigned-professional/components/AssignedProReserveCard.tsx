@@ -50,7 +50,7 @@ export function AssignedProReserveCard(props: {
         onClick={needsPurchase ? props.onBuy : props.onReserve}
       >
         {needsPurchase
-          ? t(props.language, { es: "Comprar otra", en: "Buy another", pt: "Comprar outra" })
+          ? t(props.language, { es: "Comprar", en: "Buy", pt: "Comprar" })
           : t(props.language, { es: "Reservar", en: "Book", pt: "Reservar" })}
       </button>
     </article>

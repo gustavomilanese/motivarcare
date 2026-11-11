@@ -31,6 +31,7 @@ export function HomeBookingDialog(props: {
   photoUrl: string | null;
   creditsRemaining: number;
   bookings: Booking[];
+  preferredStartsAt?: string | null;
   onClose: () => void;
   onConfirm: (
     professionalId: string,
@@ -46,6 +47,7 @@ export function HomeBookingDialog(props: {
     professionalId: props.professional?.id ?? null,
     language: props.language,
     bookings: props.bookings,
+    preferredStartsAt: props.preferredStartsAt,
     onConfirm: props.onConfirm
   });
 

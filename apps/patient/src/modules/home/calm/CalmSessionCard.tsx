@@ -13,7 +13,7 @@ import { CalmPersonHit } from "./CalmPersonHit";
 import { CalmSessionCreditsBadge } from "./CalmSessionCreditsBadge";
 import {
   formatClock,
-  formatWeekday,
+  formatWeekdayDate,
   isSameZonedDay,
   sessionChipLabel,
   sessionLengthMinutes,
@@ -82,7 +82,7 @@ export function CalmSessionCard(props: {
               }}
             >
               {props.availableSessions <= 0
-                ? t(language, { es: "Comprar otra", en: "Buy another", pt: "Comprar outra" })
+                ? t(language, { es: "Comprar", en: "Buy", pt: "Comprar" })
                 : t(language, { es: "Reservar sesión", en: "Book a session", pt: "Reservar sessão" })}
             </button>
           ) : (
@@ -128,7 +128,7 @@ export function CalmSessionCard(props: {
         <h2 className="calm-session-when">
           {sameDay
             ? t(language, { es: `Hoy, ${clock}`, en: `Today, ${clock}`, pt: `Hoje, ${clock}` })
-            : `${formatWeekday(booking.startsAt, timeZone, language)}, ${clock}`}
+            : `${formatWeekdayDate(booking.startsAt, timeZone, language)}, ${clock}`}
         </h2>
         <p className="calm-session-meta">
           {minutes

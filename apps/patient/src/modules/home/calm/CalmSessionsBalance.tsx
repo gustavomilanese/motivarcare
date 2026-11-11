@@ -57,7 +57,7 @@ export function CalmSessionsBalance(props: {
       </div>
       <button className="calm-btn calm-btn--yellow" type="button" onClick={onPrimary}>
         {needsPurchase
-          ? t(props.language, { es: "Comprar otra", en: "Buy another", pt: "Comprar outra" })
+          ? t(props.language, { es: "Comprar", en: "Buy", pt: "Comprar" })
           : t(props.language, { es: "Reservar otra", en: "Book another", pt: "Reservar outra" })}
       </button>
     </article>

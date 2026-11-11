@@ -52,8 +52,6 @@ import { useMobilePortal } from "../../app/hooks/useMobilePortal";
 import { DashboardHomePurchaseModal } from "../ml/PurchaseModal";
 import { DashboardHomeChatModal } from "../ml/ChatModal";
 import { DashboardNextActionHome } from "../ml/NextActionHome";
-import { friendlyChatSurfaceMessage } from "../../app/lib/friendlyPatientMessages";
-import { postPatientProfessionalMessage } from "../../chat/lib/postPatientProfessionalMessage";
 import { CalmHome } from "../calm/CalmHome";
 import { HomeBookingDialog } from "../calm/HomeBookingDialog";
 import { calmHomeSurface } from "../calm/calmHomeCase";
@@ -233,17 +231,29 @@ export function HomePage(props: {
     props.onGoToProfessional(id);
   }, [props.onGoToProfessional, props.state.assignedProfessionalId]);
   const [homeBookingProfessionalId, setHomeBookingProfessionalId] = useState<string | null>(null);
+  const [homeBookingPreferredStartsAt, setHomeBookingPreferredStartsAt] = useState<string | null>(null);
   const openHomeBooking = useCallback(
-    (_professionalId?: string) => {
+    (_professionalId?: string, preferredStartsAt?: string | null) => {
       const id = resolveHomeBookingProfessionalId({
         assignedProfessionalId: props.state.assignedProfessionalId,
         selectedProfessionalId: props.state.selectedProfessionalId
       });
       if (!id) return;
+      setHomeBookingPreferredStartsAt(preferredStartsAt?.trim() || null);
       setHomeBookingProfessionalId(id);
     },
     [props.state.assignedProfessionalId, props.state.selectedProfessionalId]
   );
+  const openHomeBookingWithSlot = useCallback(
+    (slot: TimeSlot) => {
+      openHomeBooking(undefined, slot.startsAt);
+    },
+    [openHomeBooking]
+  );
+  const closeHomeBooking = useCallback(() => {
+    setHomeBookingProfessionalId(null);
+    setHomeBookingPreferredStartsAt(null);
+  }, []);
   const homeBookingProfessional = homeBookingProfessionalId
     ? findProfessionalById(homeBookingProfessionalId, props.professionals)
     : null;
@@ -261,19 +271,6 @@ export function HomePage(props: {
     },
     [isMobilePortal, props.onGoToChat, props.onSetActiveChatProfessional]
   );
-  const sendHomeChatMessage = async (professionalId: string, text: string) => {
-    if (!props.authToken) {
-      props.onSendChatMessage(professionalId, text);
-      return;
-    }
-    try {
-      await postPatientProfessionalMessage(props.authToken, professionalId, text);
-    } catch (error) {
-      const raw = error instanceof Error ? error.message : "";
-      throw new Error(friendlyChatSurfaceMessage("send", raw, props.language));
-    }
-    openHomeChat(professionalId);
-  };
   const dashboardSpotlightBlockersRef = useRef(false);
   dashboardSpotlightBlockersRef.current =
     assignProModalOpen ||
@@ -931,6 +928,8 @@ export function HomePage(props: {
           onOpenBookingDetail={props.onOpenBookingDetail}
           onRescheduleBooking={props.onRescheduleBooking}
           onGoToBooking={openHomeBooking}
+          onBookPreferredSlot={openHomeBookingWithSlot}
+          bookingPreferredStartsAt={homeBookingPreferredStartsAt}
           currency={props.currency}
           fxRates={props.fxRates}
           residencyCountry={props.state.profileResidencyCountry}
@@ -943,7 +942,6 @@ export function HomePage(props: {
           onBookTrial={props.onNavigateToBookTrial}
           onOpenChat={props.onGoToChat}
           onOpenProfile={openAssignedProfessionalProfile}
-          onSendChatMessage={sendHomeChatMessage}
           onReserveAnother={() => {
             if (!hasAssignedProfessional) {
               setProfessionalPickOpen(true);
@@ -1448,7 +1446,8 @@ export function HomePage(props: {
         photoUrl={homeBookingProfessional ? props.professionalPhotoMap[homeBookingProfessional.id] ?? null : null}
         creditsRemaining={props.state.subscription.creditsRemaining}
         bookings={props.state.bookings}
-        onClose={() => setHomeBookingProfessionalId(null)}
+        preferredStartsAt={homeBookingPreferredStartsAt}
+        onClose={closeHomeBooking}
         onConfirm={props.onConfirmBooking}
         onImageFallback={props.onImageFallback}
       />

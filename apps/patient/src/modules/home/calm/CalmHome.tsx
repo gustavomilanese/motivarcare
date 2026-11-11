@@ -1,10 +1,9 @@
 import { type SyntheticEvent, useMemo, useState } from "react";
 import { type AppLanguage, type DisplayFxRates, type LocalizedText, type SupportedCurrency, textByLanguage } from "@therapy/i18n-config";
 import { findProfessionalById } from "../../app/lib/professionals";
-import type { Booking, PatientAppState, Professional } from "../../app/types";
+import type { Booking, PatientAppState, Professional, TimeSlot } from "../../app/types";
 import { CalmBetweenSessions } from "./CalmBetweenSessions";
 import { CalmFirstSessionCard } from "./CalmFirstSessionCard";
-import { CalmMessageCard } from "./CalmMessageCard";
 import { CalmSideProfessional } from "./CalmSideProfessional";
 import { CalmSessionsBalance } from "./CalmSessionsBalance";
 import { CalmSessionCard } from "./CalmSessionCard";
@@ -38,6 +37,8 @@ export function CalmHome(props: {
   onOpenBookingDetail: (bookingId: string) => void;
   onRescheduleBooking: (bookingId: string) => void;
   onGoToBooking: (professionalId: string) => void;
+  onBookPreferredSlot?: (slot: TimeSlot) => void;
+  bookingPreferredStartsAt?: string | null;
   currency: SupportedCurrency;
   fxRates?: DisplayFxRates;
   residencyCountry: string | null;
@@ -45,7 +46,6 @@ export function CalmHome(props: {
   onBookTrial: () => void;
   onOpenChat: (professionalId: string) => void;
   onOpenProfile: () => void;
-  onSendChatMessage: (professionalId: string, text: string) => void | Promise<void>;
   onReserveAnother: () => void;
   onBuyAnother: () => void;
 }) {
@@ -120,7 +120,16 @@ export function CalmHome(props: {
             now={now}
             professional={bookingProfessional}
             availableSessions={props.availableSessions}
+            selectedStartsAt={props.bookingPreferredStartsAt}
             onBook={() => {
+              if (!reserveProfessional) return;
+              props.onGoToBooking(reserveProfessional.id);
+            }}
+            onBookSlot={(slot) => {
+              if (props.onBookPreferredSlot) {
+                props.onBookPreferredSlot(slot);
+                return;
+              }
               if (!reserveProfessional) return;
               props.onGoToBooking(reserveProfessional.id);
             }}
@@ -162,7 +171,7 @@ export function CalmHome(props: {
           />
         ) : (
         <div className="calm-side">
-          {homeCase === "upcoming" && props.activeProfessional ? (
+          {props.activeProfessional ? (
             <CalmSideProfessional
               language={props.language}
               timeZone={props.timeZone}
@@ -175,20 +184,7 @@ export function CalmHome(props: {
               onChat={() => props.onOpenChat(props.activeProfessional!.id)}
               onProfile={props.onOpenProfile}
             />
-          ) : (
-            <CalmMessageCard
-              language={props.language}
-              timeZone={props.timeZone}
-              now={now}
-              professional={props.activeProfessional}
-              photoUrl={photoFor(props.activeProfessional)}
-              messages={props.state.messages}
-              authToken={props.state.authToken}
-              onImageFallback={props.onImageFallback}
-              onOpenChat={props.onOpenChat}
-              onSend={props.onSendChatMessage}
-            />
-          )}
+          ) : null}
           <CalmSessionsBalance
             language={props.language}
             available={props.availableSessions}

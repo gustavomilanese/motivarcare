@@ -528,7 +528,7 @@ export function DashboardNextActionHome(props: {
 
   const bookOrBuyLabel =
     props.availableSessions <= 0
-      ? t(props.language, { es: "Comprar otra", en: "Buy another", pt: "Comprar outra" })
+      ? t(props.language, { es: "Comprar", en: "Buy", pt: "Comprar" })
       : t(props.language, {
           es: "Reservar sesión",
           en: "Book a session",
@@ -688,7 +688,7 @@ export function DashboardNextActionHome(props: {
               variant="book"
               title={
                 props.availableSessions <= 0
-                  ? t(props.language, { es: "Comprar otra", en: "Buy another", pt: "Comprar outra" })
+                  ? t(props.language, { es: "Comprar", en: "Buy", pt: "Comprar" })
                   : t(props.language, {
                       es: "Reservar sesión",
                       en: "Book a session",

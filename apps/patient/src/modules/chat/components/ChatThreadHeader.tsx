@@ -12,7 +12,7 @@ export function ChatThreadHeader(props: {
   mobile?: boolean;
   name: string | null;
   photoSrc: string | null;
-  /** Con saldo → Reservar; sin saldo → Comprar otra (paquetes). */
+  /** Con saldo → Reservar; sin saldo → Comprar (paquetes). */
   canReserve?: boolean;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
 }) {
@@ -25,7 +25,7 @@ export function ChatThreadHeader(props: {
         pt: "Costuma responder no dia, de segunda a sexta"
       });
   const reserveLabel = t(props.language, { es: "Reservar sesión", en: "Book a session", pt: "Reservar sessão" });
-  const buyLabel = t(props.language, { es: "Comprar otra", en: "Buy another", pt: "Comprar outra" });
+  const buyLabel = t(props.language, { es: "Comprar", en: "Buy", pt: "Comprar" });
   const actionLabel = canReserve ? reserveLabel : buyLabel;
   const actionTo = canReserve ? "/sessions" : "/sessions?flow=checkout";
 

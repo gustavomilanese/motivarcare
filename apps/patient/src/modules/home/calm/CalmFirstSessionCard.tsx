@@ -1,10 +1,11 @@
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { professionalGivenName } from "../../app/lib/professionalDisplayName";
-import type { Professional } from "../../app/types";
+import type { Professional, TimeSlot } from "../../app/types";
 import { upcomingProfessionalSlots } from "./calmHomeCase";
 import { CalmFirstSessionNextSteps } from "./CalmFirstSessionNextSteps";
+import { CalmFirstSessionSlotList } from "./CalmFirstSessionSlotList";
 import { CalmSessionCreditsBadge } from "./CalmSessionCreditsBadge";
-import { formatClock, formatShortDate, timezoneCaption } from "./calmHomeFormat";
+import { timezoneCaption } from "./calmHomeFormat";
 import { IconSesiones } from "./calmIcons";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -18,6 +19,9 @@ export function CalmFirstSessionCard(props: {
   professional: Professional;
   availableSessions: number;
   onBook: () => void;
+  /** Abre la reserva con este horario ya elegido. */
+  onBookSlot?: (slot: TimeSlot) => void;
+  selectedStartsAt?: string | null;
   /** Misma acción que `CalmSessionsBalance` en home asignada. */
   onBuyPackage?: () => void;
 }) {
@@ -25,6 +29,18 @@ export function CalmFirstSessionCard(props: {
   const given = professionalGivenName(props.professional);
   const needsPurchase = props.availableSessions <= 0;
   const primaryAction = needsPurchase && props.onBuyPackage ? props.onBuyPackage : props.onBook;
+
+  const onSelectProposed = (slot: TimeSlot) => {
+    if (needsPurchase && props.onBuyPackage) {
+      props.onBuyPackage();
+      return;
+    }
+    if (props.onBookSlot) {
+      props.onBookSlot(slot);
+      return;
+    }
+    props.onBook();
+  };
 
   return (
     <article className="calm-card calm-session calm-first-session">
@@ -67,19 +83,14 @@ export function CalmFirstSessionCard(props: {
         </p>
       </div>
       {slots.length > 0 ? (
-        <div className="calm-first-session__slots">
-          <div className="calm-slot-row">
-            {slots.map((slot) => (
-              <button key={slot.id} type="button" className="calm-slot" onClick={primaryAction}>
-                {formatClock(slot.startsAt, props.timeZone, props.language)}
-                <small>{formatShortDate(slot.startsAt, props.timeZone, props.language)}</small>
-              </button>
-            ))}
-          </div>
-          <button type="button" className="calm-text-link calm-first-session__more-slots" onClick={primaryAction}>
-            {t(props.language, { es: "Ver más horarios", en: "See more times", pt: "Ver mais horários" })}
-          </button>
-        </div>
+        <CalmFirstSessionSlotList
+          language={props.language}
+          timeZone={props.timeZone}
+          slots={slots}
+          selectedStartsAt={props.selectedStartsAt}
+          onSelectSlot={onSelectProposed}
+          onSeeMore={primaryAction}
+        />
       ) : null}
       <div className="calm-session-actions calm-first-session__actions">
         <button className="calm-btn calm-btn--yellow calm-btn--large calm-first-session__cta" type="button" onClick={primaryAction}>

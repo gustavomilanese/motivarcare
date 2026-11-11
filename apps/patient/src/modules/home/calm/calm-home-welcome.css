@@ -197,6 +197,14 @@
   background: #fff;
 }
 
+.calm-slot--selected,
+.calm-slot--selected:hover,
+.calm-slot--selected:focus-visible {
+  border-style: solid;
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--menta);
+}
+
 .calm-slot--more {
   border-style: solid;
   border-color: transparent;

@@ -4,6 +4,7 @@ import { fetchSharedPatientAvailabilitySlots } from "../../app/lib/fetchPatientA
 import { acquireBookingSlotHold, releaseBookingSlotHold } from "../../matching/services/slotHold";
 import type { AppLanguage } from "@therapy/i18n-config";
 import type { Booking, TimeSlot } from "../../app/types";
+import { matchPreferredHomeSlot } from "./matchPreferredHomeSlot";
 
 function overlaps(slot: TimeSlot, booking: Booking): boolean {
   return new Date(slot.startsAt).getTime() < new Date(booking.endsAt).getTime()
@@ -16,6 +17,8 @@ export function useHomeBooking(params: {
   professionalId: string | null;
   language: AppLanguage;
   bookings: Booking[];
+  /** ISO del horario propuesto en el card de primera sesión. */
+  preferredStartsAt?: string | null;
   onConfirm: (
     professionalId: string,
     slot: TimeSlot,
@@ -33,6 +36,7 @@ export function useHomeBooking(params: {
   const [error, setError] = useState("");
   const holdIdRef = useRef("");
   const bookingsRef = useRef(params.bookings);
+  const preferredAppliedRef = useRef(false);
   holdIdRef.current = holdId;
   bookingsRef.current = params.bookings;
 
@@ -83,6 +87,7 @@ export function useHomeBooking(params: {
     if (token && currentHold) {
       void releaseBookingSlotHold(currentHold, token).catch(() => undefined);
     }
+    preferredAppliedRef.current = false;
     setSelectedSlotId("");
     setHoldId("");
     setHoldExpiresAt("");
@@ -152,7 +157,18 @@ export function useHomeBooking(params: {
     if (params.open && slotsSettled) {
       setSlotsSettled(false);
     }
+    if (params.open) {
+      preferredAppliedRef.current = false;
+    }
   }
+
+  useEffect(() => {
+    if (!params.open || !slotsSettled || preferredAppliedRef.current) return;
+    const preferred = matchPreferredHomeSlot(slots, params.preferredStartsAt);
+    preferredAppliedRef.current = true;
+    if (!preferred) return;
+    void selectSlot(preferred.id);
+  }, [params.open, params.preferredStartsAt, slots, slotsSettled]);
 
   return {
     slots,
