@@ -979,22 +979,28 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
           }
         : { professionalIdSnapshot: null })
     };
-    const [creditRemainingSummary, activePackRows] = await Promise.all([
-      prisma.patientPackagePurchase.aggregate({
-        where: bondPurchaseWhere,
-        _sum: { remainingCredits: true }
-      }),
-      /** Tamaño del medidor = paquetes aún abiertos (no suma packs ya agotados). */
-      prisma.patientPackagePurchase.findMany({
-        where: { ...bondPurchaseWhere, remainingCredits: { gt: 0 } },
-        select: { totalCredits: true, packageCreditsSnapshot: true, remainingCredits: true }
-      })
-    ]);
-    const remainingCreditsSum = creditRemainingSummary._sum.remainingCredits ?? 0;
+    /**
+     * Medidor + latestPackage: solo packs abiertos del vínculo.
+     * El nombre/tamaño no pueden salir de purchases[0] agotado (mostraba “Basic” con 8 de otro pack).
+     */
+    const activePackRows = await prisma.patientPackagePurchase.findMany({
+      where: { ...bondPurchaseWhere, remainingCredits: { gt: 0 } },
+      orderBy: { purchasedAt: "desc" },
+      select: {
+        id: true,
+        totalCredits: true,
+        packageCreditsSnapshot: true,
+        remainingCredits: true,
+        purchasedAt: true,
+        sessionPackage: { select: { name: true, credits: true } }
+      }
+    });
+    const remainingCreditsSum = activePackRows.reduce((sum, row) => sum + Math.max(0, row.remainingCredits), 0);
     const activePackTotalCredits = activePackRows.reduce((sum, row) => {
-      const size = row.packageCreditsSnapshot ?? row.totalCredits;
+      const size = row.packageCreditsSnapshot ?? row.totalCredits ?? row.sessionPackage.credits;
       return sum + Math.max(0, size);
     }, 0);
+    const primaryOpenPack = activePackRows[0] ?? null;
     const creditSummary = {
       _sum: {
         remainingCredits: remainingCreditsSum,
@@ -1077,13 +1083,13 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
         intakeRiskBlocked,
         intakeCompletedAt: patient?.intake?.createdAt ?? null,
         trialRebookAvailable,
-        latestPackage: patient?.purchases[0]
+        latestPackage: primaryOpenPack
           ? {
-              id: patient.purchases[0].id,
-              name: patient.purchases[0].sessionPackage.name,
-              remainingCredits: creditSummary._sum.remainingCredits ?? patient.purchases[0].remainingCredits,
-              totalCredits: creditSummary._sum.totalCredits ?? patient.purchases[0].totalCredits,
-              purchasedAt: patient.purchases[0].purchasedAt
+              id: primaryOpenPack.id,
+              name: primaryOpenPack.sessionPackage.name,
+              remainingCredits: creditSummary._sum.remainingCredits,
+              totalCredits: creditSummary._sum.totalCredits,
+              purchasedAt: primaryOpenPack.purchasedAt
             }
           : null,
         recentPackages,
