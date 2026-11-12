@@ -967,24 +967,40 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
     const assignments = parsePatientAssignments(assignmentConfig?.value);
     const triageByPatient = parsePatientIntakeTriage(triageConfig?.value);
     const activeProfessionalId = patient ? assignments[patient.id] ?? null : null;
-    /** Saldo gastable solo del vínculo (o legacy sin snapshot). No mezcla créditos de otro profesional. */
-    const creditSummary = await prisma.patientPackagePurchase.aggregate({
-      where: {
-        patientId: actor.patientProfileId,
-        ...(activeProfessionalId
-          ? {
-              OR: [
-                { professionalIdSnapshot: activeProfessionalId },
-                { professionalIdSnapshot: null }
-              ]
-            }
-          : { professionalIdSnapshot: null })
-      },
+    /** Solo compras del vínculo (o legacy sin snapshot). No mezcla créditos de otro profesional. */
+    const bondPurchaseWhere = {
+      patientId: actor.patientProfileId,
+      ...(activeProfessionalId
+        ? {
+            OR: [
+              { professionalIdSnapshot: activeProfessionalId },
+              { professionalIdSnapshot: null }
+            ]
+          }
+        : { professionalIdSnapshot: null })
+    };
+    const [creditRemainingSummary, activePackRows] = await Promise.all([
+      prisma.patientPackagePurchase.aggregate({
+        where: bondPurchaseWhere,
+        _sum: { remainingCredits: true }
+      }),
+      /** Tamaño del medidor = paquetes aún abiertos (no suma packs ya agotados). */
+      prisma.patientPackagePurchase.findMany({
+        where: { ...bondPurchaseWhere, remainingCredits: { gt: 0 } },
+        select: { totalCredits: true, packageCreditsSnapshot: true, remainingCredits: true }
+      })
+    ]);
+    const remainingCreditsSum = creditRemainingSummary._sum.remainingCredits ?? 0;
+    const activePackTotalCredits = activePackRows.reduce((sum, row) => {
+      const size = row.packageCreditsSnapshot ?? row.totalCredits;
+      return sum + Math.max(0, size);
+    }, 0);
+    const creditSummary = {
       _sum: {
-        totalCredits: true,
-        remainingCredits: true
+        remainingCredits: remainingCreditsSum,
+        totalCredits: activePackTotalCredits > 0 ? activePackTotalCredits : remainingCreditsSum
       }
-    });
+    };
     const intakeRiskLevel = patient?.intake?.riskLevel ?? null;
     const intakeTriageDecision = patient
       ? resolveIntakeTriageDecision(triageByPatient, patient.id, intakeRiskLevel)

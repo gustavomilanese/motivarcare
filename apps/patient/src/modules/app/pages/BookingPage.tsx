@@ -1497,6 +1497,7 @@ export function BookingPage(props: {
           available={availableSessions}
           packageName={props.state.subscription.packageName}
           packageSize={props.state.subscription.creditsTotal}
+          reserved={upcomingConfirmedBookings.filter((booking) => booking.bookingMode !== "trial").length}
           bookingOpen={panelMode === "new"}
           canBuy={hasProfessionalsOnPortal}
           bookPrimary={

@@ -1,19 +1,19 @@
 import { useMemo, type SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
+import { filterUpcomingPatientBookings } from "@therapy/patient-core";
 import { findProfessionalById } from "../../app/lib/professionals";
 import type { Booking, Professional } from "../../app/types";
 import { CalmUpcomingRow } from "./CalmUpcomingRow";
-import { calendarWeek, weekSessions } from "./calmWeek";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
 /** Web: máx. 2 filas para no empujar el riel; el resto va a Sesiones. */
-const WEEK_LIST_LIMIT = 2;
+const NEXT_LIST_LIMIT = 2;
 
-/** Card compacta (estilo créditos): sesiones de la semana calendario actual. */
+/** Card compacta (estilo créditos): próximas reservas del vínculo, no “esta semana”. */
 export function CalmWeekAgenda(props: {
   language: AppLanguage;
   timeZone: string;
@@ -27,23 +27,22 @@ export function CalmWeekAgenda(props: {
   onRescheduleBooking: (bookingId: string) => void;
 }) {
   const navigate = useNavigate();
-  const rows = useMemo(() => {
-    const assigned = props.assignedProfessionalId?.trim() ?? "";
-    const scoped = assigned
-      ? props.bookings.filter((booking) => booking.professionalId === assigned)
-      : props.bookings;
-    const days = calendarWeek(props.now, props.timeZone);
-    return weekSessions(scoped, days, props.timeZone).flat();
-  }, [props.assignedProfessionalId, props.bookings, props.now, props.timeZone]);
+  const rows = useMemo(
+    () =>
+      filterUpcomingPatientBookings(props.bookings, props.now.getTime(), {
+        assignedProfessionalId: props.assignedProfessionalId
+      }),
+    [props.assignedProfessionalId, props.bookings, props.now]
+  );
 
   if (rows.length === 0) return null;
 
-  const visible = rows.slice(0, WEEK_LIST_LIMIT);
+  const visible = rows.slice(0, NEXT_LIST_LIMIT);
   const count = rows.length;
   const label =
     count === 1
-      ? t(props.language, { es: "sesión esta semana", en: "session this week", pt: "sessão esta semana" })
-      : t(props.language, { es: "sesiones esta semana", en: "sessions this week", pt: "sessões esta semana" });
+      ? t(props.language, { es: "próxima reserva", en: "upcoming booking", pt: "próxima reserva" })
+      : t(props.language, { es: "próximas reservas", en: "upcoming bookings", pt: "próximas reservas" });
 
   return (
     <article className="calm-card calm-week-sessions" aria-labelledby="calm-week-sessions-title">
@@ -52,7 +51,7 @@ export function CalmWeekAgenda(props: {
         <b id="calm-week-sessions-title" className="calm-week-sessions-label">
           {label}
         </b>
-        {count > WEEK_LIST_LIMIT ? (
+        {count > NEXT_LIST_LIMIT ? (
           <button
             type="button"
             className="calm-text-link calm-week-sessions-month"

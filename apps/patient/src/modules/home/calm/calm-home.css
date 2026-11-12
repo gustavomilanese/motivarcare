@@ -482,12 +482,16 @@
 
 .calm-person {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
   margin-top: 0;
 }
 
-.calm-person--hit {
+.calm-person__hit {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   width: 100%;
   max-width: 100%;
   padding: 0;
@@ -495,29 +499,35 @@
   background: transparent;
   box-shadow: none;
   text-align: left;
-  justify-content: flex-start; /* pisa button global con justify-content: center */
+  justify-content: flex-start;
   font: inherit;
   color: inherit;
   cursor: pointer;
   border-radius: 8px;
 }
 
+.calm-person__meta {
+  min-width: 0;
+  /* Alineado bajo el nombre, a la derecha del anillo (58px + gap). */
+  padding-left: calc(58px + 14px);
+}
+
 /* Evita button:hover global (#f8fbff) que blanquea toda la fila. */
-.calm-person--hit:hover,
-.calm-person--hit:focus-visible {
+.calm-person__hit:hover,
+.calm-person__hit:focus-visible {
   background: transparent !important;
   box-shadow: none;
   border-color: transparent;
 }
 
 /* DS: hover de nombre → bosque-2 (no subrayado de enlace). */
-.calm-person--hit:hover strong,
-.calm-person--hit:focus-visible strong {
+.calm-person__hit:hover strong,
+.calm-person__hit:focus-visible strong {
   color: var(--bosque-2);
   text-decoration: none;
 }
 
-.calm-person--hit:focus-visible {
+.calm-person__hit:focus-visible {
   outline: 2px solid var(--bosque);
   outline-offset: 4px;
 }

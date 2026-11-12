@@ -9,7 +9,7 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-/** Fila compacta de sesión (próximas / esta semana). */
+/** Fila compacta de sesión (próximas reservas). */
 export function CalmUpcomingRow(props: {
   booking: Booking;
   language: AppLanguage;
@@ -17,7 +17,7 @@ export function CalmUpcomingRow(props: {
   now: Date;
   professional: Professional | null;
   photoUrl: string | null;
-  /** `inline`: horario + profesional en una línea (card esta semana). */
+  /** `inline`: horario + profesional en una línea (card del riel). */
   layout?: "stack" | "inline";
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onOpen: (bookingId: string) => void;

@@ -49,6 +49,7 @@ export function SessionsContextRail(props: {
           available={available}
           packageName={props.packageName}
           packageSize={props.packageSize}
+          reserved={props.upcoming.filter((booking) => booking.bookingMode !== "trial").length}
           bookingOpen={props.bookingOpen}
           canBuy={props.canBuy}
           bookPrimary={bookPrimary}

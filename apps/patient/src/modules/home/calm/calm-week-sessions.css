@@ -1,4 +1,4 @@
-/* Esta semana · card baja al estilo sesiones disponibles (riel derecho, web). */
+/* Próximas reservas · card baja al estilo sesiones disponibles (riel derecho, web). */
 
 .calm-week-sessions {
   display: flex;
@@ -72,7 +72,7 @@
 
 .calm-side .calm-week-sessions .calm-upcoming-row-copy.is-inline b {
   flex: none;
-  max-width: 55%;
+  max-width: min(100%, 12.5rem);
 }
 
 .calm-side .calm-week-sessions .calm-upcoming-row-copy.is-inline > span:not(.calm-upcoming-row-sep) {

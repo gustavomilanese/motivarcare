@@ -18,6 +18,7 @@
   margin-top: 8px;
 }
 
+/* Base = reservada (salvia sólida), como `.puntos span` del DS. */
 .calm-dots i {
   width: 22px;
   height: 22px;
@@ -27,12 +28,14 @@
   box-sizing: border-box;
 }
 
+/* Tomada / `.usada` */
 .calm-dots i.is-used {
   background: var(--bosque);
   border-style: solid;
   border-color: var(--bosque);
 }
 
+/* Disponible / `.libre` */
 .calm-dots i.is-free {
   background: transparent;
   border-style: dashed;

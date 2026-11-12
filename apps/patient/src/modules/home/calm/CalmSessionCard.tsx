@@ -107,7 +107,8 @@ export function CalmSessionCard(props: {
   const joinUrl = bookingJoinUrl(booking);
   const name = professionalAccessibleName(professional);
   const given = professionalFirstName(professional);
-  const meta = [professional.title, professional.specialties[0]].filter(Boolean).join(" · ");
+  const specialtyLabel = professional.specialties.filter(Boolean).join(", ");
+  const meta = [professional.title, specialtyLabel].filter(Boolean).join(" · ");
   const noticeHours = resolvePatientChangeNoticeHours(professional.cancellationHours);
   const canReschedule = canPatientRescheduleBooking(booking.startsAt, noticeHours);
 
@@ -145,11 +146,13 @@ export function CalmSessionCard(props: {
         </p>
       </div>
       <CalmPersonHit
+        language={language}
         name={name}
         meta={meta}
         photoUrl={props.photoUrl}
         onImageFallback={props.onImageFallback}
         onOpenProfile={props.onOpenProfile}
+        metaLines={2}
       />
       <div className="calm-session-actions">
         {joinUrl ? (

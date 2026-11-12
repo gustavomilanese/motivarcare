@@ -12,6 +12,7 @@ import { CalmUpcomingList } from "./CalmUpcomingList";
 import { CalmWeekAgenda } from "./CalmWeekAgenda";
 import { CalmWelcomeCard } from "./CalmWelcomeCard";
 import { resolveCalmHomeCase } from "./calmHomeCase";
+import { countReservedPackageSessions } from "./countReservedPackageSessions";
 import { CalmPortalToolbarRow } from "../../app/components/CalmPortalToolbarRow";
 import {
   formatDayHeading,
@@ -61,6 +62,11 @@ export function CalmHome(props: {
     professional ? props.professionalPhotoMap[professional.id] ?? null : null;
   const includesToday = Boolean(
     props.nextBooking && isSameZonedDay(new Date(props.nextBooking.startsAt), now, props.timeZone)
+  );
+  const reservedSessions = countReservedPackageSessions(
+    props.state.bookings,
+    now.getTime(),
+    props.activeProfessional?.id
   );
   const homeCase = resolveCalmHomeCase({
     hasProfessional: Boolean(bookingProfessional),
@@ -190,6 +196,7 @@ export function CalmHome(props: {
             available={props.availableSessions}
             packageName={props.state.subscription.packageName}
             packageSize={props.state.subscription.creditsTotal}
+            reserved={reservedSessions}
             includesToday={includesToday}
             professional={props.activeProfessional}
             onReserveAnother={props.onReserveAnother}
@@ -236,6 +243,7 @@ export function CalmHome(props: {
             available={props.availableSessions}
             packageName={props.state.subscription.packageName}
             packageSize={props.state.subscription.creditsTotal}
+            reserved={reservedSessions}
             includesToday={includesToday}
             professional={props.activeProfessional}
             onReserveAnother={props.onReserveAnother}

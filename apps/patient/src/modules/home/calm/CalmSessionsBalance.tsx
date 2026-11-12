@@ -12,6 +12,8 @@ export function CalmSessionsBalance(props: {
   available: number;
   packageName: string;
   packageSize: number;
+  /** Próximas con crédito de paquete (círculo salvia del DS). */
+  reserved?: number;
   includesToday: boolean;
   professional: Professional | null;
   onReserveAnother: () => void;
@@ -51,7 +53,7 @@ export function CalmSessionsBalance(props: {
           language={props.language}
           available={props.available}
           packageSize={props.packageSize}
-          includesToday={props.includesToday}
+          reserved={props.reserved}
           variant="home"
         />
       </div>

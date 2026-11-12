@@ -10,6 +10,8 @@ export function SessionsCalmBalance(props: {
   available: number;
   packageName: string;
   packageSize: number;
+  /** Próximas con crédito de paquete (círculo salvia del DS). */
+  reserved?: number;
   bookingOpen: boolean;
   canBuy: boolean;
   bookPrimary: boolean;
@@ -39,6 +41,7 @@ export function SessionsCalmBalance(props: {
             language={props.language}
             available={props.available}
             packageSize={props.packageSize}
+            reserved={props.reserved}
             variant="sessions"
           />
         </div>

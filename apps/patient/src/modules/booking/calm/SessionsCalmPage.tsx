@@ -16,6 +16,7 @@ export function SessionsCalmPage(props: {
   available: number;
   packageName: string;
   packageSize: number;
+  reserved?: number;
   bookingOpen: boolean;
   canBuy: boolean;
   bookPrimary: boolean;
@@ -49,6 +50,7 @@ export function SessionsCalmPage(props: {
           available={props.available}
           packageName={props.packageName}
           packageSize={props.packageSize}
+          reserved={props.reserved}
           bookingOpen={props.bookingOpen}
           canBuy={props.canBuy}
           bookPrimary={props.bookPrimary}
