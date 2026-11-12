@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
 import { InlineBadge } from "@therapy/ui";
 import { type UpcomingReservationItem, UpcomingReservationsList } from "../components/agenda/UpcomingReservationsList";
+import { ClearAllPublishedAvailability } from "../components/availability/ClearAllPublishedAvailability";
 import { ProPageLoader } from "../components/ProPageLoader";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { formatPortalBookingStatus, isUpcomingListSession } from "../lib/sessionLifecycle";
@@ -74,6 +75,7 @@ function usePublishedAvailabilityData(token: string, language: AppLanguage) {
   const [bookings, setBookings] = useState<ProfessionalBookingsResponse["bookings"]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingSlotId, setDeletingSlotId] = useState("");
+  const [clearingAll, setClearingAll] = useState(false);
   const [error, setError] = useState("");
 
   const loadSlots = async (showLoading = false) => {
@@ -158,7 +160,33 @@ function usePublishedAvailabilityData(token: string, language: AppLanguage) {
     }
   };
 
-  return { groupedSlots, scheduleSummary, loading, deletingSlotId, error, reload: loadSlots, handleDelete };
+  const handleClearAll = async () => {
+    setClearingAll(true);
+    setError("");
+    try {
+      await apiRequest<{ message: string; deletedCount: number }>("/api/availability/me/slots", token, {
+        method: "DELETE"
+      });
+      await loadSlots(true);
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("published-slots-clear", language, raw));
+    } finally {
+      setClearingAll(false);
+    }
+  };
+
+  return {
+    groupedSlots,
+    scheduleSummary,
+    loading,
+    deletingSlotId,
+    clearingAll,
+    error,
+    reload: loadSlots,
+    handleDelete,
+    handleClearAll
+  };
 }
 
 export function AgendaPage(props: { token: string; language: AppLanguage }) {
@@ -761,7 +789,16 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
 }
 
 export function PublishedAvailabilityPage(props: { token: string; language: AppLanguage }) {
-  const { groupedSlots, scheduleSummary, loading, deletingSlotId, error, handleDelete } = usePublishedAvailabilityData(props.token, props.language);
+  const {
+    groupedSlots,
+    scheduleSummary,
+    loading,
+    deletingSlotId,
+    clearingAll,
+    error,
+    handleDelete,
+    handleClearAll
+  } = usePublishedAvailabilityData(props.token, props.language);
   const [openDayKey, setOpenDayKey] = useState<string | null>(null);
 
   return (
@@ -775,6 +812,12 @@ export function PublishedAvailabilityPage(props: { token: string; language: AppL
             pt: "Aqui voce administra os horarios ja criados e ve quais seguem livres, reservados ou bloqueados."
           })}
         </p>
+        <ClearAllPublishedAvailability
+          language={props.language}
+          slotCount={scheduleSummary.total}
+          busy={loading || clearingAll || Boolean(deletingSlotId)}
+          onClear={handleClearAll}
+        />
       </section>
 
       <section className="pro-kpi-grid schedule-kpi-grid">

@@ -95,6 +95,7 @@ export type AdminSurfaceContext =
   | "prof-ops-update"
   | "prof-ops-slot-create"
   | "prof-ops-slot-delete"
+  | "prof-ops-slot-clear"
   | "prof-ops-session-update"
   | "sessions-ops-load"
   | "sessions-ops-update"
@@ -256,6 +257,11 @@ const SURFACE: Record<AdminSurfaceContext, LocalizedText> = {
     es: "No pudimos borrar el horario. Refrescá la grilla y probá otra vez.",
     en: "We couldn’t delete the slot. Refresh the grid and try again.",
     pt: "Nao foi possivel remover o horario. Atualize a grade."
+  },
+  "prof-ops-slot-clear": {
+    es: "No pudimos borrar toda la disponibilidad. Refrescá y probá otra vez.",
+    en: "We couldn’t clear all availability. Refresh and try again.",
+    pt: "Nao foi possivel apagar toda a disponibilidade. Atualize e tente de novo."
   },
   "prof-ops-session-update": {
     es: "No actualizamos la sesión. Reintentá o abrí el detalle de nuevo.",

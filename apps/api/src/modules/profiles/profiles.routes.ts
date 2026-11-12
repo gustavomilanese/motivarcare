@@ -942,16 +942,7 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
       }
     });
 
-    const [creditSummary, assignmentConfig, triageConfig, paidTrialCheckouts] = await Promise.all([
-      prisma.patientPackagePurchase.aggregate({
-        where: {
-          patientId: actor.patientProfileId
-        },
-        _sum: {
-          totalCredits: true,
-          remainingCredits: true
-        }
-      }),
+    const [assignmentConfig, triageConfig, paidTrialCheckouts] = await Promise.all([
       prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } }),
       prisma.systemConfig.findUnique({ where: { key: PATIENT_INTAKE_TRIAGE_KEY } }),
       prisma.paymentCheckout.findMany({
@@ -976,6 +967,24 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
     const assignments = parsePatientAssignments(assignmentConfig?.value);
     const triageByPatient = parsePatientIntakeTriage(triageConfig?.value);
     const activeProfessionalId = patient ? assignments[patient.id] ?? null : null;
+    /** Saldo gastable solo del vínculo (o legacy sin snapshot). No mezcla créditos de otro profesional. */
+    const creditSummary = await prisma.patientPackagePurchase.aggregate({
+      where: {
+        patientId: actor.patientProfileId,
+        ...(activeProfessionalId
+          ? {
+              OR: [
+                { professionalIdSnapshot: activeProfessionalId },
+                { professionalIdSnapshot: null }
+              ]
+            }
+          : { professionalIdSnapshot: null })
+      },
+      _sum: {
+        totalCredits: true,
+        remainingCredits: true
+      }
+    });
     const intakeRiskLevel = patient?.intake?.riskLevel ?? null;
     const intakeTriageDecision = patient
       ? resolveIntakeTriageDecision(triageByPatient, patient.id, intakeRiskLevel)

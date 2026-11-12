@@ -95,6 +95,17 @@ export function friendlyBookingFailureMessage(raw: string, language: AppLanguage
     });
   }
 
+  if (
+    normalized.includes("CREDITS_FOR_OTHER_PROFESSIONAL")
+    || normalized.includes("belong to another professional")
+  ) {
+    return t(language, {
+      es: "Tus sesiones disponibles son de otro profesional. Con este vínculo necesitás un paquete de este profesional (o que soporte reasigne esos créditos).",
+      en: "Your available sessions belong to another professional. For this bond you need a package with this professional (or support to reassign those credits).",
+      pt: "Suas sessoes disponiveis sao de outro profissional. Neste vinculo precisa de um pacote deste profissional (ou que o suporte reatribua esses creditos)."
+    });
+  }
+
   if (normalized === "Another request is booking that slot right now. Please retry.") {
     return t(language, {
       es: "Alguien más está eligiendo ese mismo momento. Esperá unos segundos y tocá de nuevo, o elegí otro horario cercano.",

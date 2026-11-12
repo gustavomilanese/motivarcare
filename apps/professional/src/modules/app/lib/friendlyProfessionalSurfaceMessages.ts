@@ -115,6 +115,7 @@ export function professionalAuthValidationMessage(
 export type ProfessionalSurfaceContext =
   | "published-slots-load"
   | "published-slot-delete"
+  | "published-slots-clear"
   | "published-agenda-load"
   | "published-reschedule-availability"
   | "published-reschedule-save"
@@ -176,6 +177,11 @@ const SURFACE: Record<ProfessionalSurfaceContext, LocalizedText> = {
     es: "No pudimos quitar ese horario. Si sigue visible, recargá la agenda o intentá otra vez.",
     en: "We couldn’t remove that slot. Reload the schedule or try again.",
     pt: "Nao foi possivel remover o horario. Recarregue a agenda."
+  },
+  "published-slots-clear": {
+    es: "No pudimos borrar toda la disponibilidad. Recargá e intentá otra vez.",
+    en: "We couldn’t clear all availability. Reload and try again.",
+    pt: "Nao foi possivel apagar toda a disponibilidade. Recarregue e tente de novo."
   },
   "published-agenda-load": {
     es: "La agenda no cargó. Revisá la conexión y tocá para actualizar, o entrá de nuevo a esta pantalla.",

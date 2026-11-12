@@ -730,6 +730,19 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
             consumedCredits = 1;
             packageSessionOrdinal = allocated.ordinal;
           } else {
+            const otherProCredits = await tx.patientPackagePurchase.aggregate({
+              where: {
+                patientId: patientProfileId,
+                remainingCredits: { gt: 0 },
+                professionalIdSnapshot: { not: null },
+                NOT: { professionalIdSnapshot: professional.id }
+              },
+              _sum: { remainingCredits: true }
+            });
+            if ((otherProCredits._sum.remainingCredits ?? 0) > 0) {
+              throw new Error("CREDITS_FOR_OTHER_PROFESSIONAL");
+            }
+
             const existingTrialBooking = await tx.booking.findFirst({
               where: {
                 patientId: patientProfileId,
@@ -898,6 +911,12 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
       }
       if (error.message === "NO_AVAILABLE_CREDITS") {
         return res.status(402).json({ error: "No available session credits. Purchase a package to continue." });
+      }
+      if (error.message === "CREDITS_FOR_OTHER_PROFESSIONAL") {
+        return res.status(409).json({
+          error: "Session credits belong to another professional. Purchase a package for this professional to continue.",
+          code: "CREDITS_FOR_OTHER_PROFESSIONAL"
+        });
       }
       if (error.message === "TRIAL_ALREADY_USED") {
         return res.status(409).json({ error: "Trial session already used. Purchase a package to continue." });

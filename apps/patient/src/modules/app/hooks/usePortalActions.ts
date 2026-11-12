@@ -686,6 +686,20 @@ export function usePortalActions(params: {
       } catch (error) {
         console.error("Could not create booking", error);
         const errorMessage = error instanceof Error ? error.message : "";
+        if (
+          errorMessage.includes("CREDITS_FOR_OTHER_PROFESSIONAL")
+          || errorMessage.includes("belong to another professional")
+        ) {
+          return {
+            ok: false,
+            error: t(params.state.language, {
+              es: "Tus sesiones disponibles son de otro profesional. Con este vínculo necesitás un paquete de este profesional (o que soporte reasigne esos créditos).",
+              en: "Your available sessions belong to another professional. For this bond you need a package with this professional (or support to reassign those credits).",
+              pt: "Suas sessoes disponiveis sao de outro profissional. Neste vinculo precisa de um pacote deste profissional (ou que o suporte reatribua esses creditos)."
+            })
+          };
+        }
+
         const hasLocalCredits = !bookingAsTrial && params.state.subscription.creditsRemaining > 0;
         const apiCreditStateMismatch =
           errorMessage === "Trial session already used. Purchase a package to continue."
@@ -696,9 +710,9 @@ export function usePortalActions(params: {
             return {
               ok: false,
               error: t(params.state.language, {
-                es: "No pudimos confirmar la reserva. Recargá la página para sincronizar tus créditos e intentá de nuevo.",
-                en: "We couldn't confirm the booking. Reload the page to sync your credits and try again.",
-                pt: "Nao foi possivel confirmar a reserva. Recarregue a pagina para sincronizar seus creditos e tente novamente."
+                es: "Esas sesiones no se pueden usar con este profesional. Recargá la página o comprá un paquete de este vínculo.",
+                en: "Those sessions can’t be used with this professional. Reload the page or buy a package for this bond.",
+                pt: "Essas sessoes nao podem ser usadas com este profissional. Recarregue a pagina ou compre um pacote deste vinculo."
               })
             };
           }

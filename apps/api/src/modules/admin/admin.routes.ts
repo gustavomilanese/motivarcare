@@ -9,6 +9,7 @@ import {
 import { hashPassword, requireAuth, requireRole, type AuthenticatedRequest } from "../../lib/auth.js";
 import { prismaErrorUserMessage } from "../../lib/prismaUserError.js";
 import { ADMIN_USER_DELETE_TX_OPTIONS, hardDeleteUserInTransaction } from "../../lib/hardDeleteUserInTransaction.js";
+import { clearProfessionalAvailability } from "../../lib/clearProfessionalAvailability.js";
 import { prisma } from "../../lib/prisma.js";
 import { buildPackageSessionIndexByBookingId } from "../../lib/packageSessionAttribution.js";
 import { refundBookingCreditsToConsumedPurchase } from "../../lib/refundBookingCredits.js";
@@ -2351,6 +2352,20 @@ adminRouter.post("/professionals/:professionalId/slots", async (req, res) => {
   });
 
   return res.status(201).json({ slot: created });
+});
+
+/** Wipe total de disponibilidad publicada (para republicar limpio). No borra reservas. */
+adminRouter.delete("/professionals/:professionalId/slots", async (req, res) => {
+  const professionalExists = await prisma.professionalProfile.findUnique({
+    where: { id: req.params.professionalId },
+    select: { id: true }
+  });
+  if (!professionalExists) {
+    return res.status(404).json({ error: "Professional not found" });
+  }
+
+  const { deletedCount } = await clearProfessionalAvailability(req.params.professionalId);
+  return res.json({ success: true, deletedCount });
 });
 
 adminRouter.delete("/professionals/:professionalId/slots/:slotId", async (req, res) => {

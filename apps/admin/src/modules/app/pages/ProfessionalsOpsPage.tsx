@@ -761,6 +761,30 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
     }
   };
 
+  const clearAllSlots = async (professionalId: string) => {
+    setError("");
+    setSuccess("");
+
+    try {
+      const result = await apiRequest<{ success: boolean; deletedCount: number }>(
+        "/api/admin/professionals/" + professionalId + "/slots",
+        { method: "DELETE" },
+        props.token
+      );
+      setSuccess(
+        t(props.language, {
+          es: `Disponibilidad borrada (${result.deletedCount} horario${result.deletedCount === 1 ? "" : "s"}).`,
+          en: `Availability cleared (${result.deletedCount} slot${result.deletedCount === 1 ? "" : "s"}).`,
+          pt: `Disponibilidade apagada (${result.deletedCount} horário${result.deletedCount === 1 ? "" : "s"}).`
+        })
+      );
+      await load(professionalSearch, visibleFilter);
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("prof-ops-slot-clear", props.language, raw));
+    }
+  };
+
   const saveProfessionalBooking = async (professionalId: string, bookingId: string) => {
     const draft = professionalBookingDrafts[bookingId];
     if (!draft) {
@@ -1730,6 +1754,12 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
               return;
             }
             void deleteSlot(selectedProfessional.id, slotId);
+          }}
+          onClearAllSlots={async () => {
+            if (!selectedProfessional) {
+              return;
+            }
+            await clearAllSlots(selectedProfessional.id);
           }}
           onToggleConfirmedSessions={() => {
             const next = !showConfirmedSessions;

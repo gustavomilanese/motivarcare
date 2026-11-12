@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
+import { clearProfessionalAvailability } from "../../lib/clearProfessionalAvailability.js";
 
 const createSlotSchema = z.object({
   startsAt: z.string().datetime(),
@@ -182,6 +183,21 @@ availabilityRouter.post("/slots", requireAuth, async (req: AuthenticatedRequest,
   });
 
   return res.status(201).json({ message: "Availability slot created", slot });
+});
+
+/** Wipe de toda la disponibilidad propia para republicar desde cero. No borra reservas. */
+availabilityRouter.delete("/me/slots", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PROFESSIONAL" || !actor.professionalProfileId) {
+    return res.status(403).json({ error: "Only professionals can clear availability" });
+  }
+
+  const { deletedCount } = await clearProfessionalAvailability(actor.professionalProfileId);
+  return res.json({ message: "Availability cleared", deletedCount });
 });
 
 availabilityRouter.delete("/slots/:slotId", requireAuth, async (req: AuthenticatedRequest, res) => {

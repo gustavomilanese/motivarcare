@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { AdminBookingOps, AdminProfessionalOps } from "../../types";
+import { ClearAllAvailabilityButton } from "./ClearAllAvailabilityButton";
 
 export interface ProfessionalSlotDraft {
   slotDate: string;
@@ -63,6 +64,7 @@ export function ProfessionalEditModal(props: {
   onToggleConfirmedSessions: () => void;
   onCreateSlot: () => void;
   onDeleteSlot: (slotId: string) => void;
+  onClearAllSlots: () => void | Promise<void>;
   onSaveBooking: (bookingId: string) => void;
   /** Textos del modal (horarios / perfil se editan en el panel principal). */
   t: (values: { es: string; en: string; pt: string }) => string;
@@ -143,6 +145,11 @@ export function ProfessionalEditModal(props: {
             <button className="primary" type="button" onClick={props.onCreateSlot}>
               {props.t({ es: "Agregar slot", en: "Add slot", pt: "Adicionar horario" })}
             </button>
+            <ClearAllAvailabilityButton
+              slotCount={selectedProfessional.slotsCount ?? sortedSlots.length}
+              t={props.t}
+              onClear={props.onClearAllSlots}
+            />
           </div>
           <div className="ops-slot-list">
             {sortedSlots.length === 0 ? (
