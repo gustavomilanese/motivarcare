@@ -967,46 +967,46 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
     const assignments = parsePatientAssignments(assignmentConfig?.value);
     const triageByPatient = parsePatientIntakeTriage(triageConfig?.value);
     const activeProfessionalId = patient ? assignments[patient.id] ?? null : null;
-    /** Solo compras del vínculo (o legacy sin snapshot). No mezcla créditos de otro profesional. */
-    const bondPurchaseWhere = {
-      patientId: actor.patientProfileId,
-      ...(activeProfessionalId
-        ? {
-            OR: [
-              { professionalIdSnapshot: activeProfessionalId },
-              { professionalIdSnapshot: null }
-            ]
-          }
-        : { professionalIdSnapshot: null })
-    };
     /**
-     * Medidor + latestPackage: solo packs abiertos del vínculo.
-     * El nombre/tamaño no pueden salir de purchases[0] agotado (mostraba “Basic” con 8 de otro pack).
+     * Paquete activo del vínculo: solo compras con snapshot del profesional asignado.
+     * Sin lazo no hay pack “con profesional”. No mezclar legacy null ni packs de otro pro.
+     * FIFO (purchasedAt asc) = el que se consume al reservar.
      */
-    const activePackRows = await prisma.patientPackagePurchase.findMany({
-      where: { ...bondPurchaseWhere, remainingCredits: { gt: 0 } },
-      orderBy: { purchasedAt: "desc" },
-      select: {
-        id: true,
-        totalCredits: true,
-        packageCreditsSnapshot: true,
-        remainingCredits: true,
-        purchasedAt: true,
-        sessionPackage: { select: { name: true, credits: true } }
-      }
-    });
-    const remainingCreditsSum = activePackRows.reduce((sum, row) => sum + Math.max(0, row.remainingCredits), 0);
-    const activePackTotalCredits = activePackRows.reduce((sum, row) => {
-      const size = row.packageCreditsSnapshot ?? row.totalCredits ?? row.sessionPackage.credits;
-      return sum + Math.max(0, size);
-    }, 0);
-    const primaryOpenPack = activePackRows[0] ?? null;
+    const activePackRows = activeProfessionalId
+      ? await prisma.patientPackagePurchase.findMany({
+          where: {
+            patientId: actor.patientProfileId,
+            professionalIdSnapshot: activeProfessionalId,
+            remainingCredits: { gt: 0 }
+          },
+          orderBy: { purchasedAt: "asc" },
+          select: {
+            id: true,
+            totalCredits: true,
+            packageCreditsSnapshot: true,
+            remainingCredits: true,
+            purchasedAt: true,
+            sessionPackage: { select: { name: true, credits: true } }
+          }
+        })
+      : [];
+    const activeBondPack = activePackRows[0] ?? null;
+    const activePackSize = activeBondPack
+      ? Math.max(
+          0,
+          activeBondPack.packageCreditsSnapshot
+            ?? activeBondPack.totalCredits
+            ?? activeBondPack.sessionPackage.credits
+        )
+      : 0;
+    const activePackRemaining = activeBondPack ? Math.max(0, activeBondPack.remainingCredits) : 0;
     const creditSummary = {
       _sum: {
-        remainingCredits: remainingCreditsSum,
-        totalCredits: activePackTotalCredits > 0 ? activePackTotalCredits : remainingCreditsSum
+        remainingCredits: activePackRemaining,
+        totalCredits: activePackSize > 0 ? activePackSize : activePackRemaining
       }
     };
+    const primaryOpenPack = activeBondPack;
     const intakeRiskLevel = patient?.intake?.riskLevel ?? null;
     const intakeTriageDecision = patient
       ? resolveIntakeTriageDecision(triageByPatient, patient.id, intakeRiskLevel)
