@@ -31,7 +31,11 @@ import {
   resolveIndividualListUnitUsdFromPackages,
   resolveSessionListUsdMajor
 } from "@therapy/patient-core";
-import { canPatientRescheduleBooking, resolveFxRatePerUsd } from "@therapy/i18n-config";
+import {
+  canPatientRescheduleBooking,
+  resolveFxRatePerUsd,
+  resolvePatientChangeNoticeHours
+} from "@therapy/i18n-config";
 import { PaymentSuccessModal, type PaymentSuccessSummary } from "../../matching/components/PaymentSuccessModal";
 import { friendlyBookingFailureMessage, friendlyCheckoutPackageMessage } from "../lib/friendlyPatientMessages";
 import { usePackageCheckout } from "../hooks/usePackageCheckout";
@@ -367,8 +371,17 @@ export function BookingPage(props: {
     (booking: Booking) => {
       const professionalHours = findProfessionalById(booking.professionalId, props.professionals)?.cancellationHours;
       if (!canPatientRescheduleBooking(booking.startsAt, professionalHours)) {
+        const hours = resolvePatientChangeNoticeHours(professionalHours);
+        setBookingActionError(
+          t(props.language, {
+            es: `Solo podés reprogramar con al menos ${hours} h de anticipación.`,
+            en: `You can only reschedule at least ${hours} h ahead.`,
+            pt: `Só é possível reagendar com pelo menos ${hours} h de antecedência.`
+          })
+        );
         return;
       }
+      setBookingActionError("");
       holdAcquireGenerationRef.current += 1;
       void releaseCurrentSlotHold();
       setEditingBookingId(booking.id);
@@ -380,7 +393,7 @@ export function BookingPage(props: {
         reservationsFocusRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     },
-    [props.professionals, releaseCurrentSlotHold]
+    [props.language, props.professionals, releaseCurrentSlotHold]
   );
 
   const handleCancelBookingFromCalendar = useCallback(
@@ -818,16 +831,32 @@ export function BookingPage(props: {
     setSearchParams(nextParams, { replace: true });
 
     const target = upcomingConfirmedBookings.find((booking) => booking.id === rescheduleBookingId);
-    if (
-      !target
-      || !canPatientRescheduleBooking(
-        target.startsAt,
-        findProfessionalById(target.professionalId, props.professionals)?.cancellationHours
-      )
-    ) {
+    const professionalHours = target
+      ? findProfessionalById(target.professionalId, props.professionals)?.cancellationHours
+      : null;
+    if (!target) {
+      setBookingActionError(
+        t(props.language, {
+          es: "No encontramos esa reserva para reprogramar.",
+          en: "We couldn’t find that booking to reschedule.",
+          pt: "Não encontramos essa reserva para reagendar."
+        })
+      );
+      return;
+    }
+    if (!canPatientRescheduleBooking(target.startsAt, professionalHours)) {
+      const hours = resolvePatientChangeNoticeHours(professionalHours);
+      setBookingActionError(
+        t(props.language, {
+          es: `Solo podés reprogramar con al menos ${hours} h de anticipación.`,
+          en: `You can only reschedule at least ${hours} h ahead.`,
+          pt: `Só é possível reagendar com pelo menos ${hours} h de antecedência.`
+        })
+      );
       return;
     }
 
+    setBookingActionError("");
     holdAcquireGenerationRef.current += 1;
     void releaseCurrentSlotHold();
     setEditingBookingId(target.id);

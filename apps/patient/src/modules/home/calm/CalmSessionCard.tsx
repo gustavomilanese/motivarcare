@@ -1,16 +1,10 @@
 import { type SyntheticEvent } from "react";
-import {
-  bookingJoinUrl,
-  canPatientRescheduleBooking,
-  resolvePatientChangeNoticeHours,
-  type AppLanguage,
-  type LocalizedText,
-  textByLanguage
-} from "@therapy/i18n-config";
+import { bookingJoinUrl, type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { professionalAccessibleName, professionalFirstName } from "../../app/lib/professionalDisplayName";
 import type { Booking, Professional } from "../../app/types";
 import { CalmPersonHit } from "./CalmPersonHit";
 import { CalmSessionCreditsBadge } from "./CalmSessionCreditsBadge";
+import { CalmSessionRescheduleButton } from "./CalmSessionRescheduleButton";
 import {
   formatClock,
   formatWeekdayDate,
@@ -109,9 +103,6 @@ export function CalmSessionCard(props: {
   const given = professionalFirstName(professional);
   const specialtyLabel = professional.specialties.filter(Boolean).join(", ");
   const meta = [professional.title, specialtyLabel].filter(Boolean).join(" · ");
-  const noticeHours = resolvePatientChangeNoticeHours(professional.cancellationHours);
-  const canReschedule = canPatientRescheduleBooking(booking.startsAt, noticeHours);
-
   return (
     <article className="calm-card calm-session" data-tour="patient-tour-bookings">
       <svg className="calm-session-blob" viewBox="0 0 500 520" aria-hidden="true">
@@ -176,14 +167,12 @@ export function CalmSessionCard(props: {
           </button>
         )}
         <div className={`calm-session-secondary${isMobilePortal ? " calm-session-secondary--solo" : ""}`}>
-          <button
-            className="calm-btn calm-btn--outline"
-            type="button"
-            disabled={!canReschedule}
-            onClick={() => props.onRescheduleBooking(booking.id)}
-          >
-            {t(language, { es: "Reprogramar", en: "Reschedule", pt: "Reagendar" })}
-          </button>
+          <CalmSessionRescheduleButton
+            language={language}
+            startsAt={booking.startsAt}
+            cancellationHours={professional.cancellationHours}
+            onReschedule={() => props.onRescheduleBooking(booking.id)}
+          />
           {isMobilePortal ? null : (
             <DeviceTestLink language={language} className="calm-text-link calm-session-av-test" />
           )}
