@@ -1,4 +1,4 @@
-import { type SyntheticEvent } from "react";
+import { type SyntheticEvent, useState } from "react";
 import { bookingJoinUrl, type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { professionalAccessibleName, professionalFirstName } from "../../app/lib/professionalDisplayName";
 import type { Booking, Professional } from "../../app/types";
@@ -41,6 +41,7 @@ export function CalmSessionCard(props: {
 }) {
   const { language, timeZone, now, booking, professional } = props;
   const isMobilePortal = useMobilePortal();
+  const [rescheduleNotice, setRescheduleNotice] = useState("");
 
   if (!booking || !professional) {
     return (
@@ -172,12 +173,18 @@ export function CalmSessionCard(props: {
             startsAt={booking.startsAt}
             cancellationHours={professional.cancellationHours}
             onReschedule={() => props.onRescheduleBooking(booking.id)}
+            onBlocked={setRescheduleNotice}
           />
           {isMobilePortal ? null : (
             <DeviceTestLink language={language} className="calm-text-link calm-session-av-test" />
           )}
         </div>
       </div>
+      {rescheduleNotice ? (
+        <p className="calm-session-footnote" role="status">
+          {rescheduleNotice}
+        </p>
+      ) : null}
       <p className="sr-only">
         {t(language, {
           es: `Sesión con ${given}`,
